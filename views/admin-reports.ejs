@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Reports - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Reports Specific Styles */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .tabs-container {
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+        }
+
+        .tabs-list {
+            display: flex;
+            gap: 24px;
+        }
+
+        .tab-item {
+            padding: 12px 4px;
+            font-size: 14px;
+            font-weight: 500;
+            color: #6B7280;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            transition: all 0.2s;
+        }
+
+        .tab-item:hover {
+            color: #374151;
+        }
+
+        .tab-item.active {
+            color: #111827;
+            border-bottom-color: #111827;
+        }
+
+        .report-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E5E7EB;
+            overflow: hidden;
+        }
+
+        .table-container {
+            width: 100%;
+            overflow-x: auto;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+
+        .report-table th {
+            text-align: left;
+            padding: 12px 24px;
+            background-color: #F9FAFB;
+            color: #6B7280;
+            font-weight: 500;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .report-table td {
+            padding: 16px 24px;
+            border-bottom: 1px solid #E5E7EB;
+            color: #374151;
+        }
+
+        .report-table tr:last-child td {
+            border-bottom: none;
+        }
+
+        .user-cell {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .user-avatar-sm {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #E5E7EB;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-success {
+            background-color: #DEF7EC;
+            color: #03543F;
+        }
+
+        .status-warning {
+            background-color: #FEF3C7;
+            color: #92400E;
+        }
+
+        .status-error {
+            background-color: #FDE8E8;
+            color: #9B1C1C;
+        }
+
+        .status-info {
+            background-color: #E1EFFE;
+            color: #1E429F;
+        }
+
+        /* Summary Tab Styles */
+        .summary-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid #E5E7EB;
+            box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #6B7280;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .print-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background-color: white;
+            border: 1px solid #D1D5DB;
+            color: #374151;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .print-btn:hover {
+            background-color: #F9FAFB;
+            border-color: #9CA3AF;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div class="page-header">
+                            <h1 class="page-title">รายงานเหตุการณ์ของระบบ (System Activity Report)</h1>
+                            <div class="date-filter">
+                                <!-- Placeholder for date filter if needed -->
+                                <span style="color: #6B7280; font-size: 14px;">Today: March 25, 2025</span>
+                            </div>
+                        </div>
+
+                        <div class="tabs-container">
+                            <div class="tabs-list">
+                                <div class="tab-item active" data-tab="user-activity">User Activity Log</div>
+                                <div class="tab-item" data-tab="system-log">System Notifications Log</div>
+                                <div class="tab-item" data-tab="daily-summary">Daily Summary</div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 1: User Activity Log -->
+                        <div id="user-activity" class="tab-content active">
+                            <div class="report-card">
+                                <div class="table-container">
+                                    <table class="report-table">
+                                        <thead>
+                                            <tr>
+                                                <th>เวลา</th>
+                                                <th>ผู้ใช้งาน</th>
+                                                <th>การกระทำ</th>
+                                                <th>รายละเอียด</th>
+                                                <th>เป้าหมาย</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>10:45 AM</td>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <div class="user-avatar-sm">AS</div>
+                                                        <div>
+                                                            <div style="font-weight: 500;">Dr. Alice Smith</div>
+                                                            <div style="font-size: 12px; color: #6B7280;">Doctor</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="status-badge status-info">View Result</span></td>
+                                                <td>เปิดดูผลเลือด</td>
+                                                <td>HN 123456789</td>
+                                            </tr>
+                                            <tr>
+                                                <td>10:30 AM</td>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <div class="user-avatar-sm">JD</div>
+                                                        <div>
+                                                            <div style="font-weight: 500;">John Doe</div>
+                                                            <div style="font-size: 12px; color: #6B7280;">Nurse</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="status-badge status-warning">Edit Info</span></td>
+                                                <td>แก้ไขข้อมูลผู้ป่วย</td>
+                                                <td>HN 987654321</td>
+                                            </tr>
+                                            <tr>
+                                                <td>09:15 AM</td>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <div class="user-avatar-sm">AS</div>
+                                                        <div>
+                                                            <div style="font-weight: 500;">Dr. Alice Smith</div>
+                                                            <div style="font-size: 12px; color: #6B7280;">Doctor</div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="status-badge status-success">Order Lab</span></td>
+                                                <td>สั่งตรวจเลือด (CBC)</td>
+                                                <td>HN 123456789</td>
+                                            </tr>
+                                            <tr>
+                                                <td>08:45 AM</td>
+                                                <td>
+                                                    <div class="user-cell">
+                                                        <div class="user-avatar-sm">LT</div>
+                                                        <div>
+                                                            <div style="font-weight: 500;">Lab Tech 1</div>
+                                                            <div style="font-size: 12px; color: #6B7280;">Lab Technician
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td><span class="status-badge status-info">Upload</span></td>
+                                                <td>อัปโหลดไฟล์ผลตรวจ</td>
+                                                <td>HN 456123789</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 2: System Notifications Log -->
+                        <div id="system-log" class="tab-content">
+                            <div class="report-card">
+                                <div class="table-container">
+                                    <table class="report-table">
+                                        <thead>
+                                            <tr>
+                                                <th>เวลา</th>
+                                                <th>เหตุการณ์</th>
+                                                <th>สถานะ</th>
+                                                <th>ข้อความระบบ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>10:46 AM</td>
+                                                <td>ส่งผลเลือด</td>
+                                                <td><span class="status-badge status-success">Success</span></td>
+                                                <td>ส่งผลเลือดไปยังแพทย์เจ้าของไข้เรียบร้อยแล้ว</td>
+                                            </tr>
+                                            <tr>
+                                                <td>10:00 AM</td>
+                                                <td>เจาะเลือด</td>
+                                                <td><span class="status-badge status-success">Completed</span></td>
+                                                <td>บันทึกการเจาะเลือด HN 987654321 สำเร็จ</td>
+                                            </tr>
+                                            <tr>
+                                                <td>09:30 AM</td>
+                                                <td>System Error</td>
+                                                <td><span class="status-badge status-error">Error</span></td>
+                                                <td>Specimen ถูกยกเลิก (Hemolyzed) - HN 555666777</td>
+                                            </tr>
+                                            <tr>
+                                                <td>09:00 AM</td>
+                                                <td>นัดหมายใหม่</td>
+                                                <td><span class="status-badge status-info">New Appointment</span></td>
+                                                <td>สร้างนัดหมายใหม่สำหรับ HN 111222333</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab 3: Daily Summary -->
+                        <div id="daily-summary" class="tab-content">
+                            <div class="page-header" style="margin-bottom: 16px;">
+                                <h2 style="font-size: 18px; font-weight: 600;">สรุปงานประจำวัน (Daily Report)</h2>
+                                <button class="print-btn" onclick="window.print()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path
+                                            d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                        </path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    Print Report
+                                </button>
+                            </div>
+
+                            <div class="summary-stats">
+                                <div class="stat-card">
+                                    <div class="stat-label">Total Orders</div>
+                                    <div class="stat-value">24</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Completed</div>
+                                    <div class="stat-value" style="color: #059669;">18</div>
+                                </div>
+                                <div class="stat-card">
+                                    <div class="stat-label">Pending</div>
+                                    <div class="stat-value" style="color: #D97706;">6</div>
+                                </div>
+                            </div>
+
+                            <div class="report-card">
+                                <div class="table-container">
+                                    <table class="report-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Order ID</th>
+                                                <th>Patient HN</th>
+                                                <th>Test Type</th>
+                                                <th>Time</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td>#ORD-2025-001</td>
+                                                <td>123456789</td>
+                                                <td>CBC</td>
+                                                <td>09:15 AM</td>
+                                                <td><span class="status-badge status-success">Completed</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2025-002</td>
+                                                <td>987654321</td>
+                                                <td>Lipid Profile</td>
+                                                <td>09:45 AM</td>
+                                                <td><span class="status-badge status-success">Completed</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2025-003</td>
+                                                <td>456123789</td>
+                                                <td>Glucose</td>
+                                                <td>10:00 AM</td>
+                                                <td><span class="status-badge status-warning">Processing</span></td>
+                                            </tr>
+                                            <tr>
+                                                <td>#ORD-2025-004</td>
+                                                <td>111222333</td>
+                                                <td>Liver Function</td>
+                                                <td>10:30 AM</td>
+                                                <td><span class="status-badge status-warning">Pending</span></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set active sidebar item
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const reportsNav = document.querySelector('.nav-item[data-page="reports"]');
+            if (reportsNav) reportsNav.classList.add('active');
+
+            // Tab Switching Logic
+            const tabItems = document.querySelectorAll('.tab-item');
+            const tabContents = document.querySelectorAll('.tab-content');
+
+            tabItems.forEach(item => {
+                item.addEventListener('click', () => {
+                    // Remove active class from all tabs and contents
+                    tabItems.forEach(t => t.classList.remove('active'));
+                    tabContents.forEach(c => c.classList.remove('active'));
+
+                    // Add active class to clicked tab
+                    item.classList.add('active');
+
+                    // Show corresponding content
+                    const tabId = item.getAttribute('data-tab');
+                    document.getElementById(tabId).classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+
+</html>

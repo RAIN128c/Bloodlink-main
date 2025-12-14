@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Doctor Detail - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Doctor Detail Specific Styles */
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 24px;
+        }
+
+        /* Profile Card */
+        .profile-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            gap: 40px;
+            margin-bottom: 24px;
+            border: 1px solid #E5E7EB;
+        }
+
+        .profile-left {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            min-width: 200px;
+            border-right: 1px solid #E5E7EB;
+            padding-right: 40px;
+        }
+
+        .profile-avatar {
+            width: 120px;
+            height: 120px;
+            background-color: #E5E7EB;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #374151;
+        }
+
+        .doctor-id {
+            font-size: 12px;
+            color: #6B7280;
+        }
+
+        .profile-right {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .doctor-name-large {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            /* Dark blue/black */
+        }
+
+        .doctor-role {
+            font-size: 16px;
+            color: #9CA3AF;
+            font-weight: 400;
+        }
+
+        .doctor-bio {
+            font-size: 14px;
+            color: #4B5563;
+            line-height: 1.6;
+            margin-top: 8px;
+            margin-bottom: 24px;
+        }
+
+        .contact-info {
+            font-size: 14px;
+            color: #4B5563;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* Appointments Section */
+        .appointments-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E5E7EB;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #111827;
+            /* Dark blue */
+            margin-bottom: 20px;
+        }
+
+        .custom-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .custom-table th {
+            text-align: left;
+            padding: 12px 16px;
+            font-weight: 600;
+            color: #111827;
+            border-bottom: 1px solid #E5E7EB;
+            font-size: 14px;
+        }
+
+        .custom-table td {
+            padding: 16px;
+            border-bottom: 1px solid #E5E7EB;
+            /* Add border to rows */
+            border-right: 1px solid #E5E7EB;
+            /* Vertical borders */
+            font-size: 14px;
+            color: #111827;
+            vertical-align: middle;
+        }
+
+        .custom-table td:last-child {
+            border-right: none;
+        }
+
+        .custom-table tr:last-child td {
+            border-bottom: none;
+            /* Remove bottom border for last row if needed, but design shows full grid usually */
+        }
+
+        /* Add vertical borders to header as well to match design style if needed, 
+           but standard tables usually just have horizontal. 
+           Looking at the image, it looks like a grid with vertical lines. */
+        .custom-table th {
+            border-right: 1px solid #E5E7EB;
+        }
+
+        .custom-table th:last-child {
+            border-right: none;
+        }
+
+        .custom-table tr {
+            height: 60px;
+            /* Taller rows */
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                            <a href="/admin-doctors"
+                                style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background-color: white; border: 1px solid #E5E7EB; color: #374151; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                                </svg>
+                            </a>
+                            <h1 class="page-title" style="margin-bottom: 0;">Doctor</h1>
+                        </div>
+
+                        <!-- Profile Card -->
+                        <div class="profile-card">
+                            <div class="profile-left">
+                                <div class="profile-avatar">
+                                    <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                        <circle cx="12" cy="7" r="4"></circle>
+                                    </svg>
+                                </div>
+                                <span class="doctor-id">Doctor ID : XXX-1234</span>
+                            </div>
+                            <div class="profile-right">
+                                <div class="doctor-name-large">ดร.สมหญิง เงินสั่งได้</div>
+                                <div class="doctor-role">จักษุแพทย์</div>
+                                <div class="doctor-bio">
+                                    คอนโดหน่อมแน้มแจ๊ส อริยสงฆ์ จ่าวกิ๊กซูเปอร์สารขัณฑ์เบอร์เกอร์ คอร์สแคมปัส แตงโมดีกรี
+                                    ติวเตอร์เซลส์แมนกับช้อนนอร์ท หลวงพี่แจมฮิปฮอปสตรอเบอร์รี่เที่ยงคืน
+                                    ตัวตนผ้าห่มออโต๊ะจีน
+                                    อิเหนาตี้บิวลัลล์ตรวจสอบ มุมมองป่า แรงใจสปอยเลอร์ คณาญาติไวอะกร้า
+                                    โชว์สิ่งคาปูชิโนผ้าห่มออเดอร์พุทธภูมิ แรลลีนายพราน สุริยยาตร์อพาร์ทเมนท์วะเพทนาการ
+                                    คอนแท็ค
+                                </div>
+                                <div class="contact-info">
+                                    <div>000-000-0000</div>
+                                    <div>XXX_SOMYING@gmail.com</div>
+                                </div>
+                                <div style="display: flex; justify-content: flex-end; margin-top: 16px;">
+                                    <a href="/admin-doctor-edit"
+                                        style="display: flex; align-items: center; gap: 8px; padding: 8px 16px; background-color: white; border: 1px solid #E5E7EB; border-radius: 8px; color: #374151; text-decoration: none; font-size: 14px; font-weight: 500; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                        แก้ไขข้อมูล
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Appointments Section -->
+                        <div class="appointments-section">
+                            <h2 class="section-title">การนัดหมาย</h2>
+                            <table class="custom-table">
+                                <thead>
+                                    <tr>
+                                        <th style="width: 50px;">#</th>
+                                        <th>ผู้ป่วย</th>
+                                        <th>การนัดหมาย</th>
+                                        <th>พบเจอล่าสุด</th>
+                                        <th>อายุ</th>
+                                        <th>ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Mock Row 1 -->
+                                    <tr>
+                                        <td>01</td>
+                                        <td style="font-weight: 600;">นายสมชาย รักดี</td>
+                                        <td>20 ก.ย 2568</td>
+                                        <td>8 ส.ค. 2568</td>
+                                        <td>67</td>
+                                        <td>012345678</td>
+                                    </tr>
+                                    <!-- Empty rows to match design height/grid -->
+                                    <tr>
+                                        <td>&nbsp;</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                    <tr>
+                                        <td>&nbsp;</td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                        <td></td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+            </main>
+
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set active sidebar item (keep 'doctors' active)
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const doctorNav = document.querySelector('.nav-item[data-page="doctors"]');
+            if (doctorNav) doctorNav.classList.add('active');
+        });
+    </script>
+</body>
+
+</html>

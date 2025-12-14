@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ประวัติผู้ป่วย - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Scrollable Patient List */
+        .patient-list-container {
+            max-height: 500px;
+            overflow-y: auto;
+            padding-right: 8px;
+        }
+
+        .patient-list-container::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .patient-list-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+
+        .patient-list-container::-webkit-scrollbar-thumb {
+            background: #c4c4c4;
+            border-radius: 3px;
+        }
+
+        /* Scrollable Missed List */
+        .missed-list {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Enhanced Missed Card */
+        .missed-card {
+            cursor: pointer;
+            transition: transform 0.2s ease;
+        }
+
+        .missed-card:hover {
+            transform: translateX(4px);
+        }
+
+        .missed-card .hn-text {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 2px;
+        }
+
+        /* No missed appointments message */
+        .no-missed-message {
+            text-align: center;
+            padding: 20px;
+            color: #16a34a;
+            font-size: 14px;
+        }
+
+        .no-missed-message svg {
+            width: 40px;
+            height: 40px;
+            margin-bottom: 8px;
+            stroke: #16a34a;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <div class="content-area">
+                        <div class="history-layout">
+                            <!-- Left Column: Patient List -->
+                            <div class="history-list-section">
+                                <h1 class="page-title">ประวัติผู้ป่วย</h1>
+                                <h2 class="section-subtitle">รายชื่อ (<%= patients.length %> คน)</h2>
+
+                                <div class="patient-list-container">
+                                    <% if (typeof patients !=='undefined' && patients.length> 0) { %>
+                                        <% patients.forEach(patient=> { %>
+                                            <div class="history-card">
+                                                <div class="history-card-content">
+                                                    <div class="history-card-header">
+                                                        <h3 class="history-hn">HN : <%= patient.hn %>
+                                                        </h3>
+                                                    </div>
+                                                    <p class="history-patient-name">
+                                                        <%= patient.name %>
+                                                            <%= patient.surname %>
+                                                    </p>
+                                                    <a href="/history-detail?hn=<%= patient.hn %>"
+                                                        class="check-history-btn"
+                                                        style="text-decoration: none; display: inline-block;">ตรวจสอบ</a>
+                                                </div>
+                                            </div>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <div class="no-data-message">
+                                                        <p>ไม่พบข้อมูลผู้ป่วย</p>
+                                                    </div>
+                                                    <% } %>
+                                </div>
+                            </div>
+
+                            <!-- Right Column: Missed Appointment Sidebar -->
+                            <div class="missed-appointment-sidebar">
+                                <div class="sidebar-header">
+                                    <h3>รายชื่อผู้ป่วยที่เลยกำหนดการนัด</h3>
+                                </div>
+
+                                <div class="missed-list">
+                                    <% if (typeof missedAppointments !=='undefined' && missedAppointments.length> 0) {
+                                        %>
+                                        <% missedAppointments.forEach(patient=> { %>
+                                            <a href="/history-detail?hn=<%= patient.hn %>" class="missed-card"
+                                                style="text-decoration: none; color: inherit;">
+                                                <div class="severity-indicator <%= patient.severity %>"></div>
+                                                <div class="missed-info">
+                                                    <h4>
+                                                        <%= patient.name %>
+                                                            <%= patient.surname %>
+                                                    </h4>
+                                                    <p class="hn-text">HN: <%= patient.hn %>
+                                                    </p>
+                                                    <p>
+                                                        <% if (patient.daysOverdue===1) { %>
+                                                            เลยกำหนดการนัด 1 วัน
+                                                            <% } else if (patient.daysOverdue>= 14) { %>
+                                                                เลยกำหนดการนัด <%= patient.daysOverdue %> วัน (เกิน 2
+                                                                    สัปดาห์)
+                                                                    <% } else if (patient.daysOverdue>= 7) { %>
+                                                                        เลยกำหนดการนัด <%= patient.daysOverdue %> วัน
+                                                                            (เกิน 1 สัปดาห์)
+                                                                            <% } else { %>
+                                                                                เลยกำหนดการนัด <%= patient.daysOverdue
+                                                                                    %> วัน
+                                                                                    <% } %>
+                                                    </p>
+                                                </div>
+                                            </a>
+                                            <% }); %>
+                                                <% } else { %>
+                                                    <div class="no-missed-message">
+                                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                                            stroke-width="2">
+                                                            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                                                            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                                                        </svg>
+                                                        <p>ไม่มีผู้ป่วยที่เลยกำหนดการนัด</p>
+                                                    </div>
+                                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+
+</html>

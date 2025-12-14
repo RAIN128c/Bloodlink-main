@@ -1,0 +1,76 @@
+<div class="header-components">
+    <!-- Home Button -->
+    <a href="/dashboard" class="home-btn">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="9 22 9 12 15 12 15 22" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+        <span>Home</span>
+    </a>
+
+    <!-- Search Container -->
+    <% if (typeof hideSearch==='undefined' || !hideSearch) { %>
+        <div class="search-container">
+            <svg class="search-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9CA3AF"
+                stroke-width="2">
+                <circle cx="11" cy="11" r="8" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="m21 21-4.35-4.35" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+            <input type="text" class="search-input" id="search-trigger" placeholder="ค้นหา..." readonly
+                style="cursor: pointer;">
+        </div>
+        <% } %>
+
+            <!-- Top Bar Actions -->
+            <div class="top-bar-actions">
+                <!-- Dark Mode Toggle -->
+                <label class="toggle-switch">
+                    <input type="checkbox" id="darkModeToggle">
+                    <span class="toggle-slider"></span>
+                </label>
+
+                <!-- Profile Button -->
+                <button class="profile-btn" aria-label="Profile">
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round"
+                            stroke-linejoin="round" />
+                        <circle cx="12" cy="7" r="4" stroke-linecap="round" stroke-linejoin="round" />
+                    </svg>
+                </button>
+            </div>
+</div>
+
+<!-- HN Search Modal -->
+<div id="hn-search-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-content hn-modal-content">
+        <div class="hn-modal-header">
+            <h2>ค้นหา รหัสโรงพยาบาล(HN)</h2>
+            <p>ใส่รหัสโรงพยาบาล(HN) ของท่านเพื่อตรวจสอบผลตรวจเลือด</p>
+        </div>
+        <div class="hn-modal-body">
+            <div class="hn-input-container">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+                <input type="text" class="hn-digit-input" maxlength="1" inputmode="numeric">
+            </div>
+            <div id="hn-error-msg" class="hn-error-message" style="display: none;">
+                ไม่พบรหัสโรงพยาบาล(HN)
+            </div>
+            <div class="hn-help-text">
+                หากไม่พบรหัสโรงพยาบาลของคุณ <a href="#" class="hn-contact-link">โปรดติดต่อเรา</a>
+            </div>
+        </div>
+        <div class="modal-footer hn-modal-actions">
+            <button id="cancel-hn-search" class="cancel-btn"
+                style="background: #60A5FA; color: white; border: none;">ยกเลิก</button>
+            <button id="confirm-hn-search" class="confirm-btn"
+                style="background: #60A5FA; color: white; border: none;">ค้นหา</button>
+        </div>
+    </div>
+</div>

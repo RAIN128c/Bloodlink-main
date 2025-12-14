@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>วันนัดหมาย - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <div class="content-area">
+                        <div class="appointment-layout">
+                            <!-- Left Column: Appointment List -->
+                            <div class="appointment-list-section">
+                                <h1 class="page-title">วันนัดเจาะเลือด</h1>
+                                <h2 class="section-subtitle">รายการนัดหมาย</h2>
+
+                                <% if (appointments && appointments.length> 0) { %>
+                                    <% appointments.forEach(function(appt) { %>
+                                        <div class="appointment-card">
+                                            <div class="appointment-card-content">
+                                                <div class="appointment-card-header">
+                                                    <h3 class="appointment-hn">HN : <%= appt.hn %>
+                                                    </h3>
+                                                </div>
+                                                <p class="appointment-details">
+                                                    <%= appt.name %>
+                                                        <%= appt.surname %> ;
+                                                            <%= appt.appointmentDate || '-' %> /
+                                                                <%= appt.appointmentTime || '-' %>
+                                                </p>
+                                                <a href="/history-detail?hn=<%= appt.hn %>"
+                                                    class="check-appointment-btn"
+                                                    style="text-decoration: none; text-align: center;">ตรวจสอบ</a>
+                                            </div>
+                                        </div>
+                                        <% }); %>
+                                            <% } else { %>
+                                                <div class="appointment-card">
+                                                    <div class="appointment-card-content">
+                                                        <p class="appointment-details" style="text-align: center;">
+                                                            ไม่มีรายการนัดหมาย</p>
+                                                    </div>
+                                                </div>
+                                                <% } %>
+                            </div>
+
+                            <!-- Right Column: Calendar & Schedule -->
+                            <div class="schedule-sidebar">
+                                <!-- Calendar Widget -->
+                                <div class="calendar-container">
+                                    <div class="calendar-header">
+                                        <button class="calendar-nav-btn">&lt;</button>
+                                        <span class="calendar-month">May 2025</span>
+                                        <button class="calendar-nav-btn">&gt;</button>
+                                    </div>
+                                    <div class="calendar-grid">
+                                        <div class="calendar-day-name">Su</div>
+                                        <div class="calendar-day-name">Mo</div>
+                                        <div class="calendar-day-name">Tu</div>
+                                        <div class="calendar-day-name">We</div>
+                                        <div class="calendar-day-name">Th</div>
+                                        <div class="calendar-day-name">Fr</div>
+                                        <div class="calendar-day-name">Sa</div>
+
+                                        <!-- Mock Calendar Days -->
+                                        <div class="calendar-day muted">29</div>
+                                        <div class="calendar-day muted">30</div>
+                                        <div class="calendar-day muted">31</div>
+                                        <div class="calendar-day">1</div>
+                                        <div class="calendar-day">2</div>
+                                        <div class="calendar-day">3</div>
+                                        <div class="calendar-day">4</div>
+                                        <div class="calendar-day">5</div>
+                                        <div class="calendar-day">6</div>
+                                        <div class="calendar-day">7</div>
+                                        <div class="calendar-day">8</div>
+                                        <div class="calendar-day active">9</div>
+                                        <div class="calendar-day">10</div>
+                                        <div class="calendar-day">11</div>
+                                        <div class="calendar-day">12</div>
+                                        <div class="calendar-day">13</div>
+                                        <div class="calendar-day">14</div>
+                                        <div class="calendar-day">15</div>
+                                        <div class="calendar-day">16</div>
+                                        <div class="calendar-day">17</div>
+                                        <div class="calendar-day">18</div>
+                                        <div class="calendar-day">19</div>
+                                        <div class="calendar-day">20</div>
+                                        <div class="calendar-day">21</div>
+                                        <div class="calendar-day">22</div>
+                                        <div class="calendar-day">23</div>
+                                        <div class="calendar-day">24</div>
+                                        <div class="calendar-day">25</div>
+                                        <div class="calendar-day">26</div>
+                                        <div class="calendar-day">27</div>
+                                        <div class="calendar-day">28</div>
+                                        <div class="calendar-day">29</div>
+                                        <div class="calendar-day">30</div>
+                                        <div class="calendar-day">31</div>
+                                        <div class="calendar-day muted">1</div>
+                                    </div>
+                                </div>
+
+                                <div class="schedule-divider"></div>
+
+                                <!-- Daily Schedule -->
+                                <div class="daily-schedule">
+                                    <div class="schedule-header">
+                                        <h3>May 9, 2025</h3>
+                                        <button class="add-schedule-btn">+</button>
+                                    </div>
+
+                                    <div class="schedule-items">
+                                        <div class="schedule-item">
+                                            <div class="schedule-indicator blue"></div>
+                                            <div class="schedule-info">
+                                                <h4>นายสมชาย ใจดี</h4>
+                                                <p>May 9, 9:00 - 10:00</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="schedule-item">
+                                            <div class="schedule-indicator blue"></div>
+                                            <div class="schedule-info">
+                                                <h4>นางขวัญฤทัย อักษรทอง</h4>
+                                                <p>May 9, 11:30 - 12:30</p>
+                                            </div>
+                                        </div>
+
+                                        <div class="schedule-item">
+                                            <div class="schedule-indicator blue"></div>
+                                            <div class="schedule-info">
+                                                <h4>นางตติยา สายใจ</h4>
+                                                <p>May 9, 14:00 - 15:00</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Time Picker -->
+                                <div class="time-picker-container">
+                                    <div class="time-input-group">
+                                        <label>Start Time</label>
+                                        <div class="time-input-wrapper">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg>
+                                            <input type="text" value="08:00" readonly
+                                                style="background-color: #f3f4f6; cursor: not-allowed;">
+                                        </div>
+                                    </div>
+                                    <div class="time-input-group">
+                                        <label>End Time</label>
+                                        <div class="time-input-wrapper">
+                                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="10"></circle>
+                                                <polyline points="12 6 12 12 16 14"></polyline>
+                                            </svg>
+                                            <input type="text" value="16:00" readonly
+                                                style="background-color: #f3f4f6; cursor: not-allowed;">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <!-- Inject Appointment Data for Client-Side Script -->
+    <script>
+        window.appointmentsData = <% - JSON.stringify(appointments || []) %>;
+    </script>
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/appointments.js"></script>
+</body>
+
+</html>

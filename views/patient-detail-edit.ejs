@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>แก้ไขผลตรวจเลือด - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <div class="content-area">
+                        <div class="patient-detail-card">
+                            <!-- Header Section -->
+                            <div class="detail-header">
+                                <div class="patient-profile">
+                                    <div class="profile-icon-large">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                            <circle cx="12" cy="7" r="4" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                    <div class="profile-info">
+                                        <h1 class="profile-name">
+                                            <%= patient.name %>
+                                                <%= patient.surname %>
+                                        </h1>
+                                        <div class="profile-hn-row">
+                                            <% String(patient.hn).split('').forEach(digit=> { %>
+                                                <span>
+                                                    <%= digit %>
+                                                </span>
+                                                <% }); %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="edit-actions">
+                                    <a href="/patient-detail?hn=<%= patient.hn %>" class="back-to-view-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M19 12H5M12 19l-7-7 7-7" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                        </svg>
+                                        ย้อนกลับ
+                                    </a>
+                                    <button class="save-btn" id="saveBtn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z">
+                                            </path>
+                                            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+                                            <polyline points="7 3 7 8 15 8"></polyline>
+                                        </svg>
+                                        บันทึก
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Results Table -->
+                            <form id="bloodTestForm">
+                                <input type="hidden" name="hn" value="<%= patient.hn %>">
+                                <div class="results-table-container">
+                                    <table class="results-table editable-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Test / Description</th>
+                                                <th>Result</th>
+                                                <th>Unit</th>
+                                                <th>Normal Range</th>
+                                                <th>หมายเหตุ</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr class="section-header">
+                                                <td colspan="5">CBC</td>
+                                            </tr>
+                                            <tr>
+                                                <td>WBC</td>
+                                                <td><input type="text" class="editable-input" name="wbc"
+                                                        value="<%= bloodTest?.wbc || '' %>"></td>
+                                                <td>10^3/µ</td>
+                                                <td>4.23-9.07</td>
+                                                <td><input type="text" class="editable-input" name="wbcNote"
+                                                        value="<%= bloodTest?.wbcNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>RBC</td>
+                                                <td><input type="text" class="editable-input" name="rbc"
+                                                        value="<%= bloodTest?.rbc || '' %>"></td>
+                                                <td>10^6/µL</td>
+                                                <td>4.63-6.08</td>
+                                                <td><input type="text" class="editable-input" name="rbcNote"
+                                                        value="<%= bloodTest?.rbcNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Hemoglobin</td>
+                                                <td><input type="text" class="editable-input" name="hemoglobin"
+                                                        value="<%= bloodTest?.hemoglobin || '' %>"></td>
+                                                <td>g/dL</td>
+                                                <td>13.7-17.5</td>
+                                                <td><input type="text" class="editable-input" name="hemoglobinNote"
+                                                        value="<%= bloodTest?.hemoglobinNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Hematocrit</td>
+                                                <td><input type="text" class="editable-input" name="hematocrit"
+                                                        value="<%= bloodTest?.hematocrit || '' %>"></td>
+                                                <td>%</td>
+                                                <td>40.1-51</td>
+                                                <td><input type="text" class="editable-input" name="hematocritNote"
+                                                        value="<%= bloodTest?.hematocritNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>MCV</td>
+                                                <td><input type="text" class="editable-input" name="mcv"
+                                                        value="<%= bloodTest?.mcv || '' %>"></td>
+                                                <td>fL</td>
+                                                <td>79-92.2</td>
+                                                <td><input type="text" class="editable-input" name="mcvNote"
+                                                        value="<%= bloodTest?.mcvNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>MCH</td>
+                                                <td><input type="text" class="editable-input" name="mch"
+                                                        value="<%= bloodTest?.mch || '' %>"></td>
+                                                <td>pg</td>
+                                                <td>25.7-32.2</td>
+                                                <td><input type="text" class="editable-input" name="mchNote"
+                                                        value="<%= bloodTest?.mchNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>MCHC</td>
+                                                <td><input type="text" class="editable-input" name="mchc"
+                                                        value="<%= bloodTest?.mchc || '' %>"></td>
+                                                <td>g/dL</td>
+                                                <td>32.3-36.5</td>
+                                                <td><input type="text" class="editable-input" name="mchcNote"
+                                                        value="<%= bloodTest?.mchcNote || '' %>"></td>
+                                            </tr>
+                                            <tr class="separator-row">
+                                                <td>Platelet count</td>
+                                                <td><input type="text" class="editable-input" name="platelet"
+                                                        value="<%= bloodTest?.platelet || '' %>"></td>
+                                                <td>10^3/µL</td>
+                                                <td>140-400</td>
+                                                <td><input type="text" class="editable-input" name="plateletNote"
+                                                        value="<%= bloodTest?.plateletNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Neutrophil</td>
+                                                <td><input type="text" class="editable-input" name="neutrophil"
+                                                        value="<%= bloodTest?.neutrophil || '' %>"></td>
+                                                <td>%</td>
+                                                <td>34-67.9</td>
+                                                <td><input type="text" class="editable-input" name="neutrophilNote"
+                                                        value="<%= bloodTest?.neutrophilNote || '' %>"></td>
+                                            </tr>
+                                            <tr class="separator-row">
+                                                <td>Lymphocyte</td>
+                                                <td><input type="text" class="editable-input" name="lymphocyte"
+                                                        value="<%= bloodTest?.lymphocyte || '' %>"></td>
+                                                <td>%</td>
+                                                <td>21.8-53.1</td>
+                                                <td><input type="text" class="editable-input" name="lymphocyteNote"
+                                                        value="<%= bloodTest?.lymphocyteNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Monocyte</td>
+                                                <td><input type="text" class="editable-input" name="monocyte"
+                                                        value="<%= bloodTest?.monocyte || '' %>"></td>
+                                                <td>%</td>
+                                                <td>5.3-12.2</td>
+                                                <td><input type="text" class="editable-input" name="monocyteNote"
+                                                        value="<%= bloodTest?.monocyteNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Eosinophil</td>
+                                                <td><input type="text" class="editable-input" name="eosinophil"
+                                                        value="<%= bloodTest?.eosinophil || '' %>"></td>
+                                                <td>%</td>
+                                                <td>0.8-7</td>
+                                                <td><input type="text" class="editable-input" name="eosinophilNote"
+                                                        value="<%= bloodTest?.eosinophilNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Basophil</td>
+                                                <td><input type="text" class="editable-input" name="basophil"
+                                                        value="<%= bloodTest?.basophil || '' %>"></td>
+                                                <td>%</td>
+                                                <td>0.2-1.2</td>
+                                                <td><input type="text" class="editable-input" name="basophilNote"
+                                                        value="<%= bloodTest?.basophilNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>Platelet from smear</td>
+                                                <td><input type="text" class="editable-input" name="plateletSmear"
+                                                        value="<%= bloodTest?.plateletSmear || '' %>"></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td><input type="text" class="editable-input" name="plateletSmearNote"
+                                                        value="<%= bloodTest?.plateletSmearNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>NRBC (cell/100 WBC)</td>
+                                                <td><input type="text" class="editable-input" name="nrbc"
+                                                        value="<%= bloodTest?.nrbc || '' %>"></td>
+                                                <td>cell/100 WBC</td>
+                                                <td></td>
+                                                <td><input type="text" class="editable-input" name="nrbcNote"
+                                                        value="<%= bloodTest?.nrbcNote || '' %>"></td>
+                                            </tr>
+                                            <tr>
+                                                <td>RBC Morphology</td>
+                                                <td><input type="text" class="editable-input" name="rbcMorphology"
+                                                        value="<%= bloodTest?.rbcMorphology || '' %>"></td>
+                                                <td></td>
+                                                <td></td>
+                                                <td><input type="text" class="editable-input" name="rbcMorphologyNote"
+                                                        value="<%= bloodTest?.rbcMorphologyNote || '' %>"></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+
+                    <!-- Confirmation Modal -->
+                    <div id="confirmModal" class="modal">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>ยืนยันการบันทึก</h2>
+                            </div>
+                            <div class="modal-body">
+                                <p>คุณต้องการบันทึกการเปลี่ยนแปลงหรือไม่?</p>
+                            </div>
+                            <div class="modal-footer">
+                                <button class="modal-btn cancel-btn" onclick="closeModal()">ยกเลิก</button>
+                                <button class="modal-btn confirm-btn" onclick="confirmSave()">ยืนยัน</button>
+                            </div>
+                        </div>
+                    </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        const patientHN = '<%= patient.hn %>';
+        const saveBtn = document.getElementById('saveBtn');
+        const modal = document.getElementById('confirmModal');
+        const form = document.getElementById('bloodTestForm');
+
+        saveBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+            modal.style.display = 'flex';
+        });
+
+        function closeModal() {
+            modal.style.display = 'none';
+        }
+
+        async function confirmSave() {
+            try {
+                const formData = new FormData(form);
+                const data = Object.fromEntries(formData.entries());
+
+                const response = await fetch('/api/blood-test/save', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    alert('บันทึกข้อมูลเรียบร้อยแล้ว');
+                    closeModal();
+                    // Redirect back to view page with HN
+                    window.location.href = '/patient-detail?hn=' + patientHN;
+                } else {
+                    alert('เกิดข้อผิดพลาด: ' + result.message);
+                    closeModal();
+                }
+            } catch (error) {
+                console.error('Error saving:', error);
+                alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+                closeModal();
+            }
+        }
+
+        // Close modal when clicking outside
+        window.addEventListener('click', function (e) {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Dashboard - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar component -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components: home button + search + profile -->
+                <%- include('partials/header') %>
+
+                    <!-- Content Area -->
+                    <div class="content-area" id="contentArea">
+                        <!-- Home Page Layout (Default) -->
+                        <div class="home-layout">
+                            <!-- Welcome Banner -->
+                            <div class="welcome-banner">
+                                <div class="welcome-content">
+                                    <div class="welcome-text">
+                                        <h1 class="welcome-title">ยินดีต้อนรับสู่ BloodLink</h1>
+                                        <p class="welcome-subtitle">ระบบจัดการข้อมูลผู้ป่วยและการตรวจเลือด</p>
+                                    </div>
+                                    <div class="welcome-icon">
+                                        <svg width="80" height="80" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="1.5">
+                                            <path
+                                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                                                stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Quick Action Cards -->
+                            <div class="quick-action-cards">
+                                <a href="/add-patient" class="action-card action-card--primary">
+                                    <div class="action-card-icon">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                            <circle cx="9" cy="7" r="4" />
+                                            <path d="M22 21v-2a4 4 0 0 0-3-3.87" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                            <path d="M16 3.13a4 4 0 0 1 0 7.75" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                    <div class="action-card-content">
+                                        <h3 class="action-card-title">เพิ่มผู้ป่วยใหม่</h3>
+                                        <p class="action-card-desc">ลงทะเบียนผู้ป่วยเข้าสู่ระบบ</p>
+                                    </div>
+                                    <div class="action-card-arrow">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                </a>
+
+                                <a href="/results" class="action-card action-card--success">
+                                    <div class="action-card-icon">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"
+                                                stroke-linecap="round" stroke-linejoin="round" />
+                                            <polyline points="14 2 14 8 20 8" />
+                                            <line x1="16" y1="13" x2="8" y2="13" />
+                                            <line x1="16" y1="17" x2="8" y2="17" />
+                                            <polyline points="10 9 9 9 8 9" />
+                                        </svg>
+                                    </div>
+                                    <div class="action-card-content">
+                                        <h3 class="action-card-title">ผลการตรวจ</h3>
+                                        <p class="action-card-desc">ดูและจัดการผลตรวจเลือด</p>
+                                    </div>
+                                    <div class="action-card-arrow">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                </a>
+
+                                <a href="/history" class="action-card action-card--info">
+                                    <div class="action-card-icon">
+                                        <svg width="32" height="32" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="12" cy="12" r="10" />
+                                            <polyline points="12 6 12 12 16 14" />
+                                        </svg>
+                                    </div>
+                                    <div class="action-card-content">
+                                        <h3 class="action-card-title">ประวัติผู้ป่วย</h3>
+                                        <p class="action-card-desc">ค้นหาและดูประวัติผู้ป่วย</p>
+                                    </div>
+                                    <div class="action-card-arrow">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M9 18l6-6-6-6" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                </a>
+                            </div>
+
+                            <!-- Bottom Section -->
+                            <div class="home-bottom-section">
+                                <!-- Info Panel -->
+                                <div class="info-panel">
+                                    <div class="info-panel-header">
+                                        <h2 class="info-panel-title">ข้อมูลระบบ</h2>
+                                    </div>
+                                    <div class="info-panel-content">
+                                        <div class="info-item">
+                                            <div class="info-item-icon info-item-icon--blue">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"
+                                                        stroke-linecap="round" stroke-linejoin="round" />
+                                                </svg>
+                                            </div>
+                                            <div class="info-item-text">
+                                                <span class="info-item-label">ระบบรักษาความปลอดภัย</span>
+                                                <span class="info-item-value info-item-value--success">ปกติ</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-item-icon info-item-icon--green">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" stroke-linecap="round"
+                                                        stroke-linejoin="round" />
+                                                    <polyline points="22 4 12 14.01 9 11.01" />
+                                                </svg>
+                                            </div>
+                                            <div class="info-item-text">
+                                                <span class="info-item-label">การเชื่อมต่อ Google Sheets</span>
+                                                <span
+                                                    class="info-item-value info-item-value--success">เชื่อมต่อแล้ว</span>
+                                            </div>
+                                        </div>
+                                        <div class="info-item">
+                                            <div class="info-item-icon info-item-icon--purple">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                    <line x1="16" y1="2" x2="16" y2="6" />
+                                                    <line x1="8" y1="2" x2="8" y2="6" />
+                                                    <line x1="3" y1="10" x2="21" y2="10" />
+                                                </svg>
+                                            </div>
+                                            <div class="info-item-text">
+                                                <span class="info-item-label">วันที่อัปเดตล่าสุด</span>
+                                                <span class="info-item-value" id="lastUpdateDate">-</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Quick Actions Panel -->
+                                <div class="quick-actions-panel">
+                                    <div class="quick-actions-header">
+                                        <h2 class="quick-actions-title">ทางลัด</h2>
+                                    </div>
+                                    <div class="quick-actions-list">
+                                        <a href="/appointments" class="quick-action-item">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                                                <line x1="16" y1="2" x2="16" y2="6" />
+                                                <line x1="8" y1="2" x2="8" y2="6" />
+                                                <line x1="3" y1="10" x2="21" y2="10" />
+                                            </svg>
+                                            <span>นัดหมาย</span>
+                                        </a>
+                                        <a href="/test-status" class="quick-action-item">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <path d="M22 12h-4l-3 9L9 3l-3 9H2" />
+                                            </svg>
+                                            <span>ติดตามสถานะ</span>
+                                        </a>
+                                        <div class="quick-action-divider"></div>
+                                        <a href="/admin-dashboard" class="quick-action-item quick-action-item--admin">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2">
+                                                <circle cx="12" cy="12" r="3" />
+                                                <path
+                                                    d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                                            </svg>
+                                            <span>จัดการระบบ (Admin)</span>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Help / support component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set last update date
+        document.addEventListener('DOMContentLoaded', function () {
+            const lastUpdateEl = document.getElementById('lastUpdateDate');
+            if (lastUpdateEl) {
+                const now = new Date();
+                const options = { year: 'numeric', month: 'long', day: 'numeric' };
+                lastUpdateEl.textContent = now.toLocaleDateString('th-TH', options);
+            }
+        });
+    </script>
+</body>
+
+</html>
+</CodeContent>
+<parameter name="EmptyFile">false

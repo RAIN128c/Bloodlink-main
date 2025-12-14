@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Edit Doctor - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Edit Doctor Specific Styles */
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 24px;
+        }
+
+        .edit-card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E5E7EB;
+        }
+
+        .section-header {
+            font-size: 20px;
+            font-weight: 700;
+            color: #111827;
+            margin-bottom: 24px;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        .form-input {
+            padding: 10px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            background-color: #F3F4F6;
+            /* Light gray background as per design placeholder */
+            color: #374151;
+            outline: none;
+        }
+
+        .form-input::placeholder {
+            color: #9CA3AF;
+        }
+
+        .form-helper {
+            font-size: 12px;
+            color: #9CA3AF;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 24px;
+            align-items: center;
+            height: 42px;
+            /* Match input height */
+        }
+
+        .radio-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-item input[type="radio"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3B82F6;
+        }
+
+        .radio-label {
+            font-size: 14px;
+            color: #374151;
+        }
+
+        .role-select {
+            width: 100%;
+            padding: 10px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            background-color: white;
+            color: #374151;
+            outline: none;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+        }
+
+        .action-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 16px;
+            margin-top: 40px;
+        }
+
+        .btn-cancel {
+            padding: 10px 24px;
+            background-color: white;
+            border: none;
+            color: #6B7280;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+
+        .btn-confirm {
+            padding: 10px 32px;
+            background-color: #3B82F6;
+            /* Blue-500 */
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+        }
+
+        /* Role Dropdown Container */
+        .role-container {
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 24px;
+        }
+
+        .role-wrapper {
+            width: 300px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div style="display: flex; align-items: center; gap: 16px; margin-bottom: 24px;">
+                            <a href="/admin-doctor-detail"
+                                style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px; border-radius: 50%; background-color: white; border: 1px solid #E5E7EB; color: #374151; text-decoration: none; box-shadow: 0 1px 2px rgba(0,0,0,0.05);">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M19 12H5M12 19l-7-7 7-7" />
+                                </svg>
+                            </a>
+                            <h1 class="page-title" style="margin-bottom: 0;">Doctor</h1>
+                        </div>
+
+                        <div class="edit-card">
+
+                            <!-- Role Select (Top Right) -->
+                            <div class="role-container">
+                                <div class="role-wrapper">
+                                    <label class="form-label" style="display: block; margin-bottom: 8px;">บทบาท</label>
+                                    <select class="role-select">
+                                        <option>กรุณาเลือกบทบาท</option>
+                                        <option selected>แพทย์</option>
+                                        <option>พยาบาล</option>
+                                        <option>เจ้าหน้าที่แลป</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <h2 class="section-header">ข้อมูลผู้ใช้ระบบ</h2>
+
+                            <div class="form-grid">
+                                <!-- Name -->
+                                <div class="form-group">
+                                    <label class="form-label">ชื่อ</label>
+                                    <input type="text" class="form-input" placeholder="Label Placeholder"
+                                        value="สมหญิง">
+                                    <span class="form-helper">กรุณาใส่เฉพาะชื่อ</span>
+                                </div>
+
+                                <!-- Surname -->
+                                <div class="form-group">
+                                    <label class="form-label">นามสกุล</label>
+                                    <input type="text" class="form-input" placeholder="Label Placeholder"
+                                        value="เงินสั่งได้">
+                                    <span class="form-helper">กรุณาใส่เฉพาะนามสกุล</span>
+                                </div>
+
+                                <!-- Email -->
+                                <div class="form-group">
+                                    <label class="form-label">อีเมล</label>
+                                    <input type="email" class="form-input" placeholder="Label Placeholder"
+                                        value="XXX_SOMYING@gmail.com">
+                                    <span class="form-helper">กรุณาใส่อีเมล</span>
+                                </div>
+
+                                <!-- Phone -->
+                                <div class="form-group">
+                                    <label class="form-label">เบอร์โทร</label>
+                                    <input type="tel" class="form-input" placeholder="Label Placeholder"
+                                        value="000-000-0000">
+                                    <span class="form-helper">เบอร์โทร</span>
+                                </div>
+
+                                <!-- Position -->
+                                <div class="form-group">
+                                    <label class="form-label">ตำแหน่ง</label>
+                                    <input type="text" class="form-input" placeholder="Label Placeholder"
+                                        value="จักษุแพทย์">
+                                    <span class="form-helper">กรุณาใส่ตำแหน่ง</span>
+                                </div>
+
+                                <!-- Gender -->
+                                <div class="form-group">
+                                    <label class="form-label">เพศกำเนิด</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="gender" value="male">
+                                            <span class="radio-label">ชาย</span>
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="gender" value="female" checked>
+                                            <span class="radio-label">หญิง</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <h2 class="section-header">ข้อมูลการเข้าสู่ระบบ</h2>
+
+                            <div class="form-grid">
+                                <!-- Username -->
+                                <div class="form-group">
+                                    <label class="form-label">ชื่อผู้ใช้</label>
+                                    <input type="text" class="form-input" placeholder="Label Placeholder"
+                                        value="Somying1234">
+                                    <span class="form-helper">ใส่ชื่อผู้ใช้</span>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="form-group">
+                                    <label class="form-label">รหัสผ่าน</label>
+                                    <input type="password" class="form-input" placeholder="Label Placeholder"
+                                        value="********">
+                                    <span class="form-helper">ใส่รหัสผ่าน</span>
+                                </div>
+
+                                <!-- Confirm Password -->
+                                <div class="form-group">
+                                    <label class="form-label">ยืนยันรหัสผ่าน</label>
+                                    <input type="password" class="form-input" placeholder="Label Placeholder"
+                                        value="********">
+                                    <span class="form-helper">ใส่รหัสผ่านอีกครั้ง</span>
+                                </div>
+
+                                <!-- Access Level -->
+                                <div class="form-group">
+                                    <label class="form-label">การเข้าถึง</label>
+                                    <div class="radio-group">
+                                        <label class="radio-item">
+                                            <input type="radio" name="access" value="bloodlink" checked>
+                                            <span class="radio-label">เฉพาะ Bloodlink</span>
+                                        </label>
+                                        <label class="radio-item">
+                                            <input type="radio" name="access" value="all">
+                                            <span class="radio-label">ทั้งหมด</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="action-buttons">
+                                <button class="btn-cancel"
+                                    onclick="window.location.href='/admin-doctor-detail'">ยกเลิก</button>
+                                <button class="btn-confirm"
+                                    onclick="alert('บันทึกข้อมูลเรียบร้อย'); window.location.href='/admin-doctor-detail'">ยืนยัน</button>
+                            </div>
+
+                        </div>
+                    </div>
+            </main>
+
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set active sidebar item (keep 'doctors' active)
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const doctorNav = document.querySelector('.nav-item[data-page="doctors"]');
+            if (doctorNav) doctorNav.classList.add('active');
+        });
+    </script>
+</body>
+
+</html>
