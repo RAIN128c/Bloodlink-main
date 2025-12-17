@@ -33,7 +33,7 @@ export class NotificationService {
             }
 
             // Add link to results page for statuses where editing/viewing results is relevant
-            const resultsLink = `/result-detail/${patientHn}`;
+            const resultsLink = `/result/${patientHn}`;
             let fullMessage = `${baseMessage}: ${patientName} (HN: ${patientHn})`;
 
             // Add specific action messages based on status
