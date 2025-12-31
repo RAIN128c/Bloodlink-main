@@ -11,7 +11,7 @@ interface RoleGuardProps {
 }
 
 // Public paths that don't require role validation
-const PUBLIC_PATHS = ['/login', '/register', '/'];
+const PUBLIC_PATHS = ['/login', '/register', '/', '/forgot-password', '/reset-password'];
 
 /**
  * RoleGuard component checks if the logged-in user has a valid role.

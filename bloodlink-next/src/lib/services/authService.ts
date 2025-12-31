@@ -366,5 +366,29 @@ export class AuthService {
             return false;
         }
     }
+
+    static async updateUserPassword(email: string, newPassword: string): Promise<boolean> {
+        try {
+            // Hash new password
+            const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+            const { error } = await supabase
+                .from('users')
+                .update({
+                    password: hashedPassword,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('email', email);
+
+            if (error) {
+                console.error('Update password error:', error);
+                return false;
+            }
+            return true;
+        } catch (error) {
+            console.error('Update password error:', error);
+            return false;
+        }
+    }
 }
 

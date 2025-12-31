@@ -3,6 +3,7 @@
 import { authenticate, register } from '@/lib/actions';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
@@ -195,7 +196,7 @@ export default function LoginPage() {
 
                                 {/* Forgot Password */}
                                 <div className="flex justify-end mb-6">
-                                    <a href="#" className="text-sm text-purple-600 dark:text-purple-400 font-medium hover:underline">ลืมรหัสผ่าน?</a>
+                                    <Link href="/forgot-password" className="text-sm text-purple-600 dark:text-purple-400 font-medium hover:underline">ลืมรหัสผ่าน?</Link>
                                 </div>
 
                                 {errorMessage && (
