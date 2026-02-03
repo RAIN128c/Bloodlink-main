@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>รายละเอียดผู้ป่วย - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div class="history-detail-container">
+                            <div class="back-nav">
+                                <a href="/admin-patients" class="back-link">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                                    </svg>
+                                    ย้อนกลับ
+                                </a>
+                            </div>
+
+                            <!-- Patient Info Card -->
+                            <div class="patient-info-card">
+                                <div class="card-header-row">
+                                    <span class="check-date">ตรวจเมื่อวันที่ 09/05/2568</span>
+                                    <button class="cart-icon-btn" id="status-icon-btn">
+                                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <circle cx="9" cy="21" r="1"></circle>
+                                            <circle cx="20" cy="21" r="1"></circle>
+                                            <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6">
+                                            </path>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                <div class="patient-info-content">
+                                    <div class="profile-section">
+                                        <div class="profile-image-large">
+                                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="1.5">
+                                                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                                <circle cx="12" cy="7" r="4"></circle>
+                                            </svg>
+                                        </div>
+                                        <h2 class="patient-name-large">นางขวัญฤทัย อักษรทอง</h2>
+                                        <div class="patient-id-row">
+                                            <span>0 8 6 2 4 7 1 3 6</span>
+                                        </div>
+                                        <button class="edit-info-btn" id="edit-toggle-btn">แก้ไขข้อมูล</button>
+                                    </div>
+
+                                    <div class="info-divider"></div>
+
+                                    <div class="details-section">
+                                        <div class="info-grid">
+                                            <div class="info-item">
+                                                <label>เพศ</label>
+                                                <span class="value" id="gender-display">หญิง</span>
+                                                <div class="edit-input-group" id="gender-input" style="display: none;">
+                                                    <label class="radio-inline"><input type="radio" name="gender"
+                                                            value="ชาย"> ชาย</label>
+                                                    <label class="radio-inline"><input type="radio" name="gender"
+                                                            value="หญิง" checked> หญิง</label>
+                                                    <label class="radio-inline"><input type="radio" name="gender"
+                                                            value="กำกวม"> กำกวม</label>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>อายุ</label>
+                                                <span class="value" id="age-display">42 ปี</span>
+                                                <div class="edit-input-group" id="age-input" style="display: none;">
+                                                    <input type="number" class="edit-input" id="age-val" value="42"
+                                                        style="width: 60px;"> ปี
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>หมู่เลือด</label>
+                                                <span class="value" id="blood-display">AB</span>
+                                                <div class="edit-input-group" id="blood-input" style="display: none;">
+                                                    <label class="radio-inline"><input type="radio" name="blood"
+                                                            value="A"> A</label>
+                                                    <label class="radio-inline"><input type="radio" name="blood"
+                                                            value="B"> B</label>
+                                                    <label class="radio-inline"><input type="radio" name="blood"
+                                                            value="AB" checked> AB</label>
+                                                    <label class="radio-inline"><input type="radio" name="blood"
+                                                            value="O"> O</label>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>สถานะ</label>
+                                                <span class="value status-text" id="status-display">ใช้งาน</span>
+                                                <div class="edit-input-group" id="status-input" style="display: none;">
+                                                    <label class="radio-inline"><input type="radio" name="active_status"
+                                                            value="ใช้งาน" checked> ใช้งาน</label>
+                                                    <label class="radio-inline"><input type="radio" name="active_status"
+                                                            value="ไม่ใช้งาน"> ไม่ใช้งาน</label>
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>โรคประจำตัว</label>
+                                                <div id="disease-display" class="tag-display">
+                                                    <!-- Tags will be injected here -->
+                                                </div>
+                                                <div class="edit-input-group" id="disease-input" style="display: none;">
+                                                    <div id="disease-tags-edit" class="tag-container"></div>
+                                                    <input type="text" class="edit-input" id="disease-text-input"
+                                                        placeholder="พิมพ์ชื่อโรคแล้วกด Enter">
+                                                </div>
+                                            </div>
+                                            <div class="info-item">
+                                                <label>อาการแพ้</label>
+                                                <span class="value" id="allergy-display">-</span>
+                                                <input type="text" class="edit-input" id="allergy-input" value="-"
+                                                    style="display: none;">
+                                            </div>
+                                            <div class="info-item">
+                                                <label>วันที่ลงทะเบียน</label>
+                                                <span class="value">04/02/2568</span>
+                                            </div>
+                                            <div class="info-item" id="ncd-item" style="display: none;">
+                                                <label>NCD</label>
+                                                <span class="value" id="ncd-display">-</span>
+                                                <div class="edit-input-group" id="ncd-input" style="display: none;">
+                                                    <input type="text" class="edit-input" id="ncd-text-input"
+                                                        placeholder="รหัส NCD (เช่น 001)">
+                                                </div>
+                                            </div>
+                                            <div class="info-item" style="display: flex; align-items: flex-end;">
+                                                <button id="save-info-btn" class="save-btn"
+                                                    style="display: none;">บันทึก</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- History Section -->
+                            <div class="history-section">
+                                <div class="history-card-container">
+                                    <h2 class="section-title">ประวัติการตรวจเลือด</h2>
+                                    <div class="history-item-card">
+                                        <div class="history-item-content">
+                                            <div class="history-date">ตรวจเมื่อวันที่ 09/05/2568</div>
+                                            <div class="history-detail-text">การรับเลือด: ได้รับเลือดจากหมู่เลือด O
+                                            </div>
+                                            <div class="history-detail-text">ประเภทการตรวจ:
+                                                การตรวจความสมบูรณ์ของเม็ดเลือด(CBC)</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Bottom Timeline & Action -->
+                            <div class="bottom-action-area">
+                                <div class="timeline-wrapper">
+                                    <div class="timeline-label" id="update-status-btn" style="cursor: pointer;">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+                                        </svg>
+                                        อัปเดตสถานะ
+                                    </div>
+                                    <div class="timeline-steps">
+                                        <div class="step completed">
+                                            <div class="step-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                                                    <line x1="16" y1="2" x2="16" y2="6"></line>
+                                                    <line x1="8" y1="2" x2="8" y2="6"></line>
+                                                    <line x1="3" y1="10" x2="21" y2="10"></line>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="connector completed"></div>
+                                        <div class="step completed">
+                                            <div class="step-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path
+                                                        d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="connector completed"></div>
+                                        <div class="step active">
+                                            <div class="step-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <circle cx="9" cy="21" r="1"></circle>
+                                                    <circle cx="20" cy="21" r="1"></circle>
+                                                    <path
+                                                        d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6">
+                                                    </path>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="connector"></div>
+                                        <div class="step">
+                                            <div class="step-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                                    <circle cx="12" cy="12" r="3"></circle>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <div class="connector"></div>
+                                        <div class="step">
+                                            <div class="step-icon">
+                                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                                    stroke="currentColor" stroke-width="2">
+                                                    <polyline points="20 6 9 17 4 12"></polyline>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="action-card">
+                                    <button class="check-result-btn">เช็คผลตรวจ</button>
+                                    <span class="duration-text">นับตั้งแต่วันตรวจ 1 วัน</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+
+                    <!-- Disease List Modal -->
+                    <div id="disease-modal" class="modal-overlay" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>โรคประจำตัวทั้งหมด</h2>
+                            </div>
+                            <div class="modal-body">
+                                <div id="disease-list-modal-content" class="tag-container"
+                                    style="justify-content: flex-start;">
+                                    <!-- Full list of diseases will be injected here -->
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="close-disease-modal-btn" class="confirm-btn">ปิด</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Status Update Modal -->
+                    <div id="status-modal" class="modal-overlay" style="display: none;">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h2>อัปเดตสถานะ</h2>
+                            </div>
+                            <div class="modal-body">
+                                <div class="status-options">
+                                    <label class="radio-option">
+                                        <input type="radio" name="status" value="appointment">
+                                        <span class="radio-label">นัดหมาย</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="status" value="blood-draw">
+                                        <span class="radio-label">เจาะเลือด</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="status" value="shipping" checked>
+                                        <span class="radio-label">กำลังจัดส่ง</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="status" value="testing">
+                                        <span class="radio-label">กำลังตรวจ</span>
+                                    </label>
+                                    <label class="radio-option">
+                                        <input type="radio" name="status" value="completed">
+                                        <span class="radio-label">เสร็จสิ้น</span>
+                                    </label>
+                                </div>
+                                <div class="note-section">
+                                    <label for="status-note">หมายเหตุ</label>
+                                    <textarea id="status-note" rows="3" placeholder="ระบุหมายเหตุ..."></textarea>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button id="cancel-status-btn" class="cancel-btn">ยกเลิก</button>
+                                <button id="confirm-status-btn" class="confirm-btn">ยืนยัน</button>
+                            </div>
+                        </div>
+                    </div>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set active sidebar item (keep 'patients' active)
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const patientNav = document.querySelector('.nav-item[data-page="patients"]');
+            if (patientNav) patientNav.classList.add('active');
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            // Edit Info Logic
+            const editBtn = document.getElementById('edit-toggle-btn');
+            const saveBtn = document.getElementById('save-info-btn');
+
+            // Display Elements
+            const genderDisplay = document.getElementById('gender-display');
+            const ageDisplay = document.getElementById('age-display');
+            const bloodDisplay = document.getElementById('blood-display');
+            const statusDisplay = document.getElementById('status-display');
+            const diseaseDisplay = document.getElementById('disease-display');
+            const allergyDisplay = document.getElementById('allergy-display');
+            const ncdDisplay = document.getElementById('ncd-display');
+
+            // Input Elements (Groups)
+            const genderInput = document.getElementById('gender-input');
+            const ageInput = document.getElementById('age-input');
+            const bloodInput = document.getElementById('blood-input');
+            const statusInput = document.getElementById('status-input');
+            const diseaseInput = document.getElementById('disease-input');
+            const allergyInput = document.getElementById('allergy-input');
+            const ncdInput = document.getElementById('ncd-input');
+            const ncdItem = document.getElementById('ncd-item');
+
+            // Specific Inputs
+            const ageVal = document.getElementById('age-val');
+            const ncdTextInput = document.getElementById('ncd-text-input');
+            const diseaseTextInput = document.getElementById('disease-text-input');
+            const diseaseTagsEdit = document.getElementById('disease-tags-edit');
+
+            // Disease Modal Elements
+            const diseaseModal = document.getElementById('disease-modal');
+            const diseaseListModalContent = document.getElementById('disease-list-modal-content');
+            const closeDiseaseModalBtn = document.getElementById('close-disease-modal-btn');
+
+            // Status Icon Button
+            const statusIconBtn = document.getElementById('status-icon-btn');
+
+            // Data State
+            let diseases = []; // Array to store disease names
+            let isEditing = false;
+            // let isTagsExpanded = false; // Removed inline expansion
+
+            // NCD Mapping
+            const ncdMap = {
+                '001': 'เบาหวาน',
+                '002': 'ความดันโลหิตสูง',
+                '003': 'ไขมันในเลือดสูง',
+                '004': 'โรคหัวใจ',
+                '005': 'โรคไตวายเรื้อรัง'
+            };
+
+            // Initialize Tags
+            function renderTags(container, isEditMode) {
+                container.innerHTML = '';
+                if (diseases.length === 0 && !isEditMode) {
+                    container.textContent = '-';
+                    return;
+                }
+
+                if (isEditMode) {
+                    diseases.forEach((disease, index) => {
+                        const tag = document.createElement('div');
+                        tag.className = 'tag';
+                        tag.innerHTML = `<span>${disease}</span>`;
+
+                        const removeBtn = document.createElement('span');
+                        removeBtn.className = 'tag-remove';
+                        removeBtn.innerHTML = '&times;';
+                        removeBtn.onclick = () => removeDisease(index);
+                        tag.appendChild(removeBtn);
+
+                        container.appendChild(tag);
+                    });
+                } else {
+                    // View Mode Truncation
+                    const displayCount = 1;
+                    const visibleDiseases = diseases.slice(0, displayCount);
+
+                    visibleDiseases.forEach(disease => {
+                        const tag = document.createElement('div');
+                        tag.className = 'tag';
+                        tag.innerHTML = `<span>${disease}</span>`;
+                        container.appendChild(tag);
+                    });
+
+                    if (diseases.length > 1) {
+                        const moreTag = document.createElement('div');
+                        moreTag.className = 'tag';
+                        moreTag.style.cursor = 'pointer';
+                        moreTag.style.background = '#F3F4F6';
+                        moreTag.innerHTML = `<span>+${diseases.length - 1}</span>`;
+                        moreTag.onclick = () => {
+                            showDiseaseModal();
+                        };
+                        container.appendChild(moreTag);
+                    }
+                }
+            }
+
+            function showDiseaseModal() {
+                diseaseListModalContent.innerHTML = '';
+                diseases.forEach(disease => {
+                    const tag = document.createElement('div');
+                    tag.className = 'tag';
+                    tag.innerHTML = `<span>${disease}</span>`;
+                    diseaseListModalContent.appendChild(tag);
+                });
+                diseaseModal.style.display = 'flex';
+            }
+
+            closeDiseaseModalBtn.addEventListener('click', function () {
+                diseaseModal.style.display = 'none';
+            });
+
+            // Close disease modal when clicking outside
+            diseaseModal.addEventListener('click', function (e) {
+                if (e.target === diseaseModal) {
+                    diseaseModal.style.display = 'none';
+                }
+            });
+
+            function addDisease(name) {
+                if (name && !diseases.includes(name)) {
+                    diseases.push(name);
+                    renderTags(diseaseTagsEdit, true);
+                }
+            }
+
+            function removeDisease(index) {
+                diseases.splice(index, 1);
+                renderTags(diseaseTagsEdit, true);
+            }
+
+            // Event Listeners for Tags
+            diseaseTextInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addDisease(this.value.trim());
+                    this.value = '';
+                }
+            });
+
+            ncdTextInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const code = this.value.trim();
+                    if (ncdMap[code]) {
+                        addDisease(ncdMap[code]);
+                        this.value = ''; // Clear NCD input after adding
+                    } else {
+                        alert('ไม่พบรหัส NCD นี้');
+                    }
+                }
+            });
+
+            editBtn.addEventListener('click', function () {
+                isEditing = !isEditing;
+                toggleEditMode(isEditing);
+            });
+
+            saveBtn.addEventListener('click', function () {
+                // Update display values
+
+                // Gender
+                const selectedGender = document.querySelector('input[name="gender"]:checked');
+                if (selectedGender) genderDisplay.textContent = selectedGender.value;
+
+                // Age
+                ageDisplay.textContent = ageVal.value + ' ปี';
+
+                // Blood
+                const selectedBlood = document.querySelector('input[name="blood"]:checked');
+                if (selectedBlood) bloodDisplay.textContent = selectedBlood.value;
+
+                // Status
+                const selectedStatus = document.querySelector('input[name="active_status"]:checked');
+                if (selectedStatus) statusDisplay.textContent = selectedStatus.value;
+
+                // Allergy
+                allergyDisplay.textContent = allergyInput.value;
+
+                // Diseases (Tags)
+                // isTagsExpanded = false; // Reset expansion on save (Removed)
+                renderTags(diseaseDisplay, false);
+
+                // Exit edit mode
+                isEditing = false;
+                toggleEditMode(false);
+
+                // Mock save alert
+                alert('บันทึกข้อมูลเรียบร้อยแล้ว');
+            });
+
+            function toggleEditMode(editing) {
+                if (editing) {
+                    editBtn.textContent = 'ยกเลิก';
+                    editBtn.style.borderColor = '#EF4444';
+                    editBtn.style.color = '#EF4444';
+
+                    // Hide Displays
+                    genderDisplay.style.display = 'none';
+                    ageDisplay.style.display = 'none';
+                    bloodDisplay.style.display = 'none';
+                    statusDisplay.style.display = 'none';
+                    diseaseDisplay.style.display = 'none';
+                    allergyDisplay.style.display = 'none';
+                    ncdDisplay.style.display = 'none'; // Hide NCD display (usually empty or dash)
+
+                    // Show Inputs
+                    genderInput.style.display = 'flex';
+                    ageInput.style.display = 'flex';
+                    bloodInput.style.display = 'flex';
+                    statusInput.style.display = 'flex';
+                    diseaseInput.style.display = 'block';
+                    allergyInput.style.display = 'block';
+                    ncdInput.style.display = 'block'; // Show NCD input only in edit mode
+
+                    // Show NCD Item
+                    ncdItem.style.display = 'flex';
+
+                    saveBtn.style.display = 'block';
+
+                    // Render tags in edit container
+                    renderTags(diseaseTagsEdit, true);
+                } else {
+                    editBtn.textContent = 'แก้ไขข้อมูล';
+                    editBtn.style.borderColor = '#6366F1';
+                    editBtn.style.color = '#6366F1';
+
+                    // Show Displays
+                    genderDisplay.style.display = 'inline';
+                    ageDisplay.style.display = 'inline';
+                    bloodDisplay.style.display = 'inline';
+                    statusDisplay.style.display = 'inline';
+                    diseaseDisplay.style.display = 'flex';
+                    allergyDisplay.style.display = 'inline';
+                    ncdDisplay.style.display = 'inline';
+
+                    // Hide Inputs
+                    genderInput.style.display = 'none';
+                    ageInput.style.display = 'none';
+                    bloodInput.style.display = 'none';
+                    statusInput.style.display = 'none';
+                    diseaseInput.style.display = 'none';
+                    allergyInput.style.display = 'none';
+                    ncdInput.style.display = 'none';
+
+                    // Hide NCD Item
+                    ncdItem.style.display = 'none';
+
+                    saveBtn.style.display = 'none';
+                }
+            }
+
+            // Status Modal Logic
+            const updateStatusBtn = document.getElementById('update-status-btn');
+            const modal = document.getElementById('status-modal');
+            const cancelStatusBtn = document.getElementById('cancel-status-btn');
+            const confirmStatusBtn = document.getElementById('confirm-status-btn');
+
+            updateStatusBtn.addEventListener('click', function () {
+                modal.style.display = 'flex';
+            });
+
+            cancelStatusBtn.addEventListener('click', function () {
+                modal.style.display = 'none';
+            });
+
+            confirmStatusBtn.addEventListener('click', function () {
+                const selectedStatus = document.querySelector('input[name="status"]:checked').value;
+                const note = document.getElementById('status-note').value;
+
+                console.log('Selected Status:', selectedStatus);
+                console.log('Note:', note);
+
+                // Update status text (Mock)
+                const statusMap = {
+                    'appointment': 'นัดหมาย',
+                    'blood-draw': 'เจาะเลือด',
+                    'shipping': 'กำลังจัดส่ง',
+                    'testing': 'กำลังตรวจ',
+                    'completed': 'เสร็จสิ้น'
+                };
+
+                const statusOrder = ['appointment', 'blood-draw', 'shipping', 'testing', 'completed'];
+                const statusIcons = {
+                    'appointment': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
+                    'blood-draw': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>',
+                    'shipping': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>',
+                    'testing': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>',
+                    'completed': '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>'
+                };
+
+                if (statusMap[selectedStatus]) {
+                    // Update Timeline
+                    const steps = document.querySelectorAll('.timeline-steps .step');
+                    const connectors = document.querySelectorAll('.timeline-steps .connector');
+                    const selectedIndex = statusOrder.indexOf(selectedStatus);
+
+                    steps.forEach((step, index) => {
+                        step.classList.remove('completed', 'active');
+                        if (index < selectedIndex) {
+                            step.classList.add('completed');
+                        } else if (index === selectedIndex) {
+                            step.classList.add('active');
+                        }
+                    });
+
+                    connectors.forEach((connector, index) => {
+                        connector.classList.remove('completed');
+                        if (index < selectedIndex) {
+                            connector.classList.add('completed');
+                        }
+                    });
+
+                    // Update Top-Right Icon
+                    if (statusIcons[selectedStatus]) {
+                        statusIconBtn.innerHTML = statusIcons[selectedStatus];
+                    }
+                }
+
+                modal.style.display = 'none';
+                alert('อัปเดตสถานะเรียบร้อยแล้ว');
+            });
+
+            // Close modal when clicking outside
+            modal.addEventListener('click', function (e) {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        });
+    </script>
+</body>
+
+</html>

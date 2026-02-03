@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Doctor List - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Doctor List Specific Styles */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .search-bar-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-bar-input {
+            width: 100%;
+            padding: 10px 16px;
+            padding-right: 40px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-bar-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+
+        .doctor-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 24px;
+        }
+
+        .doctor-card {
+            background: white;
+            border-radius: 16px;
+            padding: 32px 24px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 16px;
+            border: 1px solid #E5E7EB;
+        }
+
+        .doctor-avatar {
+            width: 80px;
+            height: 80px;
+            background-color: #E5E7EB;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .doctor-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #374151;
+            text-align: center;
+        }
+
+        .doctor-tags {
+            display: flex;
+            gap: 8px;
+        }
+
+        .tag {
+            padding: 4px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .tag-role {
+            background-color: #67E8F9;
+            /* Cyan-300 approx */
+            color: #0E7490;
+        }
+
+        .tag-profile {
+            background-color: #E5E7EB;
+            color: #374151;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div class="page-header">
+                            <h1 class="page-title">Doctor List</h1>
+                            <div class="search-bar-container">
+                                <input type="text" class="search-bar-input" placeholder="ค้นหารายชื่อ/HN">
+                                <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="doctor-grid">
+                            <!-- Mock Doctor Cards -->
+                            <% for(let i=0; i<9; i++) { %>
+                                <div class="doctor-card">
+                                    <div class="doctor-avatar">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                            stroke-linejoin="round">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <div class="doctor-name">ดร.สมหญิง เงินสั่งได้</div>
+                                    <div class="doctor-tags">
+                                        <span class="tag tag-role">จักษุแพทย์</span>
+                                        <a href="/admin-doctor-detail" class="tag tag-profile"
+                                            style="text-decoration: none;">โปรไฟล์</a>
+                                    </div>
+                                </div>
+                                <% } %>
+                        </div>
+                    </div>
+            </main>
+
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Simple active state handling for sidebar
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const doctorNav = document.querySelector('.nav-item[data-page="doctors"]');
+            if (doctorNav) doctorNav.classList.add('active');
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>เพิ่มข้อมูลผู้ป่วย - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="stylesheet" href="/css/patient-form.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&family=InriaSans:wght@400;700&family=NotoSans:wght@400;500&family=Poppins:wght@400;500&family=Roboto:wght@400;500&display=swap"
+        rel="stylesheet">
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <!-- Patient Data Entry Form Component -->
+                    <%- include('partials/patient-form', { _formId: 'addPatientForm' , _formPrefix: 'addPatient' ,
+                        _showTitle: true, _containerClass: 'patient-form-container' }) %>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script src="/js/patient-form.js"></script>
+</body>
+
+</html>

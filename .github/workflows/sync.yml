@@ -1,0 +1,34 @@
+name: Auto Sync Upstream
+
+on:
+  schedule:
+    - cron: '0 0 * * *' # รันทุกเที่ยงคืน (UTC) = 7 โมงเช้าไทย
+  workflow_dispatch: # อนุญาตให้กดรันมือได้
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout target repo
+        uses: actions/checkout@v3
+        with:
+          # ต้องใช้ PAT หรือ Token ที่มีสิทธิ์เขียน (default token ของ action พอสำหรับ fork ตัวเอง)
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Git Config
+        run: |
+          git config --global user.name "Bloodlink Auto Bot"
+          git config --global user.email "bot@bloodlink.local"
+
+      - name: Add Upstream and Fetch
+        run: |
+          # ชี้ไปที่ Repo ต้นฉบับ
+          git remote add upstream https://github.com/RAIN128c/Bloodlink.git
+          git fetch upstream
+
+      - name: Hard Reset to Upstream (Force Update)
+        run: |
+          # บังคับให้ Code เหมือนต้นฉบับ 100% (ข้อมูลเก่าใน Code จะหาย ถ้ามีการแก้เอง)
+          git checkout main
+          git reset --hard upstream/main
+          git push origin main --force

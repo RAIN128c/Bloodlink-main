@@ -1,0 +1,462 @@
+<!-- Component 48 - Login Form Card Component -->
+<!-- Generated from Zeplin Design -->
+<div class="component-48">
+    <!-- Background Card -->
+    <div class="component-48-card">
+        <!-- Welcome Section -->
+        <div class="component-48-welcome-section">
+            <p class="component-48-welcome-text">Welcome to</p>
+            <div class="component-48-logo-container">
+                <img src="" alt="Logo" class="component-48-logo" id="component48Logo" style="display: none;">
+            </div>
+        </div>
+
+        <!-- Email Input Field -->
+        <div class="component-48-form-group">
+            <label for="component48Email" class="component-48-input-label">EMAIL</label>
+            <input type="email" id="component48Email" name="email" class="component-48-form-input" placeholder="">
+        </div>
+
+        <!-- Password Input Field -->
+        <div class="component-48-form-group">
+            <label for="component48Password" class="component-48-input-label">PASSWORD</label>
+            <div class="component-48-password-wrapper">
+                <input type="password" id="component48Password" name="password" class="component-48-form-input component-48-password-input" placeholder="">
+                <button type="button" class="component-48-password-toggle" id="component48PasswordToggle" aria-label="Toggle password visibility">
+                    <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9 4C5.58172 4 2 7.58172 2 12C2 16.4183 5.58172 20 9 20C12.4183 20 16 16.4183 16 12C16 7.58172 12.4183 4 9 4ZM9 17.2727C6.69485 17.2727 4 14.8864 4 12C4 9.11364 6.69485 6.72727 9 6.72727C11.3051 6.72727 14 9.11364 14 12C14 14.8864 11.3051 17.2727 9 17.2727ZM9 8.18182C7.01673 8.18182 5.40909 9.86364 5.40909 12C5.40909 14.1364 7.01673 15.8182 9 15.8182C10.9833 15.8182 12.5909 14.1364 12.5909 12C12.5909 9.86364 10.9833 8.18182 9 8.18182ZM9 13.8182C8.17273 13.8182 7.5 13.1364 7.5 12.2727C7.5 11.4091 8.17273 10.7273 9 10.7273C9.82727 10.7273 10.5 11.4091 10.5 12.2727C10.5 13.1364 9.82727 13.8182 9 13.8182Z" fill="rgb(47, 47, 47)"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Remember Me and Forgot Password -->
+        <div class="component-48-form-options">
+            <label class="component-48-checkbox-label">
+                <input type="checkbox" id="component48RememberMe" name="rememberMe">
+                <span class="component-48-checkbox-custom"></span>
+                <span class="component-48-checkbox-text">Remember me</span>
+            </label>
+            <a href="#" class="component-48-forgot-password">Forgot Password?</a>
+        </div>
+
+        <!-- Login Button -->
+        <button type="button" class="component-48-btn-login" id="component48LoginBtn">เข้าสู่ระบบ</button>
+
+        <!-- Registration Section -->
+        <div class="component-48-registration-section">
+            <p class="component-48-registration-text">หากคุณยังไม่ได้ลงทะเบียน คลิกปุ่มด้านล่าง</p>
+            <button type="button" class="component-48-btn-register" id="component48RegisterBtn">ลงทะเบียน</button>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Component 48 - Main Container */
+    .component-48 {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 20px;
+    }
+
+    /* Component 48 Card - White background with shadow */
+    .component-48-card {
+        width: 515px;
+        min-height: 528px;
+        background-color: rgb(255, 255, 255);
+        border-radius: 8px;
+        box-shadow: 12px 12px 12px 0px rgba(0, 0, 0, 0.08);
+        padding: 42px;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+
+    /* Welcome Section */
+    .component-48-welcome-section {
+        margin-bottom: 26px;
+    }
+
+    .component-48-welcome-text {
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 36px;
+        font-weight: 700;
+        line-height: 48.78px;
+        color: rgb(47, 47, 47);
+        margin: 0 0 10px 0;
+        text-align: left;
+    }
+
+    .component-48-logo-container {
+        margin-top: 10px;
+        width: 260px;
+        height: 117px;
+        display: flex;
+        align-items: center;
+        justify-content: flex-start;
+    }
+
+    .component-48-logo {
+        max-width: 260px;
+        max-height: 117px;
+        object-fit: contain;
+    }
+
+    /* Form Groups */
+    .component-48-form-group {
+        margin-bottom: 20px;
+    }
+
+    .component-48-input-label {
+        display: block;
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 700;
+        line-height: 16.26px;
+        color: rgba(47, 47, 47, 0.5);
+        margin-bottom: 8px;
+        text-align: left;
+    }
+
+    .component-48-form-input {
+        width: 100%;
+        padding: 12px 16px;
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 16px;
+        border: 1px solid rgba(0, 0, 0, 0.1);
+        border-radius: 4px;
+        background-color: rgb(255, 255, 255);
+        color: rgb(47, 47, 47);
+        box-sizing: border-box;
+        transition: border-color 0.2s;
+    }
+
+    .component-48-form-input:focus {
+        outline: none;
+        border-color: rgb(99, 88, 220);
+    }
+
+    .component-48-form-input::placeholder {
+        color: rgba(47, 47, 47, 0.3);
+    }
+
+    /* Password Wrapper */
+    .component-48-password-wrapper {
+        position: relative;
+    }
+
+    .component-48-password-input {
+        padding-right: 50px;
+    }
+
+    .component-48-password-toggle {
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: rgb(47, 47, 47);
+        transition: opacity 0.2s;
+    }
+
+    .component-48-password-toggle:hover {
+        opacity: 0.7;
+    }
+
+    .component-48-password-toggle:focus {
+        outline: none;
+    }
+
+    /* Form Options */
+    .component-48-form-options {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 20px;
+    }
+
+    .component-48-checkbox-label {
+        display: flex;
+        align-items: center;
+        cursor: pointer;
+        position: relative;
+    }
+
+    .component-48-checkbox-label input[type="checkbox"] {
+        position: absolute;
+        opacity: 0;
+        cursor: pointer;
+        height: 0;
+        width: 0;
+    }
+
+    .component-48-checkbox-custom {
+        height: 20.034px;
+        width: 20.034px;
+        background-color: rgb(236, 236, 236);
+        border: 1px solid rgb(217, 217, 217);
+        border-radius: 4px;
+        margin-right: 16.728px;
+        position: relative;
+        transition: all 0.2s;
+        flex-shrink: 0;
+    }
+
+    .component-48-checkbox-label input[type="checkbox"]:checked ~ .component-48-checkbox-custom {
+        background-color: rgb(99, 88, 220);
+        border-color: rgb(99, 88, 220);
+    }
+
+    .component-48-checkbox-label input[type="checkbox"]:checked ~ .component-48-checkbox-custom::after {
+        content: "";
+        position: absolute;
+        left: 6px;
+        top: 2px;
+        width: 6px;
+        height: 10px;
+        border: solid white;
+        border-width: 0 2px 2px 0;
+        transform: rotate(45deg);
+    }
+
+    .component-48-checkbox-text {
+        font-family: 'Poppins', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 21.68px;
+        color: rgb(47, 47, 47);
+    }
+
+    .component-48-forgot-password {
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 16px;
+        font-weight: 400;
+        line-height: 21.68px;
+        color: rgb(99, 88, 220);
+        text-decoration: none;
+        transition: opacity 0.2s;
+    }
+
+    .component-48-forgot-password:hover {
+        opacity: 0.7;
+        text-decoration: underline;
+    }
+
+    /* Login Button */
+    .component-48-btn-login {
+        width: 192px;
+        height: 45px;
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 21.68px;
+        color: rgb(255, 255, 255);
+        background-color: rgb(99, 88, 220);
+        border: none;
+        border-radius: 16px;
+        cursor: pointer;
+        box-shadow: 6px 8px 16px 0px rgba(0, 0, 0, 0.25);
+        transition: all 0.2s;
+        align-self: center;
+        margin-bottom: 20px;
+    }
+
+    .component-48-btn-login:hover {
+        background-color: rgb(88, 78, 200);
+        transform: translateY(-1px);
+        box-shadow: 8px 10px 18px 0px rgba(0, 0, 0, 0.3);
+    }
+
+    .component-48-btn-login:active {
+        transform: translateY(0);
+        box-shadow: 4px 6px 12px 0px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Registration Section */
+    .component-48-registration-section {
+        text-align: center;
+        margin-top: 20px;
+    }
+
+    .component-48-registration-text {
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 12px;
+        font-weight: 400;
+        line-height: 16.26px;
+        color: rgba(0, 0, 0, 0.6);
+        margin: 0 0 20px 0;
+        text-align: center;
+    }
+
+    .component-48-btn-register {
+        width: 192px;
+        height: 45px;
+        font-family: 'Inria Sans', sans-serif;
+        font-size: 16px;
+        font-weight: 700;
+        line-height: 21.68px;
+        color: rgba(0, 0, 0, 0.76);
+        background-color: transparent;
+        border: 1px solid rgba(0, 0, 0, 0.76);
+        border-radius: 16px;
+        cursor: pointer;
+        transition: all 0.2s;
+        align-self: center;
+    }
+
+    .component-48-btn-register:hover {
+        background-color: rgba(0, 0, 0, 0.05);
+        border-color: rgba(0, 0, 0, 0.9);
+    }
+
+    .component-48-btn-register:active {
+        background-color: rgba(0, 0, 0, 0.1);
+    }
+
+    /* Responsive Design */
+    @media (max-width: 600px) {
+        .component-48-card {
+            width: 100%;
+            max-width: 515px;
+            padding: 30px 20px;
+        }
+
+        .component-48-welcome-text {
+            font-size: 28px;
+            line-height: 38px;
+        }
+
+        .component-48-logo-container {
+            width: 100%;
+            max-width: 260px;
+        }
+    }
+</style>
+
+<script>
+    // Component 48 - Password Toggle Functionality
+    (function() {
+        const passwordToggle = document.getElementById('component48PasswordToggle');
+        const passwordInput = document.getElementById('component48Password');
+
+        if (passwordToggle && passwordInput) {
+            let isPasswordVisible = false;
+            
+            // Eye icon SVG (visible state)
+            const eyeIconSvg = `
+                <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M9 4C5.58172 4 2 7.58172 2 12C2 16.4183 5.58172 20 9 20C12.4183 20 16 16.4183 16 12C16 7.58172 12.4183 4 9 4ZM9 17.2727C6.69485 17.2727 4 14.8864 4 12C4 9.11364 6.69485 6.72727 9 6.72727C11.3051 6.72727 14 9.11364 14 12C14 14.8864 11.3051 17.2727 9 17.2727ZM9 8.18182C7.01673 8.18182 5.40909 9.86364 5.40909 12C5.40909 14.1364 7.01673 15.8182 9 15.8182C10.9833 15.8182 12.5909 14.1364 12.5909 12C12.5909 9.86364 10.9833 8.18182 9 8.18182ZM9 13.8182C8.17273 13.8182 7.5 13.1364 7.5 12.2727C7.5 11.4091 8.17273 10.7273 9 10.7273C9.82727 10.7273 10.5 11.4091 10.5 12.2727C10.5 13.1364 9.82727 13.8182 9 13.8182Z" fill="rgb(47, 47, 47)"/>
+                </svg>
+            `;
+
+            // Eye slash icon SVG (hidden state)
+            const eyeSlashIconSvg = `
+                <svg width="18" height="20" viewBox="0 0 18 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M1 1L17 19M9 4C5.58172 4 2 7.58172 2 12C2 13.5 2.5 14.8 3.2 15.9M9 20C12.4183 20 16 16.4183 16 12C16 10.5 15.5 9.2 14.8 8.1M6.5 7.5C5.8 8.2 5.3 9.1 5.1 10.1M12.5 16.5C11.8 15.8 11.3 14.9 11.1 13.9" stroke="rgb(47, 47, 47)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            `;
+
+            passwordToggle.innerHTML = eyeIconSvg;
+
+            passwordToggle.addEventListener('click', function() {
+                isPasswordVisible = !isPasswordVisible;
+                if (isPasswordVisible) {
+                    passwordInput.type = 'text';
+                    passwordToggle.innerHTML = eyeSlashIconSvg;
+                } else {
+                    passwordInput.type = 'password';
+                    passwordToggle.innerHTML = eyeIconSvg;
+                }
+            });
+        }
+
+        // Component 48 Event Handlers
+        const loginBtn = document.getElementById('component48LoginBtn');
+        const registerBtn = document.getElementById('component48RegisterBtn');
+        const forgotPasswordLink = document.querySelector('.component-48-forgot-password');
+
+        // Login Button Handler
+        if (loginBtn) {
+            loginBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                const email = document.getElementById('component48Email').value;
+                const password = document.getElementById('component48Password').value;
+                const rememberMe = document.getElementById('component48RememberMe').checked;
+                
+                // Dispatch custom event for login
+                const event = new CustomEvent('component48:login', { 
+                    detail: { 
+                        email, 
+                        password, 
+                        rememberMe 
+                    } 
+                });
+                document.dispatchEvent(event);
+                
+                console.log('Component 48 - Login attempt:', { email, password, rememberMe });
+            });
+        }
+
+        // Register Button Handler
+        if (registerBtn) {
+            registerBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Dispatch custom event for register
+                const event = new CustomEvent('component48:register');
+                document.dispatchEvent(event);
+                
+                console.log('Component 48 - Register button clicked');
+            });
+        }
+
+        // Forgot Password Link Handler
+        if (forgotPasswordLink) {
+            forgotPasswordLink.addEventListener('click', function(e) {
+                e.preventDefault();
+                
+                // Dispatch custom event for forgot password
+                const event = new CustomEvent('component48:forgotPassword');
+                document.dispatchEvent(event);
+                
+                console.log('Component 48 - Forgot password clicked');
+            });
+        }
+
+        // Expose component API for external use
+        window.Component48 = {
+            getFormData: function() {
+                return {
+                    email: document.getElementById('component48Email')?.value || '',
+                    password: document.getElementById('component48Password')?.value || '',
+                    rememberMe: document.getElementById('component48RememberMe')?.checked || false
+                };
+            },
+            setLogo: function(logoUrl) {
+                const logo = document.getElementById('component48Logo');
+                if (logo) {
+                    logo.src = logoUrl;
+                    logo.style.display = 'block';
+                }
+            },
+            reset: function() {
+                const email = document.getElementById('component48Email');
+                const password = document.getElementById('component48Password');
+                const rememberMe = document.getElementById('component48RememberMe');
+                
+                if (email) email.value = '';
+                if (password) password.value = '';
+                if (rememberMe) rememberMe.checked = false;
+            }
+        };
+    })();
+</script>
+

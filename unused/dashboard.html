@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Dashboard - BloodLink</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .dashboard-box {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            max-width: 600px;
+            width: 100%;
+            text-align: center;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+        }
+
+        ul {
+            text-align: left;
+            margin: 20px 0;
+        }
+
+        li {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f0f0f0;
+            border-radius: 5px;
+        }
+
+        .token-display {
+            background: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            word-break: break-all;
+            font-family: monospace;
+            font-size: 12px;
+        }
+
+        .logo-status {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+
+        .success {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .warning {
+            background: #fed7aa;
+            color: #9a3412;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-box">
+        <div class="success-icon">🎉</div>
+        <h1>Dashboard กำลังทำงาน!</h1>
+
+        <p><strong>ยินดีด้วย! หากคุณเห็นหน้านี้ แสดงว่า:</strong></p>
+        <ul>
+            <li>✅ Login สำเร็จ</li>
+            <li>✅ Routing ไปยัง Dashboard ทำงานถูกต้อง</li>
+            <li>✅ Template evaluation ทำงาน</li>
+            <li>✅ ไฟล์ dashboard.html โหลดได้</li>
+        </ul>
+
+        <div class="token-display">
+            <strong>Session Token:</strong><br>
+            <?= sessionToken || 'No token' ?>
+        </div>
+
+        <div class="logo-status <?= logoImage ? 'success' : 'warning' ?>">
+            <strong>Logo Status:</strong>
+            <? if (logoImage) { ?>
+            ✅ Logo loaded successfully
+            <? } else { ?>
+            ⚠️ Logo not loaded (but dashboard still works!)
+            <? } ?>
+        </div>
+
+        <p style="margin-top: 30px; color: #666;">
+            ตอนนี้เรารู้แล้วว่าระบบทำงาน<br>
+            เรา submit ให้คุณจะสร้าง dashboard แบบเต็มรูปแบบต่อไป
+        </p>
+    </div>
+</body>
+
+</html>

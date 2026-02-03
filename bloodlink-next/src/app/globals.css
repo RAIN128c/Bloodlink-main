@@ -1,0 +1,607 @@
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ============================================
+   ANIMATION SYSTEM - BloodLink
+   ============================================ */
+
+/* ---------- Base Keyframes ---------- */
+
+/* Fade animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes fadeInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Scale animations */
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes scaleInBounce {
+  0% {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+
+  50% {
+    transform: scale(1.02);
+  }
+
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Slide animations */
+@keyframes slideInFromLeft {
+  from {
+    transform: translateX(-100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInFromRight {
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideOutToLeft {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-100%);
+  }
+}
+
+/* Float animation */
+@keyframes float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+/* Pulse glow */
+@keyframes pulseGlow {
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+  }
+}
+
+/* Skeleton shimmer */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* Spin */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Bounce */
+@keyframes bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-5px);
+  }
+}
+
+/* Shake (for errors) */
+@keyframes shake {
+
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  10%,
+  30%,
+  50%,
+  70%,
+  90% {
+    transform: translateX(-4px);
+  }
+
+  20%,
+  40%,
+  60%,
+  80% {
+    transform: translateX(4px);
+  }
+}
+
+/* ---------- Animation Utility Classes ---------- */
+
+.animate-fade-in {
+  animation: fadeIn 0.4s ease-out both;
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.animate-fade-in-down {
+  animation: fadeInDown 0.5s ease-out both;
+}
+
+.animate-fade-in-left {
+  animation: fadeInLeft 0.5s ease-out both;
+}
+
+.animate-fade-in-right {
+  animation: fadeInRight 0.5s ease-out both;
+}
+
+.animate-scale-in {
+  animation: scaleIn 0.3s ease-out both;
+}
+
+.animate-scale-in-bounce {
+  animation: scaleInBounce 0.4s ease-out both;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.3s ease-out both;
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.3s ease-out both;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-shimmer {
+  background: linear-gradient(90deg,
+      var(--background) 0%,
+      #e5e7eb 50%,
+      var(--background) 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .animate-shimmer {
+  background: linear-gradient(90deg,
+      #1F2937 0%,
+      #374151 50%,
+      #1F2937 100%);
+  background-size: 200% 100%;
+}
+
+.animate-spin-slow {
+  animation: spin 2s linear infinite;
+}
+
+.animate-bounce-subtle {
+  animation: bounce 1s ease-in-out infinite;
+}
+
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* ---------- Stagger Delay Utilities ---------- */
+
+.stagger-1 {
+  animation-delay: 0.05s;
+}
+
+.stagger-2 {
+  animation-delay: 0.1s;
+}
+
+.stagger-3 {
+  animation-delay: 0.15s;
+}
+
+.stagger-4 {
+  animation-delay: 0.2s;
+}
+
+.stagger-5 {
+  animation-delay: 0.25s;
+}
+
+.stagger-6 {
+  animation-delay: 0.3s;
+}
+
+.stagger-7 {
+  animation-delay: 0.35s;
+}
+
+.stagger-8 {
+  animation-delay: 0.4s;
+}
+
+/* ---------- Duration Modifiers ---------- */
+
+.duration-fast {
+  animation-duration: 0.2s !important;
+}
+
+.duration-normal {
+  animation-duration: 0.4s !important;
+}
+
+.duration-slow {
+  animation-duration: 0.6s !important;
+}
+
+.duration-slower {
+  animation-duration: 0.8s !important;
+}
+
+/* ---------- Hover Enhancements ---------- */
+
+.hover-lift {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hover-lift:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.1);
+}
+
+.dark .hover-lift:hover {
+  box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+}
+
+.hover-scale {
+  transition: transform 0.2s ease;
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
+}
+
+/* ---------- Page Transition Classes ---------- */
+
+.page-enter {
+  animation: fadeInUp 0.5s ease-out both;
+}
+
+.page-exit {
+  animation: fadeIn 0.3s ease-in reverse both;
+}
+
+/* ---------- Modal Animation Classes ---------- */
+
+.modal-backdrop {
+  animation: fadeIn 0.2s ease-out both;
+}
+
+.modal-content {
+  animation: scaleIn 0.3s ease-out both;
+}
+
+/* ---------- Card Animation Classes ---------- */
+
+.card-animate {
+  opacity: 0;
+  animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* ---------- Skeleton Loading ---------- */
+
+.skeleton {
+  background: linear-gradient(90deg,
+      #f3f4f6 0%,
+      #e5e7eb 50%,
+      #f3f4f6 100%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  border-radius: 8px;
+}
+
+.dark .skeleton {
+  background: linear-gradient(90deg,
+      #1F2937 0%,
+      #374151 50%,
+      #1F2937 100%);
+  background-size: 200% 100%;
+}
+
+/* ---------- Custom Scrollbar ---------- */
+
+/* ---------- Custom Scrollbar ---------- */
+
+@media (min-width: 640px) {
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background-color: rgba(156, 163, 175, 0.5);
+    border-radius: 20px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: rgba(75, 85, 99, 0.5);
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(107, 114, 128, 0.8);
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.8);
+  }
+}
+
+/* For Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+}
+
+.dark * {
+  scrollbar-color: rgba(75, 85, 99, 0.5) transparent;
+}
+
+/* ---------- Browser Defaults Override ---------- */
+
+/* Hide Edge's default password reveal button */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
+
+/* ---------- Print Optimizations ---------- */
+/* ---------- Print Overhaul (Nuclear Option) ---------- */
+@media print {
+
+  /* 1. Page Setup */
+  @page {
+    margin: 1cm;
+    /* Standard professional margin */
+    size: A4 portrait;
+  }
+
+  /* 2. Global Resets for Layout Roots */
+  html,
+  body {
+    width: 210mm;
+    zoom: 0.95;
+    /* Slight scaling instead of extreme 0.75 */
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: white !important;
+    font-size: 11pt;
+    color: black !important;
+    display: block !important;
+  }
+
+  /* 3. Hide UI Noise */
+  .no-print,
+  .print-hide,
+  .sidebar,
+  nav,
+  header,
+  footer,
+  aside,
+  [role="button"],
+  button {
+    display: none !important;
+  }
+
+  /* 4. Content Flow Control */
+  /* Make sure our main wrappers don't trap content */
+  #__next,
+  main,
+  .print-container,
+  .print-card {
+    display: block !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border: none !important;
+    background: transparent !important;
+  }
+
+  /* 5. Specific Print Layout Adjustments */
+  .print-container {
+    padding: 0 !important;
+  }
+
+  /* 6. Page Break Logic */
+  .break-inside-avoid {
+    break-inside: avoid !important;
+  }
+
+  table,
+  tr,
+  td,
+  th {
+    break-inside: avoid;
+    /* Keep rows together */
+  }
+
+  thead {
+    display: table-header-group;
+    /* Repeat headers if table splits (shouldn't if fits on 1 page) */
+  }
+
+  /* Tables */
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+  }
+
+  th,
+  td {
+    padding: 4px 8px !important;
+    /* Compact padding */
+    border: 1px solid #ddd !important;
+    font-size: 10pt !important;
+  }
+
+  /* Vital Signs Grid */
+  .grid {
+    display: grid !important;
+    /* Keep grid for vital signs */
+    grid-template-columns: repeat(5, 1fr) !important;
+    /* Force 5 columns */
+    gap: 0.5rem !important;
+  }
+
+  /* Headers */
+  h1,
+  h2,
+  h3 {
+    margin-top: 0 !important;
+    margin-bottom: 0.5rem !important;
+    page-break-after: avoid;
+  }
+}

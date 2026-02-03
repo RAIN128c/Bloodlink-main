@@ -1,0 +1,170 @@
+<% /* Component options with defaults */ var localFormId=(typeof _formId !=='undefined' && _formId !==null) ? _formId
+    : 'patientForm' ; var localFormPrefix=(typeof _formPrefix !=='undefined' && _formPrefix !==null) ? _formPrefix : ''
+    ; var localCancelAction=(typeof _cancelAction !=='undefined' && _cancelAction !==null) ? _cancelAction : null; var
+    localConfirmAction=(typeof _confirmAction !=='undefined' && _confirmAction !==null) ? _confirmAction : null; var
+    localInitialData=(typeof _initialData !=='undefined' && _initialData !==null) ? _initialData : {}; var
+    localShowTitle=(typeof _showTitle !=='undefined' && _showTitle !==null) ? _showTitle : true; var
+    localContainerClass=(typeof _containerClass !=='undefined' && _containerClass !==null) ? _containerClass
+    : 'patient-form-container' ; /* Generate unique IDs for form elements */ function getId(name) { return
+    localFormPrefix ? localFormPrefix + '_' + name : name; } %>
+
+    <!-- Patient Data Entry Form Component -->
+    <div class="<%= localContainerClass %>">
+        <div class="patient-form-card">
+            <% if (localShowTitle) { %>
+                <h1 class="form-title">กรอกข้อมูลผู้ป่วย</h1>
+                <% } %>
+
+                    <!-- Examination Type Dropdown (Absolute positioned) -->
+                    <div class="input-group examination-type-absolute">
+                        <label class="form-label">ประเภทการตรวจ</label>
+                        <div class="dropdown-wrapper">
+                            <select class="form-dropdown" id="<%= getId('examinationType') %>" name="examinationType">
+                                <option value="">กรุณาเลือกประเภทการตรวจ</option>
+                                <option value="cbc" <%=localInitialData.examinationType==='cbc' ? 'selected' : '' %>
+                                    >ตรวจเลือดทั่วไป (CBC)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-content">
+                        <!-- Section: Name -->
+                        <div class="form-section-header section-name">
+                            <label class="section-label">ชื่อ-สกุล</label>
+                        </div>
+
+                        <!-- Name -->
+                        <div class="input-group field-firstname">
+                            <label class="form-label">ชื่อ</label>
+                            <input type="text" class="form-input" id="<%= getId('firstName') %>" name="firstName"
+                                value="<%= localInitialData.firstName || '' %>">
+                            <span class="helper-text">กรุณาใส่เฉพาะชื่อ</span>
+                        </div>
+
+                        <!-- Surname -->
+                        <div class="input-group field-lastname">
+                            <label class="form-label">นามสกุล</label>
+                            <input type="text" class="form-input" id="<%= getId('lastName') %>" name="lastName"
+                                value="<%= localInitialData.lastName || '' %>">
+                            <span class="helper-text">กรุณาใส่เฉพาะนามสกุล</span>
+                        </div>
+
+                        <!-- Section: Patient Data -->
+                        <div class="form-section-header section-patient-data">
+                            <label class="section-label">ข้อมูลผู้ป่วย</label>
+                        </div>
+
+                        <!-- HN -->
+                        <div class="input-group field-hn">
+                            <label class="form-label">HN</label>
+                            <input type="text" class="form-input" id="<%= getId('hn') %>" name="hn"
+                                value="<%= localInitialData.hn || '' %>">
+                        </div>
+
+                        <!-- Blood Type -->
+                        <div class="input-group field-bloodtype">
+                            <label class="form-label">หมู่เลือด</label>
+                            <div class="dropdown-wrapper">
+                                <select class="form-dropdown" id="<%= getId('bloodType') %>" name="bloodType">
+                                    <option value="">เลือกหมู่เลือด</option>
+                                    <option value="A+" <%=localInitialData.bloodType==='A+' ? 'selected' : '' %>>A+
+                                    </option>
+                                    <option value="A-" <%=localInitialData.bloodType==='A-' ? 'selected' : '' %>>A-
+                                    </option>
+                                    <option value="B+" <%=localInitialData.bloodType==='B+' ? 'selected' : '' %>>B+
+                                    </option>
+                                    <option value="B-" <%=localInitialData.bloodType==='B-' ? 'selected' : '' %>>B-
+                                    </option>
+                                    <option value="AB+" <%=localInitialData.bloodType==='AB+' ? 'selected' : '' %>>AB+
+                                    </option>
+                                    <option value="AB-" <%=localInitialData.bloodType==='AB-' ? 'selected' : '' %>>AB-
+                                    </option>
+                                    <option value="O+" <%=localInitialData.bloodType==='O+' ? 'selected' : '' %>>O+
+                                    </option>
+                                    <option value="O-" <%=localInitialData.bloodType==='O-' ? 'selected' : '' %>>O-
+                                    </option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Age -->
+                        <div class="input-group field-age">
+                            <label class="form-label">อายุ</label>
+                            <input type="text" class="form-input" id="<%= getId('age') %>" name="age"
+                                value="<%= localInitialData.age || '' %>">
+                            <span class="helper-text">ใส่อายุเป็นตัวเลข</span>
+                        </div>
+
+                        <!-- Gender -->
+                        <div class="input-group field-gender">
+                            <label class="form-label">เพศกำเนิด</label>
+                            <div class="radio-group">
+                                <label class="radio-label">
+                                    <input type="radio" name="gender" value="male" class="radio-input"
+                                        <%=localInitialData.gender==='male' ? 'checked' : '' %>>
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">ชาย</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="gender" value="female" class="radio-input"
+                                        <%=localInitialData.gender==='female' ? 'checked' : '' %>>
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">หญิง</span>
+                                </label>
+                                <label class="radio-label">
+                                    <input type="radio" name="gender" value="ambiguous" class="radio-input"
+                                        <%=localInitialData.gender==='ambiguous' ? 'checked' : '' %>>
+                                    <span class="radio-custom"></span>
+                                    <span class="radio-text">เพศกำกวม</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Underlying Disease -->
+                        <div class="input-group field-disease">
+                            <label class="form-label">โรคประจำตัว</label>
+                            <input type="text" class="form-input" id="<%= getId('underlyingDisease') %>"
+                                name="underlyingDisease" value="<%= localInitialData.underlyingDisease || '' %>">
+                            <span class="helper-text">ไม่มีใส่ " - "</span>
+                        </div>
+
+                        <!-- Medication -->
+                        <div class="input-group field-medication">
+                            <label class="form-label">การใช้ยาที่มีผลต่อเม็ดเลือด</label>
+                            <input type="text" class="form-input" id="<%= getId('medication') %>" name="medication"
+                                value="<%= localInitialData.medication || '' %>">
+                            <span class="helper-text">ไม่มีใส่ " - "</span>
+                        </div>
+
+                        <!-- Allergies -->
+                        <div class="input-group field-allergies">
+                            <label class="form-label">อาการแพ้</label>
+                            <input type="text" class="form-input" id="<%= getId('allergies') %>" name="allergies"
+                                value="<%= localInitialData.allergies || '' %>">
+                            <span class="helper-text">ไม่มีใส่ " - "</span>
+                        </div>
+
+                        <!-- Last Blood Transfusion -->
+                        <div class="input-group field-transfusion">
+                            <label class="form-label">การได้รับเลือดล่าสุด</label>
+                            <input type="text" class="form-input" id="<%= getId('lastTransfusion') %>"
+                                name="lastTransfusion" value="<%= localInitialData.lastTransfusion || '' %>">
+                            <span class="helper-text">ไม่มีใส่ " - "</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="form-actions">
+                        <button type="button" class="btn-cancel" id="<%= getId('cancelBtn') %>"
+                            data-form-id="<%= localFormId %>" <% if (localCancelAction) { %>data-action="<%=
+                                localCancelAction %>"<% } %>>
+                                    ยกเลิก
+                        </button>
+                        <button type="button" class="btn-confirm" id="<%= getId('confirmBtn') %>"
+                            data-form-id="<%= localFormId %>" <% if (localConfirmAction) { %>data-action="<%=
+                                localConfirmAction %>"<% } %>>
+                                    ยืนยัน
+                        </button>
+                    </div>
+        </div>
+    </div>

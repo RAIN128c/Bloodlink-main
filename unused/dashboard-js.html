@@ -1,0 +1,209 @@
+<script>
+    // ==========================================
+    // Real-time Clock
+    // ==========================================
+    function updateClock() {
+        const now = new Date();
+
+        // Time format: HH:MM
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        document.getElementById('currentTime').textContent = `${hours}:${minutes}`;
+
+        // Thai date format
+        const thaiMonths = ['ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
+            'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.'];
+        const thaiDays = ['อา.', 'จ.', 'อ.', 'พ.', 'พฤ.', 'ศ.', 'ส.'];
+
+        const thaiDay = thaiDays[now.getDay()];
+        const thaiDate = now.getDate();
+        const thaiMonth = thaiMonths[now.getMonth()];
+        const thaiYear = now.getFullYear() + 543; // Buddhist Era
+
+        document.getElementById('currentDateThai').textContent =
+            `${thaiDay}, ${thaiDate} ${thaiMonth} ${thaiYear}`;
+
+        // English date format
+        const engDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const engMonths = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+            'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+        const engDay = engDays[now.getDay()];
+        const engMonth = engMonths[now.getMonth()];
+        const engYear = now.getFullYear();
+
+        document.getElementById('currentDateEng').textContent =
+            `${engDay}, ${engMonth} ${thaiDate} ${engYear}`;
+    }
+
+    // Update clock immediately and every second
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // ==========================================
+    // Navigation Menu Handlers
+    // ==========================================
+    const navItems = document.querySelectorAll('.nav-item');
+    const contentArea = document.getElementById('contentArea');
+
+    navItems.forEach(item => {
+        item.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Get the page type
+            const page = this.getAttribute('data-page');
+
+            // Update active state
+            navItems.forEach(nav => nav.classList.remove('active'));
+            this.classList.add('active');
+
+            // Show placeholder content
+            showPageContent(page);
+        });
+    });
+
+    function showPageContent(page) {
+        let content = '';
+
+        switch (page) {
+            case 'results':
+                content = `
+                    <div class="welcome-message">
+                        <h1>ผลตรวจเลือด</h1>
+                        <p>ฟีเจอร์นี้กำลังอยู่ระหว่างการพัฒนา</p>
+                    </div>
+                `;
+                break;
+            case 'history':
+                content = `
+                    <div class="welcome-message">
+                        <h1>ประวัติผู้ป่วย</h1>
+                        <p>ฟีเจอร์นี้กำลังอยู่ระหว่างการพัฒนา</p>
+                    </div>
+                `;
+                break;
+            case 'appointments':
+                content = `
+                    <div class="welcome-message">
+                        <h1>วันนัดหมาย</h1>
+                        <p>ฟีเจอร์นี้กำลังอยู่ระหว่างการพัฒนา</p>
+                    </div>
+                `;
+                break;
+            default:
+                content = `
+                    <div class="welcome-message">
+                        <h1>ยินดีต้อนรับสู่ BloodLink Dashboard</h1>
+                        <p>เลือกเมนูจากด้านซ้ายเพื่อเริ่มต้นใช้งาน</p>
+                    </div>
+                `;
+        }
+
+        contentArea.innerHTML = content;
+    }
+
+    // ==========================================
+    // Add Button Handler
+    // ==========================================
+    const addBtn = document.getElementById('addBtn');
+    if (addBtn) {
+        addBtn.addEventListener('click', function () {
+            alert('ฟีเจอร์เพิ่มข้อมูลใหม่กำลังอยู่ระหว่างการพัฒนา');
+        });
+    }
+
+    // ==========================================
+    // Dark Mode Toggle
+    // ==========================================
+    const darkModeToggle = document.getElementById('darkModeToggle');
+    if (darkModeToggle) {
+        darkModeToggle.addEventListener('change', function () {
+            if (this.checked) {
+                alert('โหมดมืดจะเปิดให้ใช้งานในเร็วๆ นี้');
+                this.checked = false;
+            }
+        });
+    }
+
+    // ==========================================
+    // Logout Handler
+    // ==========================================
+    const logoutBtn = document.getElementById('logoutBtn');
+    if (logoutBtn) {
+        logoutBtn.addEventListener('click', function () {
+            if (confirm('คุณต้องการออกจากระบบหรือไม่?')) {
+                // Redirect to login page
+                window.location.href = window.location.origin + window.location.pathname;
+            }
+        });
+    }
+
+    // ==========================================
+    // Help Button Handler
+    // ==========================================
+    const helpBtn = document.getElementById('helpBtn');
+    if (helpBtn) {
+        helpBtn.addEventListener('click', function () {
+            alert('ต้องการความช่วยเหลือ?\nกรุณาติดต่อทีมสนับสนุน');
+        });
+    }
+
+    // ==========================================
+    // Home Button Handler
+    // ==========================================
+    const homeBtn = document.querySelector('.home-btn');
+    if (homeBtn) {
+        homeBtn.addEventListener('click', function (e) {
+            e.preventDefault();
+
+            // Remove active from nav items
+            navItems.forEach(nav => nav.classList.remove('active'));
+
+            // Show welcome message
+            showPageContent('home');
+        });
+    }
+
+    // ==========================================
+    // Profile Button Handler
+    // ==========================================
+    const profileBtn = document.querySelector('.profile-btn');
+    if (profileBtn) {
+        profileBtn.addEventListener('click', function () {
+            alert('ฟีเจอร์โปรไฟล์จะเปิดให้ใช้งานในเร็วๆ นี้');
+        });
+    }
+
+    // ==========================================
+    // Search Functionality
+    // ==========================================
+    const searchInput = document.querySelector('.search-input');
+    if (searchInput) {
+        searchInput.addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                const query = this.value.trim();
+                if (query) {
+                    alert('การค้นหา: ' + query + '\nฟีเจอร์นี้กำลังอยู่ระหว่างการพัฒนา');
+                    this.value = '';
+                }
+            }
+        });
+    }
+
+    // ==========================================
+    // Initialize on Load
+    // ==========================================
+    document.addEventListener('DOMContentLoaded', function () {
+        console.log('Dashboard initialized');
+
+        // Get user info from URL if available (session token system)
+        const urlParams = new URLSearchParams(window.location.search);
+        const token = urlParams.get('token');
+
+        if (token) {
+            console.log('User session token:', token);
+            // Store token for future API calls
+            sessionStorage.setItem('sessionToken', token);
+        }
+    });
+</script>

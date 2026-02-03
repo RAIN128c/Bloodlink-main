@@ -1,0 +1,480 @@
+﻿<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>ประวัติการตรวจเลือด - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Override info-item styles for history-detail - remove box and hover effect */
+        .patient-info-card .info-item {
+            padding: 0;
+            background: transparent !important;
+            border-radius: 0;
+        }
+
+        .patient-info-card .info-item:hover {
+            background: transparent !important;
+        }
+
+        .patient-info-card .info-grid {
+            gap: 24px 48px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <div class="content-area">
+                        <div class="history-detail-container">
+                            <div class="back-nav">
+                                <a href="/history" class="back-link">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <path d="M19 12H5M12 19l-7-7 7-7"></path>
+                                    </svg>
+                                    ย้อนกลับ
+                                </a>
+                            </div>
+
+                            <%- include('partials/patient-detail-content') %>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+
+
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Edit Info Logic
+            const editBtn = document.getElementById('edit-toggle-btn');
+            const saveBtn = document.getElementById('save-info-btn');
+            // Define statusIconBtn here to be available globally
+            const statusIconBtn = document.getElementById('status-icon-btn');
+
+            // Only attach listeners if buttons exist (based on permissions)
+            if (editBtn && saveBtn) {
+
+                // Display Elements
+                const genderDisplay = document.getElementById('gender-display');
+                const ageDisplay = document.getElementById('age-display');
+                const bloodDisplay = document.getElementById('blood-display');
+                const statusDisplay = document.getElementById('status-display');
+                const diseaseDisplay = document.getElementById('disease-display');
+                const allergyDisplay = document.getElementById('allergy-display');
+                const ncdDisplay = document.getElementById('ncd-display');
+
+                // Input Elements (Groups)
+                const genderInput = document.getElementById('gender-input');
+                const ageInput = document.getElementById('age-input');
+                const bloodInput = document.getElementById('blood-input');
+                const statusInput = document.getElementById('status-input');
+                const diseaseInput = document.getElementById('disease-input');
+                const allergyInput = document.getElementById('allergy-input');
+                const ncdInput = document.getElementById('ncd-input');
+                const ncdItem = document.getElementById('ncd-item');
+
+                // Specific Inputs
+                const ageVal = document.getElementById('age-val');
+                const ncdTextInput = document.getElementById('ncd-text-input');
+                const diseaseTextInput = document.getElementById('disease-text-input');
+                const diseaseTagsEdit = document.getElementById('disease-tags-edit');
+
+                // Disease Modal Elements
+                const diseaseModal = document.getElementById('disease-modal');
+                const diseaseListModalContent = document.getElementById('disease-list-modal-content');
+                const closeDiseaseModalBtn = document.getElementById('close-disease-modal-btn');
+
+                // Data State
+                // Initialize from server-side data
+                let diseases = <%- JSON.stringify(patient.disease ? String(patient.disease).split(',').map(s => s.trim()).filter(s => s !== '-' && s !== '') : []) %>;
+
+                let isEditing = false;
+
+                // NCD Mapping
+                const ncdMap = {
+                    '001': 'เบาหวาน',
+                    '002': 'ความดันโลหิตสูง',
+                    '003': 'ไขมันในเลือดสูง',
+                    '004': 'โรคหัวใจ',
+                    '005': 'โรคไตวายเรื้อรัง'
+                };
+
+                // Initialize Tags
+                function renderTags(container, isEditMode) {
+                    container.innerHTML = '';
+                    if (diseases.length === 0 && !isEditMode) {
+                        container.textContent = '-';
+                        return;
+                    }
+
+                    if (isEditMode) {
+                        diseases.forEach((disease, index) => {
+                            const tag = document.createElement('div');
+                            tag.className = 'tag';
+                            tag.innerHTML = `<span>${disease}</span>`;
+
+                            const removeBtn = document.createElement('span');
+                            removeBtn.className = 'tag-remove';
+                            removeBtn.innerHTML = '&times;';
+                            removeBtn.onclick = () => removeDisease(index);
+                            tag.appendChild(removeBtn);
+
+                            container.appendChild(tag);
+                        });
+                    } else {
+                        // View Mode Truncation
+                        const displayCount = 1;
+                        const visibleDiseases = diseases.slice(0, displayCount);
+
+                        visibleDiseases.forEach(disease => {
+                            const tag = document.createElement('div');
+                            tag.className = 'tag';
+                            tag.innerHTML = `<span>${disease}</span>`;
+                            container.appendChild(tag);
+                        });
+
+                        if (diseases.length > 1) {
+                            const moreTag = document.createElement('div');
+                            moreTag.className = 'tag';
+                            moreTag.style.cursor = 'pointer';
+                            moreTag.style.background = '#F3F4F6';
+                            moreTag.innerHTML = `<span>+${diseases.length - 1}</span>`;
+                            moreTag.onclick = () => {
+                                showDiseaseModal();
+                            };
+                            container.appendChild(moreTag);
+                        }
+                    }
+                }
+
+                // Fix initial render
+                renderTags(diseaseDisplay, false);
+
+                function showDiseaseModal() {
+                    diseaseListModalContent.innerHTML = '';
+                    diseases.forEach(disease => {
+                        const tag = document.createElement('div');
+                        tag.className = 'tag';
+                        tag.innerHTML = `<span>${disease}</span>`;
+                        diseaseListModalContent.appendChild(tag);
+                    });
+                    diseaseModal.style.display = 'flex';
+                }
+
+                if (closeDiseaseModalBtn) {
+                    closeDiseaseModalBtn.addEventListener('click', function () {
+                        diseaseModal.style.display = 'none';
+                    });
+                }
+
+
+                // Close disease modal when clicking outside
+                if (diseaseModal) {
+                    diseaseModal.addEventListener('click', function (e) {
+                        if (e.target === diseaseModal) {
+                            diseaseModal.style.display = 'none';
+                        }
+                    });
+                }
+
+                function addDisease(name) {
+                    if (name && !diseases.includes(name)) {
+                        diseases.push(name);
+                        renderTags(diseaseTagsEdit, true);
+                    }
+                }
+
+                function removeDisease(index) {
+                    diseases.splice(index, 1);
+                    renderTags(diseaseTagsEdit, true);
+                }
+
+                // Event Listeners for Tags
+                if (diseaseTextInput) {
+                    diseaseTextInput.addEventListener('keypress', function (e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            addDisease(this.value.trim());
+                            this.value = '';
+                        }
+                    });
+                }
+
+                if (ncdTextInput) {
+                    ncdTextInput.addEventListener('keypress', function (e) {
+                        if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const code = this.value.trim();
+                            if (ncdMap[code]) {
+                                addDisease(ncdMap[code]);
+                                this.value = ''; // Clear NCD input after adding
+                            } else {
+                                alert('ไม่พบรหัส NCD นี้');
+                            }
+                        }
+                    });
+                }
+
+                editBtn.addEventListener('click', function () {
+                    isEditing = !isEditing;
+                    toggleEditMode(isEditing);
+                });
+
+                saveBtn.addEventListener('click', function () {
+                    // Prepare data for update
+                    const updateData = {
+                        hn: '<%= patient.hn %>', // Get HN from server-rendered variable
+                        gender: document.querySelector('input[name="gender"]:checked')?.value,
+                        age: ageVal.value,
+                        bloodType: document.querySelector('input[name="blood"]:checked')?.value,
+                        disease: diseases.join(', '), // Convert array to comma-separated string
+                        allergies: allergyInput.value
+                        // Status is handled separately or can be added here if it maps to a column
+                    };
+
+                    // Disable button
+                    saveBtn.disabled = true;
+                    saveBtn.textContent = 'กำลังบันทึก...';
+
+                    fetch('/api/update-patient', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(updateData)
+                    })
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.success) {
+                                alert('บันทึกข้อมูลเรียบร้อยแล้ว');
+
+                                // Update display values
+                                // Gender
+                                const selectedGender = document.querySelector('input[name="gender"]:checked');
+                                if (selectedGender) genderDisplay.textContent = selectedGender.value;
+
+                                // Age
+                                ageDisplay.textContent = ageVal.value + ' ปี';
+
+                                // Blood
+                                const selectedBlood = document.querySelector('input[name="blood"]:checked');
+                                if (selectedBlood) bloodDisplay.textContent = selectedBlood.value;
+
+                                // Allergy
+                                allergyDisplay.textContent = allergyInput.value;
+
+                                // Diseases (Tags)
+                                renderTags(diseaseDisplay, false);
+
+                                // Exit edit mode
+                                isEditing = false;
+                                toggleEditMode(false);
+                            } else {
+                                alert(result.message || 'เกิดข้อผิดพลาดในการบันทึก');
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                        })
+                        .finally(() => {
+                            saveBtn.disabled = false;
+                            saveBtn.textContent = 'บันทึก';
+                        });
+                });
+
+                function toggleEditMode(editing) {
+                    if (editing) {
+                        editBtn.textContent = 'ยกเลิก';
+                        editBtn.style.borderColor = '#EF4444';
+                        editBtn.style.color = '#EF4444';
+
+                        // Hide Displays
+                        genderDisplay.style.display = 'none';
+                        ageDisplay.style.display = 'none';
+                        bloodDisplay.style.display = 'none';
+                        statusDisplay.style.display = 'none';
+                        diseaseDisplay.style.display = 'none';
+                        allergyDisplay.style.display = 'none';
+                        ncdDisplay.style.display = 'none'; // Hide NCD display (usually empty or dash)
+
+                        // Show Inputs
+                        genderInput.style.display = 'flex';
+                        ageInput.style.display = 'flex';
+                        bloodInput.style.display = 'flex';
+                        statusInput.style.display = 'flex';
+                        diseaseInput.style.display = 'block';
+                        allergyInput.style.display = 'block';
+                        ncdInput.style.display = 'block'; // Show NCD input only in edit mode
+
+                        // Show NCD Item
+                        ncdItem.style.display = 'flex';
+
+                        saveBtn.style.display = 'block';
+
+                        // Render tags in edit container
+                        renderTags(diseaseTagsEdit, true);
+                    } else {
+                        editBtn.textContent = 'แก้ไขข้อมูล';
+                        editBtn.style.borderColor = '#6366F1';
+                        editBtn.style.color = '#6366F1';
+
+                        // Show Displays
+                        genderDisplay.style.display = 'inline';
+                        ageDisplay.style.display = 'inline';
+                        bloodDisplay.style.display = 'inline';
+                        statusDisplay.style.display = 'inline';
+                        diseaseDisplay.style.display = 'flex';
+                        allergyDisplay.style.display = 'inline';
+                        ncdDisplay.style.display = 'inline';
+
+                        // Hide Inputs
+                        genderInput.style.display = 'none';
+                        ageInput.style.display = 'none';
+                        bloodInput.style.display = 'none';
+                        statusInput.style.display = 'none';
+                        diseaseInput.style.display = 'none';
+                        allergyInput.style.display = 'none';
+                        ncdInput.style.display = 'none';
+
+                        // Hide NCD Item
+                        ncdItem.style.display = 'none';
+
+                        saveBtn.style.display = 'none';
+                    }
+                }
+            } // End of if (editBtn && saveBtn)
+
+            // Status Modal Logic
+            const updateStatusBtn = document.getElementById('update-status-btn');
+            const modal = document.getElementById('status-modal');
+            const cancelStatusBtn = document.getElementById('cancel-status-btn');
+            const confirmStatusBtn = document.getElementById('confirm-status-btn');
+            const appointmentSection = document.getElementById('appointmentDatetimeSection');
+            const statusRadios = document.querySelectorAll('input[name="status"]');
+
+
+            // Show/hide appointment datetime picker based on selected status
+            if (statusRadios) {
+                statusRadios.forEach(radio => {
+                    radio.addEventListener('change', function () {
+                        if (this.value === 'นัดหมาย') {
+                            appointmentSection.style.display = 'block';
+                        } else {
+                            appointmentSection.style.display = 'none';
+                        }
+                    });
+                });
+            }
+
+            // Check initial state
+            const checkedStatus = document.querySelector('input[name="status"]:checked');
+            if (checkedStatus && checkedStatus.value === 'นัดหมาย' && appointmentSection) {
+                appointmentSection.style.display = 'block';
+            }
+
+            // Only attach listeners if status update button exists (based on permissions)
+            if ((updateStatusBtn || statusIconBtn) && modal) {
+                if (updateStatusBtn) {
+                    updateStatusBtn.addEventListener('click', function () {
+                        modal.style.display = 'flex';
+                    });
+                }
+
+                if (statusIconBtn) {
+                    statusIconBtn.addEventListener('click', function () {
+                        modal.style.display = 'flex';
+                    });
+                }
+
+                cancelStatusBtn.addEventListener('click', function () {
+                    modal.style.display = 'none';
+                });
+
+                confirmStatusBtn.addEventListener('click', function () {
+                    const selectedStatus = document.querySelector('input[name="status"]:checked');
+                    const note = document.getElementById('status-note').value;
+
+                    if (selectedStatus) {
+                        const statusValue = selectedStatus.value;
+                        const processText = statusValue; // Values are already Thai
+
+                        // Get appointment datetime if selected
+                        const appointmentDate = document.getElementById('appointmentDate')?.value || '';
+                        const appointmentTime = document.getElementById('appointmentTime')?.value || '';
+
+                        // VALIDATION: If status is "นัดหมาย", require date and time
+                        if (statusValue === 'นัดหมาย' || statusValue === 'Appointment') {
+                            if (!appointmentDate || !appointmentTime) {
+                                alert('กรุณาระบุวันและเวลานัดหมายให้ครบถ้วน');
+                                return; // Stop execution
+                            }
+                        }
+
+                        // Send update to backend
+                        fetch('/update-process', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify({
+                                hn: '<%= patient.hn %>',
+                                process: statusValue,
+                                note: note,
+                                appointmentDate: appointmentDate,
+                                appointmentTime: appointmentTime
+                            })
+                        })
+                            .then(response => response.json())
+                            .then(result => {
+                                if (result.success) {
+                                    alert('อัปเดตสถานะเรียบร้อยแล้ว');
+                                    window.location.reload();
+                                } else {
+                                    alert(result.message || 'เกิดข้อผิดพลาดในการอัปเดตสถานะ');
+                                }
+                            })
+                            .catch(error => {
+                                console.error('Error:', error);
+                                alert('เกิดข้อผิดพลาดในการเชื่อมต่อ');
+                            });
+                    }
+                    modal.style.display = 'none';
+                });
+            }
+
+            // Close modal when clicking outside
+            if (modal) {
+                window.addEventListener('click', function (e) {
+                    if (e.target === modal) {
+                        modal.style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,80 @@
+<!-- Help Button -->
+<button class="help-btn" id="helpBtn" aria-label="Help">
+    <span style="font-size: 24px; color: white;">?</span>
+</button>
+
+<!-- Help Menu -->
+<div class="help-menu" id="helpMenu">
+    <div class="help-menu-header">ต้องการความช่วยเหลือ</div>
+    <div class="help-menu-items">
+        <button class="help-menu-item" data-help="usage">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>วิธีการใช้งาน</span>
+        </button>
+        <button class="help-menu-item" data-help="contact">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+            <span>การสอบถาม</span>
+        </button>
+        <button class="help-menu-item" data-help="complaint">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                <line x1="12" y1="9" x2="12" y2="13" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+            <span>ร้องเรียน</span>
+        </button>
+        <div style="border-top: 1px solid #eee; margin: 8px 0; padding-top: 8px;">
+            <div style="font-size: 12px; color: #999; padding: 0 12px 4px;">Debug Tools</div>
+            <button class="help-menu-item" id="debugNotifySuccessBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span>แจ้งเตือน: ผลเลือดออก</span>
+            </button>
+            <button class="help-menu-item" id="debugNotifyTimeBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <polyline points="12 6 12 12 16 14"></polyline>
+                </svg>
+                <span>แจ้งเตือน: ถึงเวลา</span>
+            </button>
+            <button class="help-menu-item" id="debugNotifySendBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 2L11 13"></path>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                </svg>
+                <span>แจ้งเตือน: ส่งเลือด</span>
+            </button>
+            <button class="help-menu-item" id="debugNotifySentSuccessBtn">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                    <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                </svg>
+                <span>แจ้งเตือน: ส่งผลสำเร็จ</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Help Modal -->
+<div class="help-modal" id="helpModal">
+    <div class="help-modal-overlay"></div>
+    <div class="help-modal-content">
+        <button class="help-modal-close" id="modalClose" aria-label="Close">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+            </svg>
+        </button>
+        <h2 id="modalTitle">ช่วยเหลือ</h2>
+        <div id="modalBody">
+            <p>เลือกหัวข้อจากเมนูด้านล่าง</p>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,36 @@
+<div id="global-notification-popup" class="notification-overlay hidden">
+    <div class="notification-card">
+        <div class="notification-header-row" style="justify-content: center;">
+            <span class="notification-time" id="notificationTime">12:00 , 13/05/2568</span>
+        </div>
+
+        <div class="notification-body">
+            <h2 class="notification-title" id="notificationTitle">ผลเลือดออก</h2>
+
+            <div class="notification-icon-container" id="notificationIconContainer">
+                <!-- Icons will be injected here via JS -->
+                <!-- Example Success Icon -->
+                <div class="notification-icon success-icon hidden">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <polyline points="20 6 9 17 4 12"></polyline>
+                    </svg>
+                </div>
+                <!-- Example Time Icon -->
+                <div class="notification-icon time-icon hidden">
+                    <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+            </div>
+
+            <p class="notification-message" id="notificationMessage">ผลเลือดออกแล้ว</p>
+        </div>
+
+        <div class="notification-footer" style="justify-content: center;">
+            <button class="notification-btn btn-open" id="notificationCancelBtn" style="width: 100%;">ยกเลิก</button>
+        </div>
+    </div>
+</div>

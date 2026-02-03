@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Patient List - BloodLink Admin</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        /* Patient List Specific Styles */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #111827;
+        }
+
+        .search-bar-container {
+            position: relative;
+            width: 300px;
+        }
+
+        .search-bar-input {
+            width: 100%;
+            padding: 10px 16px;
+            padding-right: 40px;
+            border: 1px solid #E5E7EB;
+            border-radius: 8px;
+            font-family: 'Kanit', sans-serif;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .search-bar-icon {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9CA3AF;
+            pointer-events: none;
+        }
+
+        .patient-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .patient-card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            border: 1px solid #E5E7EB;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .patient-hn {
+            font-size: 18px;
+            font-weight: 600;
+            color: #1F2937;
+            /* Darker gray */
+        }
+
+        .patient-name {
+            font-size: 14px;
+            color: #4B5563;
+            /* Gray-600 */
+            margin-bottom: 8px;
+        }
+
+        .btn-inspect {
+            align-self: flex-start;
+            padding: 6px 16px;
+            background-color: #E0E7FF;
+            /* Light Indigo */
+            color: #374151;
+            border: 1px solid #C7D2FE;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-inspect:hover {
+            background-color: #C7D2FE;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Admin Sidebar -->
+        <%- include('partials/admin-sidebar') %>
+
+            <!-- Main Content -->
+            <main class="main-content">
+                <!-- Header Components -->
+                <!-- Header Components -->
+                <%- include('partials/header', { hideSearch: true, isAdminPage: true }) %>
+
+                    <div class="content-area">
+                        <div class="page-header">
+                            <h1 class="page-title">Patient List</h1>
+                            <div class="search-bar-container">
+                                <input type="text" class="search-bar-input" placeholder="ค้นหารายชื่อ/HN">
+                                <svg class="search-bar-icon" width="20" height="20" viewBox="0 0 24 24" fill="none"
+                                    stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                    stroke-linejoin="round">
+                                    <circle cx="11" cy="11" r="8"></circle>
+                                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                                </svg>
+                            </div>
+                        </div>
+
+                        <div class="patient-list">
+                            <!-- Mock Patient Cards -->
+                            <% for(let i=0; i<4; i++) { %>
+                                <div class="patient-card">
+                                    <div class="patient-hn">HN : 123456789</div>
+                                    <div class="patient-name">นายสมชาย ใจดี</div>
+                                    <a href="/admin-patient-detail" class="btn-inspect">ตรวจสอบ</a>
+                                </div>
+                                <% } %>
+                        </div>
+                    </div>
+            </main>
+
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+    <script>
+        // Set active sidebar item
+        document.addEventListener('DOMContentLoaded', () => {
+            const navItems = document.querySelectorAll('.nav-item');
+            navItems.forEach(item => item.classList.remove('active'));
+
+            const patientNav = document.querySelector('.nav-item[data-page="patients"]');
+            if (patientNav) patientNav.classList.add('active');
+        });
+    </script>
+</body>
+
+</html>

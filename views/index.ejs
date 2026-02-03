@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BloodLink - เข้าสู่ระบบ</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+
+<body>
+    <div class="login-container">
+        <!-- Left Panel - Illustration -->
+        <div class="left-panel">
+            <div class="octagon-container">
+                <!-- Placeholder for Nurse Image -->
+                <!-- <div
+                    style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; background-color: #e0f2fe; color: #0369a1; font-weight: bold;">
+                    Nurse Illustration
+                </div> -->
+                <img src="/images/nurse.png" alt="Nurse illustration" class="nurse-illustration">
+            </div>
+        </div>
+
+        <!-- Right Panel - Login Form -->
+        <div class="right-panel">
+            <div class="forms-container" id="formsContainer">
+                <!-- Login Form Wrapper -->
+                <div class="form-wrapper active" id="loginWrapper">
+                    <div class="login-form-wrapper">
+                        <!-- Logo and Welcome -->
+                        <div class="logo-section">
+                            <div class="logo-container">
+                                <!-- Placeholder for Logo -->
+                                <!-- <div
+                                    style="width: 260px; height: 117px; display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; color: #4b5563; font-weight: bold; margin-bottom: 10px;">
+                                    BloodLink Logo
+                                </div> -->
+                                <img src="/images/logo.png" alt="BloodLink Logo" class="logo">
+                                <p class="welcome-text">ยินดีต้อนรับสู่</p>
+                            </div>
+                        </div>
+
+                        <!-- Login Form -->
+                        <form class="login-form" id="loginForm" action="#" method="POST" autocomplete="on">
+                            <!-- Email Input -->
+                            <div class="form-group">
+                                <label for="email" class="input-label">อีเมล</label>
+                                <input type="email" id="email" name="email" class="form-input" placeholder="" required
+                                    autocomplete="username">
+                            </div>
+
+                            <!-- Password Input -->
+                            <div class="form-group">
+                                <label for="password" class="input-label">รหัสผ่าน</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="password" name="password"
+                                        class="form-input password-input" placeholder="" required
+                                        autocomplete="current-password">
+                                    <button type="button" class="password-toggle" id="passwordToggle"
+                                        aria-label="Toggle password visibility">
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M10 4C5.58172 4 2 7.58172 2 12C2 16.4183 5.58172 20 10 20C14.4183 20 18 16.4183 18 12C18 7.58172 14.4183 4 10 4ZM10 17.2727C6.69485 17.2727 4 14.8864 4 12C4 9.11364 6.69485 6.72727 10 6.72727C13.3051 6.72727 16 9.11364 16 12C16 14.8864 13.3051 17.2727 10 17.2727ZM10 8.18182C8.01673 8.18182 6.40909 9.86364 6.40909 12C6.40909 14.1364 8.01673 15.8182 10 15.8182C11.9833 15.8182 13.5909 14.1364 13.5909 12C13.5909 9.86364 11.9833 8.18182 10 8.18182ZM10 13.8182C9.17273 13.8182 8.5 13.1364 8.5 12.2727C8.5 11.4091 9.17273 10.7273 10 10.7273C10.8273 10.7273 11.5 11.4091 11.5 12.2727C11.5 13.1364 10.8273 13.8182 10 13.8182Z"
+                                                fill="#9CA3AF" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Forgot Password (Remember Me Removed) -->
+                            <div class="form-options" style="justify-content: flex-end;">
+                                <a href="#" class="forgot-password">ลืมรหัสผ่าน?</a>
+                            </div>
+
+                            <!-- Login Button -->
+                            <button type="submit" class="btn-login">เข้าสู่ระบบ</button>
+
+                            <!-- Registration Section -->
+                            <div class="registration-section">
+                                <p class="registration-text">หากคุณยังไม่ได้ลงทะเบียน คลิกปุ่มด้านล่าง
+                                </p>
+                                <button type="button" class="btn-register" id="registerBtn">ลงทะเบียน</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Register Form Wrapper -->
+                <div class="form-wrapper" id="registerWrapper">
+                    <div class="login-form-wrapper">
+                        <!-- Logo and Welcome -->
+                        <div class="logo-section">
+                            <div class="logo-container">
+                                <!-- Placeholder for Logo -->
+                                <!-- <div
+                                    style="width: 260px; height: 117px; display: flex; align-items: center; justify-content: center; background-color: #f3f4f6; color: #4b5563; font-weight: bold; margin-bottom: 10px;">
+                                    BloodLink Logo
+                                </div> -->
+                                <img src="/images/logo.png" alt="BloodLink Logo" class="logo">
+                                <p class="welcome-text">ยินดีต้อนรับสู่</p>
+                            </div>
+                        </div>
+
+                        <!-- Registration Form -->
+                        <form class="login-form" id="registerForm" action="#" method="POST" autocomplete="on">
+                            <!-- ROLE Dropdown -->
+                            <div class="form-group">
+                                <label for="role" class="input-label">บทบาท</label>
+                                <select id="role" name="role" class="form-input form-select" required>
+                                    <option value="หมอ">หมอ</option>
+                                    <option value="พยาบาล">พยาบาล</option>
+                                    <option value="แลป">แลป</option>
+                                </select>
+                            </div>
+
+                            <!-- NAME Input -->
+                            <div class="form-group">
+                                <label for="name" class="input-label">ชื่อ</label>
+                                <input type="text" id="name" name="name" class="form-input" placeholder="" required
+                                    autocomplete="given-name">
+                            </div>
+
+                            <!-- SURNAME Input -->
+                            <div class="form-group">
+                                <label for="surname" class="input-label">นามสกุล</label>
+                                <input type="text" id="surname" name="surname" class="form-input" placeholder=""
+                                    required autocomplete="family-name">
+                            </div>
+
+                            <!-- EMAIL Input -->
+                            <div class="form-group">
+                                <label for="registerEmail" class="input-label">อีเมล</label>
+                                <input type="email" id="registerEmail" name="email" class="form-input" placeholder=""
+                                    required autocomplete="username">
+                            </div>
+
+                            <!-- PASSWORD Input -->
+                            <div class="form-group">
+                                <label for="registerPassword" class="input-label">รหัสผ่าน</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="registerPassword" name="password"
+                                        class="form-input password-input" placeholder="" required
+                                        autocomplete="new-password">
+                                    <button type="button" class="password-toggle" id="registerPasswordToggle"
+                                        aria-label="Toggle password visibility">
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M10 4C5.58172 4 2 7.58172 2 12C2 16.4183 5.58172 20 10 20C14.4183 20 18 16.4183 18 12C18 7.58172 14.4183 4 10 4ZM10 17.2727C6.69485 17.2727 4 14.8864 4 12C4 9.11364 6.69485 6.72727 10 6.72727C13.3051 6.72727 16 9.11364 16 12C16 14.8864 13.3051 17.2727 10 17.2727ZM10 8.18182C8.01673 8.18182 6.40909 9.86364 6.40909 12C6.40909 14.1364 8.01673 15.8182 10 15.8182C11.9833 15.8182 13.5909 14.1364 13.5909 12C13.5909 9.86364 11.9833 8.18182 10 8.18182ZM10 13.8182C9.17273 13.8182 8.5 13.1364 8.5 12.2727C8.5 11.4091 9.17273 10.7273 10 10.7273C10.8273 10.7273 11.5 11.4091 11.5 12.2727C11.5 13.1364 10.8273 13.8182 10 13.8182Z"
+                                                fill="#9CA3AF" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- CONFIRM PASSWORD Input -->
+                            <div class="form-group">
+                                <label for="confirmPassword" class="input-label">ยืนยันรหัสผ่าน</label>
+                                <div class="password-input-wrapper">
+                                    <input type="password" id="confirmPassword" name="confirmPassword"
+                                        class="form-input password-input" placeholder="" required
+                                        autocomplete="new-password">
+                                    <button type="button" class="password-toggle" id="confirmPasswordToggle"
+                                        aria-label="Toggle password visibility">
+                                        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+                                            xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M10 4C5.58172 4 2 7.58172 2 12C2 16.4183 5.58172 20 10 20C14.4183 20 18 16.4183 18 12C18 7.58172 14.4183 4 10 4ZM10 17.2727C6.69485 17.2727 4 14.8864 4 12C4 9.11364 6.69485 6.72727 10 6.72727C13.3051 6.72727 16 9.11364 16 12C16 14.8864 13.3051 17.2727 10 17.2727ZM10 8.18182C8.01673 8.18182 6.40909 9.86364 6.40909 12C6.40909 14.1364 8.01673 15.8182 10 15.8182C11.9833 15.8182 13.5909 14.1364 13.5909 12C13.5909 9.86364 11.9833 8.18182 10 8.18182ZM10 13.8182C9.17273 13.8182 8.5 13.1364 8.5 12.2727C8.5 11.4091 9.17273 10.7273 10 10.7273C10.8273 10.7273 11.5 11.4091 11.5 12.2727C11.5 13.1364 10.8273 13.8182 10 13.8182Z"
+                                                fill="#9CA3AF" />
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- HOSPITAL Dropdown -->
+                            <div class="form-group">
+                                <label for="hospital" class="input-label">ประเภทโรงพยาบาล</label>
+                                <select id="hospital" name="hospital" class="form-input form-select" required>
+                                    <option value="แม่ข่าย">โรงพยาบาลแม่ข่าย</option>
+                                    <option value="ชุมชน">โรงพยาบาลชุมชน</option>
+                                </select>
+                            </div>
+
+                            <!-- HOSPITAL NAME Input -->
+                            <div class="form-group">
+                                <label for="hospitalName" class="input-label">ชื่อโรงพยาบาล</label>
+                                <input type="text" id="hospitalName" name="hospitalName" class="form-input"
+                                    placeholder="" required>
+                            </div>
+
+                            <!-- Privacy Policy Checkbox -->
+                            <div class="form-group">
+                                <label class="checkbox-label">
+                                    <input type="checkbox" id="privacyPolicy" name="privacyPolicy" required>
+                                    <span class="checkbox-custom"></span>
+                                    <span class="checkbox-text">ฉันเข้าใจ และยอมรับนโยบายความเป็นส่วนตัว</span>
+                                </label>
+                            </div>
+
+                            <!-- Register Button -->
+                            <button type="submit" class="btn-login">ลงทะเบียน</button>
+
+                            <!-- Login Link Section -->
+                            <div class="registration-section" style="margin-top: 24px;">
+                                <p class="registration-text">มีบัญชีอยู่แล้ว? <a href="#" id="loginLink"
+                                        style="color: #9333EA; text-decoration: none; font-weight: 500;">เข้าสู่ระบบ</a>
+                                </p>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/js/main.js"></script>
+</body>
+
+</html>

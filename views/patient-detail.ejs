@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>รายละเอียดผลตรวจเลือด - BloodLink</title>
+    <link rel="stylesheet" href="/css/dashboard.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;500;600;700&family=Inter:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <style>
+        @media print {
+            body {
+                background: white !important;
+            }
+
+            .sidebar,
+            .header-components,
+            .help-btn,
+            .edit-btn,
+            .print-btn {
+                display: none !important;
+            }
+
+            .dashboard-container {
+                display: block !important;
+            }
+
+            .main-content {
+                margin: 0 !important;
+                padding: 20px !important;
+                width: 100% !important;
+            }
+
+            .content-area {
+                max-width: none !important;
+                padding: 0 !important;
+            }
+
+            .patient-detail-card {
+                box-shadow: none !important;
+                border: 1px solid #ddd !important;
+            }
+
+            .results-table {
+                font-size: 10pt !important;
+            }
+
+            .results-table th,
+            .results-table td {
+                padding: 6px 8px !important;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboard-container">
+        <!-- Shared sidebar -->
+        <%- include('partials/sidebar') %>
+
+            <!-- Main content -->
+            <main class="main-content">
+                <!-- Shared header (Home, search, profile) -->
+                <%- include('partials/header') %>
+
+                    <div class="content-area">
+                        <div class="patient-detail-card">
+                            <!-- Header Section -->
+                            <div class="detail-header">
+                                <div class="patient-profile">
+                                    <div class="profile-icon-large">
+                                        <svg width="40" height="40" viewBox="0 0 24 24" fill="none"
+                                            stroke="currentColor" stroke-width="2">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                            <circle cx="12" cy="7" r="4" stroke-linecap="round"
+                                                stroke-linejoin="round" />
+                                        </svg>
+                                    </div>
+                                    <div class="profile-info">
+                                        <div class="profile-name-row">
+                                            <h1 class="profile-name">
+                                                <%= patient.name %>
+                                                    <%= patient.surname %>
+                                            </h1>
+                                            <% if (canEdit) { %>
+                                                <a href="/patient-detail-edit?hn=<%= patient.hn %>" class="edit-btn">
+                                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none"
+                                                        stroke="currentColor" stroke-width="2">
+                                                        <path
+                                                            d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7">
+                                                        </path>
+                                                        <path
+                                                            d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z">
+                                                        </path>
+                                                    </svg>
+                                                </a>
+                                                <% } %>
+                                        </div>
+                                        <div class="profile-hn-row">
+                                            <% String(patient.hn).split('').forEach(digit=> { %>
+                                                <span>
+                                                    <%= digit %>
+                                                </span>
+                                                <% }); %>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button class="print-btn" onclick="window.print()">
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="2">
+                                        <polyline points="6 9 6 2 18 2 18 9"></polyline>
+                                        <path
+                                            d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2">
+                                        </path>
+                                        <rect x="6" y="14" width="12" height="8"></rect>
+                                    </svg>
+                                    Print
+                                </button>
+                            </div>
+
+                            <!-- Results Table -->
+                            <div class="results-table-container">
+                                <table class="results-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Test / Description</th>
+                                            <th>Result</th>
+                                            <th>Unit</th>
+                                            <th>Normal Range</th>
+                                            <th>หมายเหตุ</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="section-header">
+                                            <td colspan="5">CBC</td>
+                                        </tr>
+                                        <tr>
+                                            <td>WBC</td>
+                                            <td>
+                                                <%= bloodTest?.wbc || '-' %>
+                                            </td>
+                                            <td>10^3/µ</td>
+                                            <td>4.23-9.07</td>
+                                            <td>
+                                                <%= bloodTest?.wbcNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>RBC</td>
+                                            <td>
+                                                <%= bloodTest?.rbc || '-' %>
+                                            </td>
+                                            <td>10^6/µL</td>
+                                            <td>4.63-6.08</td>
+                                            <td>
+                                                <%= bloodTest?.rbcNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Hemoglobin</td>
+                                            <td>
+                                                <%= bloodTest?.hemoglobin || '-' %>
+                                            </td>
+                                            <td>g/dL</td>
+                                            <td>13.7-17.5</td>
+                                            <td>
+                                                <%= bloodTest?.hemoglobinNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Hematocrit</td>
+                                            <td>
+                                                <%= bloodTest?.hematocrit || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>40.1-51</td>
+                                            <td>
+                                                <%= bloodTest?.hematocritNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>MCV</td>
+                                            <td>
+                                                <%= bloodTest?.mcv || '-' %>
+                                            </td>
+                                            <td>fL</td>
+                                            <td>79-92.2</td>
+                                            <td>
+                                                <%= bloodTest?.mcvNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>MCH</td>
+                                            <td>
+                                                <%= bloodTest?.mch || '-' %>
+                                            </td>
+                                            <td>pg</td>
+                                            <td>25.7-32.2</td>
+                                            <td>
+                                                <%= bloodTest?.mchNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>MCHC</td>
+                                            <td>
+                                                <%= bloodTest?.mchc || '-' %>
+                                            </td>
+                                            <td>g/dL</td>
+                                            <td>32.3-36.5</td>
+                                            <td>
+                                                <%= bloodTest?.mchcNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr class="separator-row">
+                                            <td>Platelet count</td>
+                                            <td>
+                                                <%= bloodTest?.platelet || '-' %>
+                                            </td>
+                                            <td>10^3/µL</td>
+                                            <td>140-400</td>
+                                            <td>
+                                                <%= bloodTest?.plateletNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Neutrophil</td>
+                                            <td>
+                                                <%= bloodTest?.neutrophil || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>34-67.9</td>
+                                            <td>
+                                                <%= bloodTest?.neutrophilNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr class="separator-row">
+                                            <td>Lymphocyte</td>
+                                            <td>
+                                                <%= bloodTest?.lymphocyte || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>21.8-53.1</td>
+                                            <td>
+                                                <%= bloodTest?.lymphocyteNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Monocyte</td>
+                                            <td>
+                                                <%= bloodTest?.monocyte || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>5.3-12.2</td>
+                                            <td>
+                                                <%= bloodTest?.monocyteNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Eosinophil</td>
+                                            <td>
+                                                <%= bloodTest?.eosinophil || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>0.8-7</td>
+                                            <td>
+                                                <%= bloodTest?.eosinophilNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Basophil</td>
+                                            <td>
+                                                <%= bloodTest?.basophil || '-' %>
+                                            </td>
+                                            <td>%</td>
+                                            <td>0.2-1.2</td>
+                                            <td>
+                                                <%= bloodTest?.basophilNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>Platelet from smear</td>
+                                            <td>
+                                                <%= bloodTest?.plateletSmear || '-' %>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td>
+                                                <%= bloodTest?.plateletSmearNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>NRBC (cell/100 WBC)</td>
+                                            <td>
+                                                <%= bloodTest?.nrbc || '-' %>
+                                            </td>
+                                            <td>cell/100 WBC</td>
+                                            <td></td>
+                                            <td>
+                                                <%= bloodTest?.nrbcNote || '-' %>
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td>RBC Morphology</td>
+                                            <td>
+                                                <%= bloodTest?.rbcMorphology || '-' %>
+                                            </td>
+                                            <td></td>
+                                            <td></td>
+                                            <td>
+                                                <%= bloodTest?.rbcMorphologyNote || '-' %>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <% if (bloodTest?.timestamp) { %>
+                                <div style="text-align: right; padding: 12px 16px; font-size: 12px; color: #6B7280;">
+                                    วันที่ตรวจ: <%= bloodTest.timestamp %>
+                                </div>
+                                <% } %>
+                        </div>
+                    </div>
+            </main>
+
+            <!-- Shared help component -->
+            <%- include('partials/help') %>
+                <%- include('partials/popup') %>
+    </div>
+
+    <script src="/js/dashboard.js"></script>
+</body>
+
+</html>
