@@ -45,7 +45,15 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, title = "�
         phone: initialData.phone || '',
         relativeName: initialData.relativeName || '',
         relativePhone: initialData.relativePhone || '',
-        relativeRelationship: initialData.relativeRelationship || ''
+        relativeRelationship: initialData.relativeRelationship || '',
+        // Vital Signs
+        weight: initialData.weight || '',
+        height: initialData.height || '',
+        waist: initialData.waist || '',
+        bp: initialData.bp || '',
+        pulse: initialData.pulse || '',
+        temperature: initialData.temperature || '',
+        dtx: initialData.dtx || ''
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -101,59 +109,164 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, title = "�
     return (
         <div className="w-full flex justify-center items-start font-[family-name:var(--font-kanit)]">
             <div className="w-full bg-white dark:bg-[#1F2937] rounded-[24px] shadow-[0_20px_40px_rgba(15,23,42,0.04)] dark:shadow-none p-[32px_40px_28px_40px] flex flex-col gap-6 relative transition-colors">
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 mb-2">
-                    <h1 className="text-[28px] font-bold text-[#111827] dark:text-white">{title}</h1>
 
-                    {/* Exam Type */}
-
-                    <div className="flex flex-col gap-2">
-                        <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                            ประเภทการตรวจ <span className="text-red-500">*</span>
-                        </label>
-                        <div className="flex flex-col gap-2 p-3 rounded-[12px] bg-[#F9FAFB] dark:bg-[#374151] border border-[#E5E7EB] dark:border-gray-600">
-                            {['CBC', 'Chemistry', 'HbA1c', 'Lipid Profile', 'Urinalysis'].map((type) => {
-                                const isChecked = formData.testType?.includes(type);
-                                return (
-                                    <label key={type} className="flex items-center gap-2 cursor-pointer group">
-                                        <div className={`w-5 h-5 rounded border flex items-center justify-center transition-all ${isChecked
-                                                ? 'bg-[#6366F1] border-[#6366F1]'
-                                                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6366F1]'
-                                            }`}>
-                                            {isChecked && (
-                                                <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                </svg>
-                                            )}
-                                        </div>
-                                        <input
-                                            type="checkbox"
-                                            className="hidden"
-                                            checked={isChecked || false}
-                                            onChange={(e) => {
-                                                if (!canEdit) return;
-                                                const currentTypes = formData.testType ? formData.testType.split(',').filter(Boolean) : [];
-                                                let newTypes;
-                                                if (e.target.checked) {
-                                                    newTypes = [...currentTypes, type];
-                                                } else {
-                                                    newTypes = currentTypes.filter(t => t !== type);
-                                                }
-                                                setFormData(prev => ({ ...prev, testType: newTypes.join(',') }));
-                                                // Clear error if at least one selected
-                                                if (newTypes.length > 0 && errors.testType) {
-                                                    setErrors(prev => ({ ...prev, testType: '' }));
-                                                }
-                                            }}
-                                            disabled={!canEdit}
-                                        />
-                                        <span className="text-[14px] text-[#374151] dark:text-gray-200">{type}</span>
-                                    </label>
-                                );
-                            })}
-                        </div>
-                        {errors.testType && <span className="text-red-500 text-[11px]">{errors.testType}</span>}
+                {/* Section: Vital Signs (New) */}
+                <div className="space-y-4 pt-4">
+                    <div className="border-b border-gray-100 dark:border-gray-700 pb-2">
+                        <label className="text-[18px] font-bold text-[#111827] dark:text-white">สัญญาณชีพ (Vital Signs)</label>
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            { name: 'weight', label: 'น้ำหนัก (kg)' },
+                            { name: 'height', label: 'ส่วนสูง (cm)' },
+                            { name: 'waist', label: 'รอบเอว (cm)' },
+                            { name: 'bp', label: 'ความดัน (BP)' },
+                            { name: 'pulse', label: 'ชีพจร (Pulse)' },
+                            { name: 'temperature', label: 'อุณหภูมิ (Temp)' },
+                            { name: 'dtx', label: 'DTX (mg/dL)' },
+                        ].map((field) => (
+                            <div key={field.name} className="flex flex-col gap-1.5">
+                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
+                                    {field.label}
+                                </label>
+                                <input
+                                    type="text"
+                                    name={field.name}
+                                    value={formData[field.name as keyof Patient] || ''}
+                                    onChange={handleChange}
+                                    disabled={!canEdit}
+                                    className="w-full p-[10px_14px] rounded-[12px] border border-[#E5E7EB] dark:border-gray-600 bg-[#F9FAFB] dark:bg-[#374151] text-[14px] text-[#111827] dark:text-white focus:outline-none focus:border-[#6366F1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-mono"
+                                />
+                            </div>
+                        ))}
                     </div>
                 </div>
+
+                {/* Section: Diagnosis (Updated) */}
+                <div className="space-y-4">
+                    <div className="border-b border-gray-100 dark:border-gray-700 pb-2">
+                        <label className="text-[18px] font-bold text-[#111827] dark:text-white">การวินิจฉัย (Diagnosis)</label>
+                    </div>
+                    <div className="flex flex-wrap gap-4 p-4 rounded-[12px] bg-[#F9FAFB] dark:bg-[#374151] border border-[#E5E7EB] dark:border-gray-600">
+                        {['DM', 'HT', 'DLP', 'CKD', 'Asthma', 'COPD'].map((dx) => {
+                            const isChecked = formData.disease?.includes(dx);
+                            return (
+                                <label key={dx} className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        className="w-4 h-4 accent-[#6366F1]"
+                                        checked={isChecked || false}
+                                        onChange={(e) => {
+                                            if (!canEdit) return;
+                                            const currentDx = formData.disease ? formData.disease.split(',').filter(d => Boolean(d) && !['DM', 'HT', 'DLP', 'CKD', 'Asthma', 'COPD'].includes(d)) : [];
+                                            const selectedDx = ['DM', 'HT', 'DLP', 'CKD', 'Asthma', 'COPD'].filter(d =>
+                                                d === dx ? e.target.checked : formData.disease?.includes(d)
+                                            );
+                                            // Combine standard Dx with custom text ones
+                                            // Actually, simpler logic:
+                                            let newDxList = formData.disease ? formData.disease.split(',') : [];
+                                            if (e.target.checked) {
+                                                if (!newDxList.includes(dx)) newDxList.push(dx);
+                                            } else {
+                                                newDxList = newDxList.filter(d => d !== dx);
+                                            }
+                                            setFormData(prev => ({ ...prev, disease: newDxList.filter(Boolean).join(',') }));
+                                        }}
+                                        disabled={!canEdit}
+                                    />
+                                    <span className="text-[14px] text-[#374151] dark:text-gray-200">{dx}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                        <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">ระบุเพิ่มเติม (Other)</label>
+                        <input
+                            type="text"
+                            placeholder="ระบุโรคอื่นๆ (คั่นด้วยจุลภาค)"
+                            value={formData.disease?.split(',').filter(d => !['DM', 'HT', 'DLP', 'CKD', 'Asthma', 'COPD'].includes(d)).join(',') || ''}
+                            onChange={(e) => {
+                                if (!canEdit) return;
+                                const standardDx = formData.disease ? formData.disease.split(',').filter(d => ['DM', 'HT', 'DLP', 'CKD', 'Asthma', 'COPD'].includes(d)) : [];
+                                const otherDx = e.target.value;
+                                const combined = [...standardDx, otherDx].filter(Boolean).join(',');
+                                setFormData(prev => ({ ...prev, disease: combined }));
+                            }}
+                            disabled={!canEdit}
+                            className="w-full p-[10px_14px] rounded-[12px] border border-[#E5E7EB] dark:border-gray-600 bg-[#F9FAFB] dark:bg-[#374151] text-[14px] text-[#111827] dark:text-white focus:outline-none focus:border-[#6366F1] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                        />
+                    </div>
+                </div>
+
+                {/* Section: Lab Requests (Updated) */}
+                <div className="flex flex-col gap-2">
+                    <div className="flex justify-between items-center">
+                        <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
+                            รายการตรวจทางห้องปฏิบัติการ (Lab Request) <span className="text-red-500">*</span>
+                        </label>
+                        {canEdit && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    const ncdSet = ['FBS', 'HbA1c', 'Lipid Profile', 'Creatinine', 'Urinalysis']; // Standard NCD Set
+                                    const current = formData.testType ? formData.testType.split(',') : [];
+                                    const unique = Array.from(new Set([...current, ...ncdSet])).filter(Boolean);
+                                    setFormData(prev => ({ ...prev, testType: unique.join(',') }));
+                                    if (errors.testType) setErrors(prev => ({ ...prev, testType: '' }));
+                                }}
+                                className="text-[11px] text-white bg-green-500 hover:bg-green-600 px-3 py-1 rounded-full transition-colors"
+                            >
+                                + NCD Set
+                            </button>
+                        )}
+                    </div>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-2 p-3 rounded-[12px] bg-[#F9FAFB] dark:bg-[#374151] border border-[#E5E7EB] dark:border-gray-600">
+                        {[
+                            'CBC', 'FBS', 'HbA1c', 'Lipid Profile',
+                            'Creatinine', 'eGFR', 'Urinalysis', 'Electrolytes',
+                            'Uric Acid', 'LFT', 'Anti-HIV', 'HBs-Ag', 'VDRL', 'UPT', 'TFT'
+                        ].map((type) => {
+                            const isChecked = formData.testType?.includes(type);
+                            return (
+                                <label key={type} className="flex items-center gap-2 cursor-pointer group">
+                                    <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all ${isChecked
+                                        ? 'bg-[#6366F1] border-[#6366F1]'
+                                        : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-[#6366F1]'
+                                        }`}>
+                                        {isChecked && (
+                                            <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <input
+                                        type="checkbox"
+                                        className="hidden"
+                                        checked={isChecked || false}
+                                        onChange={(e) => {
+                                            if (!canEdit) return;
+                                            const currentTypes = formData.testType ? formData.testType.split(',').filter(Boolean) : [];
+                                            let newTypes;
+                                            if (e.target.checked) {
+                                                newTypes = [...currentTypes, type];
+                                            } else {
+                                                newTypes = currentTypes.filter(t => t !== type);
+                                            }
+                                            setFormData(prev => ({ ...prev, testType: newTypes.join(',') }));
+                                            if (newTypes.length > 0 && errors.testType) {
+                                                setErrors(prev => ({ ...prev, testType: '' }));
+                                            }
+                                        }}
+                                        disabled={!canEdit}
+                                    />
+                                    <span className="text-[13px] text-[#374151] dark:text-gray-200">{type}</span>
+                                </label>
+                            );
+                        })}
+                    </div>
+                    {errors.testType && <span className="text-red-500 text-[11px]">{errors.testType}</span>}
+                </div>
+
 
                 <form onSubmit={handleSubmit} className="flex flex-col gap-6">
 
@@ -458,12 +571,8 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, title = "�
                                 {errors.relativePhone && <span className="text-red-500 text-[11px]">{errors.relativePhone}</span>}
                             </div>
 
-                            {/* Disease */}
-                            <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">โรคประจำตัว</label>
-                                <input type="text" name="disease" value={formData.disease} onChange={handleChange} disabled={!canEdit} className="w-full p-[10px_14px] rounded-[12px] border border-[#E5E7EB] dark:border-gray-600 bg-[#F9FAFB] dark:bg-[#374151] text-[14px] text-[#111827] dark:text-white focus:outline-none focus:border-[#6366F1] transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
-                                <span className="text-[11px] text-[#9CA3AF] dark:text-gray-500">ไม่มีใส่ " - "</span>
-                            </div>
+                            {/* Disease (Removed - merged into Diagnosis above) */}
+
 
                             {/* Medication */}
                             <div className="flex flex-col gap-1.5">

@@ -24,6 +24,14 @@ export interface Patient {
     relativeName?: string;
     relativePhone?: string;
     relativeRelationship?: string;
+    // Vital Signs
+    weight?: string;
+    height?: string;
+    waist?: string;
+    bp?: string; // "120/80"
+    pulse?: string;
+    temperature?: string;
+    dtx?: string;
 }
 
 export interface User {
