@@ -8,7 +8,8 @@ import { SessionProvider, useSession } from 'next-auth/react';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import Link from 'next/link';
-import { Edit2, Save, Send, X, FileText, Activity, User, Stethoscope, Building2, ClipboardList } from 'lucide-react';
+import { Edit2, Save, Send, X, FileText, Activity, User, Stethoscope, Building2, ClipboardList, FileDown } from 'lucide-react';
+import { ExcelExporter } from '@/lib/utils/excelExporter';
 import { formatDateTimeThai } from '@/lib/utils';
 import { toast } from 'sonner';
 import { LabAlert } from '@/components/ui/LabAlert';
@@ -46,6 +47,13 @@ interface LabResult {
     clinical_history?: string;
     specimen_type?: string;
     reporter_name?: string;
+
+    // New Fields
+    ward?: string;
+    bed?: string;
+    visit_type?: string;
+    receive_by?: string;
+    approver_name?: string;
 
     wbc?: string; wbc_note?: string;
     rbc?: string; rbc_note?: string;
@@ -299,6 +307,19 @@ function BloodTestResultsContent() {
         if (!editData) return;
         const fieldKey = isNote ? `${key}_note` : key;
         setEditData({ ...editData, [fieldKey]: value });
+    };
+
+    const handleExportExcel = () => {
+        if (!patient || !labResults) return;
+        try {
+            const filename = `Lab_Report_${patient.hn}_${new Date().toISOString().split('T')[0]}.xlsx`;
+            const printerName = session?.user?.name || 'System';
+            ExcelExporter.exportPatientLabResultToExcel({ patient, result: labResults, printerName }, filename);
+            toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
+        } catch (error) {
+            console.error('Export error:', error);
+            toast.error('เกิดข้อผิดพลาดในการ Export Excel');
+        }
     };
 
     const formatRange = (min: number | null, max: number | null) => {
@@ -561,6 +582,13 @@ function BloodTestResultsContent() {
                                             </svg>
                                             Print
                                         </button>
+                                        <button
+                                            onClick={handleExportExcel}
+                                            className="flex items-center gap-2 px-4 py-2 bg-[#10B981] text-white rounded-lg hover:bg-[#059669] transition-colors text-sm font-medium"
+                                        >
+                                            <FileDown className="w-4 h-4" />
+                                            Excel
+                                        </button>
                                     </div>
                                 </div>
 
@@ -666,6 +694,88 @@ function BloodTestResultsContent() {
                                                     ) : (
                                                         <div className="text-gray-900 font-medium">{labResults?.reporter_name || '-'}</div>
                                                     )}
+                                                </div>
+
+                                                {/* New Fields Group 1: Visit Info */}
+                                                <div className="grid grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">ประเภทผู้ป่วย (Visit Type)</label>
+                                                        {isEditing ? (
+                                                            <select
+                                                                value={editData?.visit_type || 'OPD'}
+                                                                onChange={(e) => setEditData({ ...editData!, visit_type: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                            >
+                                                                <option value="OPD">OPD</option>
+                                                                <option value="IPD">IPD</option>
+                                                                <option value="Checkup">Checkup</option>
+                                                                <option value="Emergency">Emergency</option>
+                                                            </select>
+                                                        ) : (
+                                                            <div className="text-gray-900 font-medium">{labResults?.visit_type || 'OPD'}</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">เตียง (Bed)</label>
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editData?.bed || ''}
+                                                                onChange={(e) => setEditData({ ...editData!, bed: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                                placeholder="ระบุเตียง..."
+                                                            />
+                                                        ) : (
+                                                            <div className="text-gray-900 font-medium">{labResults?.bed || '-'}</div>
+                                                        )}
+                                                    </div>
+                                                </div>
+
+                                                {/* New Fields Group 2: Ward & Approver */}
+                                                <div>
+                                                    <label className="block text-sm font-medium text-gray-700 mb-1">หอผู้ป่วย (Ward)</label>
+                                                    {isEditing ? (
+                                                        <input
+                                                            type="text"
+                                                            value={editData?.ward || ''}
+                                                            onChange={(e) => setEditData({ ...editData!, ward: e.target.value })}
+                                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                            placeholder="ระบุหอผู้ป่วย..."
+                                                        />
+                                                    ) : (
+                                                        <div className="text-gray-900 font-medium">{labResults?.ward || '-'}</div>
+                                                    )}
+                                                </div>
+
+                                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">ผู้รับสิ่งส่งตรวจ (Receive By)</label>
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editData?.receive_by || ''}
+                                                                onChange={(e) => setEditData({ ...editData!, receive_by: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                                placeholder="ระบุชื่อผู้รับ..."
+                                                            />
+                                                        ) : (
+                                                            <div className="text-gray-900 font-medium">{labResults?.receive_by || '-'}</div>
+                                                        )}
+                                                    </div>
+                                                    <div>
+                                                        <label className="block text-sm font-medium text-gray-700 mb-1">ผู้รับรองผล (Approver)</label>
+                                                        {isEditing ? (
+                                                            <input
+                                                                type="text"
+                                                                value={editData?.approver_name || ''}
+                                                                onChange={(e) => setEditData({ ...editData!, approver_name: e.target.value })}
+                                                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-indigo-500 focus:border-indigo-500"
+                                                                placeholder="ระบุชื่อผู้รับรอง..."
+                                                            />
+                                                        ) : (
+                                                            <div className="text-gray-900 font-medium">{labResults?.approver_name || '-'}</div>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

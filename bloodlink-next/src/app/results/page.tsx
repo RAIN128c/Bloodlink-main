@@ -3,11 +3,13 @@
 import { Header } from '@/components/layout/Header';
 import { MainLayout } from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { ChevronLeft, ChevronRight, Activity, Clock, CheckCircle, Loader2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Activity, Clock, CheckCircle, Loader2, Upload, FileDown } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { Patient } from '@/types';
 import { formatDateTimeThai } from '@/lib/utils';
 import { toast } from 'sonner';
+import { getLabResultsForExport } from './actions';
+import { ExcelExporter } from '@/lib/utils/excelExporter';
 
 export default function ResultsPage() {
     const [currentDate, setCurrentDate] = useState('');
@@ -22,6 +24,7 @@ export default function ResultsPage() {
     // Data State
     const [patients, setPatients] = useState<Patient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [isExporting, setIsExporting] = useState(false);
 
     useEffect(() => {
         // Set current date string
@@ -85,6 +88,23 @@ export default function ResultsPage() {
         }
     };
 
+    const handleExport = async () => {
+        setIsExporting(true);
+        try {
+            const { success, data, error } = await getLabResultsForExport();
+            if (success && data) {
+                ExcelExporter.exportToExcel(data, `Bloodlink_Lab_Results_${new Date().toISOString().split('T')[0]}.xlsx`);
+                toast.success('ดาวน์โหลดไฟล์ Excel เรียบร้อยแล้ว');
+            } else {
+                toast.error(`Export failed: ${error}`);
+            }
+        } catch (err: any) {
+            toast.error(`An error occurred: ${err.message}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
     return (
 
         <MainLayout>
@@ -96,10 +116,24 @@ export default function ResultsPage() {
                     <div className="flex-1 bg-[#F3F4F6] dark:bg-transparent rounded-[20px] flex flex-col overflow-hidden transition-colors min-h-[500px]">
                         <div className="mb-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 flex-shrink-0 animate-fade-in-up">
                             <h1 className="text-[22px] font-bold text-[#111827] dark:text-white">ผลตรวจเลือด</h1>
-                            <Link href="/test-status" className="flex items-center gap-1.5 text-[#6366F1] dark:text-indigo-400 font-semibold hover:text-[#4F46E5] dark:hover:text-indigo-300 transition-colors text-[13px]">
-                                <Activity className="w-4 h-4" />
-                                สถานะผลตรวจเลือด
-                            </Link>
+                            <div className="flex items-center gap-3">
+                                <Link href="/results/import" className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors text-[13px]">
+                                    <Upload className="w-4 h-4" />
+                                    นำเข้าผลตรวจ (Bulk)
+                                </Link>
+                                <button
+                                    onClick={handleExport}
+                                    disabled={isExporting}
+                                    className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 font-semibold hover:text-blue-700 dark:hover:text-blue-300 transition-colors text-[13px] disabled:opacity-50"
+                                >
+                                    {isExporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileDown className="w-4 h-4" />}
+                                    Export Excel
+                                </button>
+                                <Link href="/test-status" className="flex items-center gap-1.5 text-[#6366F1] dark:text-indigo-400 font-semibold hover:text-[#4F46E5] dark:hover:text-indigo-300 transition-colors text-[13px]">
+                                    <Activity className="w-4 h-4" />
+                                    สถานะผลตรวจเลือด
+                                </Link>
+                            </div>
                         </div>
 
                         <div className="mb-3 animate-fade-in-up stagger-1">

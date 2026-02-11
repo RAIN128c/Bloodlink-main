@@ -5,6 +5,7 @@ export interface LabResult {
     id?: number;
     timestamp: string;
     hn: string;
+    patientName?: string;
 
     // Request Form Data
     doctor_name?: string;
@@ -12,6 +13,13 @@ export interface LabResult {
     diagnosis?: string;
     clinical_history?: string;
     specimen_type?: string;
+
+    // New Fields for Excel Export
+    ward?: string;
+    bed?: string;
+    visit_type?: string;
+    receive_by?: string;
+    approver_name?: string;
 
     wbc?: string;
     wbc_note?: string;
@@ -67,6 +75,15 @@ export interface LabResult {
     hdl?: number;
     ldl?: number;
 
+    // Kidney Function
+    creatinine?: number;
+    egfr?: number;
+    // Electrolytes
+    sodium?: number;
+    potassium?: number;
+    chloride?: number;
+    co2?: number;
+
     // Urine
     urineAlbumin?: string;
     urineSugar?: string;
@@ -120,6 +137,13 @@ export class LabService {
                 clinical_history: item.clinical_history,
                 specimen_type: item.specimen_type,
 
+                // New Fields
+                ward: item.ward,
+                bed: item.bed,
+                visit_type: item.visit_type,
+                receive_by: item.receive_by,
+                approver_name: item.approver_name,
+
                 // Audit
                 reporter_name: item.reporter_name,
 
@@ -142,6 +166,13 @@ export class LabService {
                 triglyceride: item.triglyceride,
                 hdl: item.hdl,
                 ldl: item.ldl,
+
+                creatinine: item.creatinine,
+                egfr: item.egfr,
+                sodium: item.sodium,
+                potassium: item.potassium,
+                chloride: item.chloride,
+                co2: item.co2,
 
                 urineAlbumin: item.urine_albumin,
                 urineSugar: item.urine_sugar,
@@ -183,6 +214,13 @@ export class LabService {
                         specimen_type: data.specimen_type,
                         reporter_name: data.reporter_name,
 
+                        // New Fields for Excel Export
+                        ward: data.ward || 'กลุ่มงานเทคนิคการแพทย์', // Default if empty
+                        bed: data.bed,
+                        visit_type: data.visit_type || 'OPD',        // Default for now
+                        receive_by: data.receive_by,
+                        approver_name: data.approver_name,
+
                         // New Fields
                         weight: data.weight,
                         height: data.height,
@@ -202,6 +240,12 @@ export class LabService {
                         triglyceride: data.triglyceride,
                         hdl: data.hdl,
                         ldl: data.ldl,
+                        creatinine: data.creatinine,
+                        egfr: data.egfr,
+                        sodium: data.sodium,
+                        potassium: data.potassium,
+                        chloride: data.chloride,
+                        co2: data.co2,
 
                         urine_albumin: data.urineAlbumin,
                         urine_sugar: data.urineSugar,
@@ -263,7 +307,15 @@ export class LabService {
             if (data.diagnosis !== undefined) dbData.diagnosis = data.diagnosis;
             if (data.clinical_history !== undefined) dbData.clinical_history = data.clinical_history;
             if (data.specimen_type !== undefined) dbData.specimen_type = data.specimen_type;
+            if (data.specimen_type !== undefined) dbData.specimen_type = data.specimen_type;
             if (data.reporter_name !== undefined) dbData.reporter_name = data.reporter_name;
+
+            // New Excel Fields
+            if (data.ward !== undefined) dbData.ward = data.ward;
+            if (data.bed !== undefined) dbData.bed = data.bed;
+            if (data.visit_type !== undefined) dbData.visit_type = data.visit_type;
+            if (data.receive_by !== undefined) dbData.receive_by = data.receive_by;
+            if (data.approver_name !== undefined) dbData.approver_name = data.approver_name;
 
             // New Fields Mapping
             if (data.weight !== undefined) dbData.weight = data.weight;
@@ -285,6 +337,12 @@ export class LabService {
             if (data.triglyceride !== undefined) dbData.triglyceride = data.triglyceride;
             if (data.hdl !== undefined) dbData.hdl = data.hdl;
             if (data.ldl !== undefined) dbData.ldl = data.ldl;
+            if (data.creatinine !== undefined) dbData.creatinine = data.creatinine;
+            if (data.egfr !== undefined) dbData.egfr = data.egfr;
+            if (data.sodium !== undefined) dbData.sodium = data.sodium;
+            if (data.potassium !== undefined) dbData.potassium = data.potassium;
+            if (data.chloride !== undefined) dbData.chloride = data.chloride;
+            if (data.co2 !== undefined) dbData.co2 = data.co2;
 
             if (data.urineAlbumin !== undefined) dbData.urine_albumin = data.urineAlbumin;
             if (data.urineSugar !== undefined) dbData.urine_sugar = data.urineSugar;
@@ -352,6 +410,136 @@ export class LabService {
         } catch (error: any) {
             console.error('Update lab result error:', error);
             return { success: false, error: error.message || 'Unknown error' };
+        }
+    }
+
+    static async getAllLabResults(daysIdx: number = 30): Promise<LabResult[]> {
+        try {
+            // Fetch lab results with patient data
+            const { data, error } = await supabase
+                .from('lab_results')
+                .select('*, patients(name, surname)')
+                .order('created_at', { ascending: false })
+                .limit(1000);
+
+            if (error || !data) {
+                console.error('Get all lab results error:', error);
+                return [];
+            }
+
+            return data.map((item: any) => ({
+                id: item.id,
+                timestamp: item.timestamp,
+                hn: item.hn,
+                patientName: item.patients ? `${item.patients.name} ${item.patients.surname || ''}`.trim() : '',
+
+                wbc: item.wbc, wbc_note: item.wbc_note,
+                rbc: item.rbc, rbc_note: item.rbc_note,
+                hb: item.hb, hb_note: item.hb_note,
+                hct: item.hct, hct_note: item.hct_note,
+                mcv: item.mcv, mcv_note: item.mcv_note,
+                mch: item.mch, mch_note: item.mch_note,
+                mchc: item.mchc, mchc_note: item.mchc_note,
+                plt: item.plt, plt_note: item.plt_note,
+                neutrophil: item.neutrophil, neutrophil_note: item.neutrophil_note,
+                lymphocyte: item.lymphocyte, lymphocyte_note: item.lymphocyte_note,
+                monocyte: item.monocyte, monocyte_note: item.monocyte_note,
+                eosinophil: item.eosinophil, eosinophil_note: item.eosinophil_note,
+                basophil: item.basophil, basophil_note: item.basophil_note,
+                plateletSmear: item.platelet_smear, plateletSmear_note: item.platelet_smear_note,
+                nrbc: item.nrbc, nrbc_note: item.nrbc_note,
+                rbcMorphology: item.rbc_morphology, rbcMorphology_note: item.rbc_morphology_note,
+
+                doctor_name: item.doctor_name,
+                department: item.department,
+                diagnosis: item.diagnosis,
+                clinical_history: item.clinical_history,
+                specimen_type: item.specimen_type,
+                reporter_name: item.reporter_name,
+
+                weight: item.weight,
+                height: item.height,
+                waistLine: item.waist_line,
+                bmi: item.bmi,
+                bpSys: item.bp_sys,
+                bpDia: item.bp_dia,
+                pulse: item.pulse,
+                respiration: item.respiration,
+                temperature: item.temperature,
+
+                fbs: item.fbs, fbs_note: item.fbs_note,
+                uricAcid: item.uric_acid,
+                ast: item.ast,
+                alt: item.alt,
+                cholesterol: item.cholesterol,
+                triglyceride: item.triglyceride,
+                hdl: item.hdl,
+                ldl: item.ldl,
+                creatinine: item.creatinine,
+                egfr: item.egfr,
+
+                sodium: item.sodium,
+                potassium: item.potassium,
+                chloride: item.chloride,
+                co2: item.co2,
+
+                urineAlbumin: item.urine_albumin,
+                urineSugar: item.urine_sugar,
+                specimenStatus: item.specimen_status,
+            }));
+        } catch (error) {
+            console.error('Get all lab results error:', error);
+            return [];
+        }
+    }
+    static async processBatchImport(results: LabResult[], autoStatusUpdate: boolean = true): Promise<{ processed: number, updated: number, errors: string[] }> {
+        let processed = 0;
+        let updated = 0;
+        const errors: string[] = [];
+
+        try {
+            for (const result of results) {
+                if (!result.hn) {
+                    errors.push(`Skipped record with no HN`);
+                    continue;
+                }
+
+                // 1. Try to Add or Update result
+                const updateRes = await this.updateLabResult(result.hn, result, false);
+                if (updateRes.success) {
+                    updated++;
+                } else {
+                    errors.push(`Failed to update HN ${result.hn}: ${updateRes.error}`);
+                    continue;
+                }
+
+                // 2. Auto Status Update (Optional)
+                if (autoStatusUpdate) {
+                    try {
+                        const { error: statusError } = await supabase
+                            .from('patients')
+                            .update({
+                                process: 'เสร็จสิ้น', // Mark as Completed
+                                timestamp: new Date().toISOString()
+                            })
+                            .eq('hn', result.hn)
+                            .eq('process', 'กำลังตรวจ'); // Only update if currently in progress
+
+                        if (statusError) {
+                            console.error(`Status update failed for HN ${result.hn}:`, statusError);
+                        }
+                    } catch (err) {
+                        console.error(`Status update error for HN ${result.hn}:`, err);
+                    }
+                }
+
+                processed++;
+            }
+
+            return { processed, updated, errors };
+        } catch (error: any) {
+            console.error('Batch process error:', error);
+            return { processed: 0, updated: 0, errors: [error.message] };
         }
     }
 }

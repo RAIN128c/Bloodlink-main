@@ -32,6 +32,15 @@ export interface Patient {
     pulse?: string;
     temperature?: string;
     dtx?: string;
+    // Kidney Function
+    creatinine?: string;
+    egfr?: string;
+    uric_acid?: string;
+    // Electrolytes
+    sodium?: string;
+    potassium?: string;
+    chloride?: string;
+    co2?: string;
 }
 
 export interface User {
