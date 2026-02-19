@@ -268,19 +268,19 @@ export function Sidebar() {
                             );
                         })}
 
-                        {/* Admin Settings Link - Visible to Admin/Lab Staff */}
+                        {/* Lab Queue Link - Visible to Admin/Lab Staff */}
                         {Permissions.canManageLabSettings(effectiveRole) && (
                             <Link
-                                href="/admin/lab-settings"
+                                href="/admin/lab/queue"
                                 className={clsx(
                                     'flex items-center gap-2 px-4 py-3 rounded-[14px] text-[12px] font-medium transition-all duration-200',
-                                    isActive('/admin/lab-settings')
+                                    isActive('/admin/lab/queue')
                                         ? 'bg-[#e1eafa] text-[#1E40AF] dark:bg-[#1E40AF] dark:text-white'
                                         : 'text-[#3E3066] dark:text-gray-300 hover:bg-[#e1eafa] dark:hover:bg-[#374151] hover:text-[#1E40AF] dark:hover:text-white'
                                 )}
                             >
-                                <Settings className="w-[18px] h-[18px] flex-shrink-0" />
-                                <span>ตั้งค่า Lab</span>
+                                <FileText className="w-[18px] h-[18px] flex-shrink-0" />
+                                <span>คิวงาน Lab</span>
                             </Link>
                         )}
                     </nav>

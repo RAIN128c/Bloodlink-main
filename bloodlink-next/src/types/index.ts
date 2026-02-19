@@ -54,4 +54,5 @@ export interface User {
     status: string;
     bio?: string;      // Staff introduction/bio
     avatarUrl?: string; // Profile picture URL
+    hospitalType?: string; // 'RorPhorSot' | 'RorPhorChumchon'
 }

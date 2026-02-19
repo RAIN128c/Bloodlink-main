@@ -1,15 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { PatientService } from '@/lib/services/patientService';
 import { auth } from '@/auth';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
     try {
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
 
+        const { searchParams } = new URL(req.url);
+        const processFilter = searchParams.get('process');
+
         const patients = await PatientService.getPatients();
+
+        // Filter for lab queue: patients waiting for lab results
+        if (processFilter === 'pending_lab') {
+            const pendingStatuses = ['กำลังจัดส่ง', 'กำลังตรวจ'];
+            const filtered = patients.filter((p: any) => pendingStatuses.includes(p.process));
+            return NextResponse.json({
+                patients: filtered.map((p: any) => ({
+                    hn: p.hn,
+                    name: p.name,
+                    surname: p.surname,
+                    process: p.process,
+                    testType: p.testType,
+                    updatedAt: p.timestamp,
+                    caregiver: p.caregiver,
+                }))
+            });
+        }
+
         return NextResponse.json(patients);
     } catch (error) {
         console.error('API Error:', error);

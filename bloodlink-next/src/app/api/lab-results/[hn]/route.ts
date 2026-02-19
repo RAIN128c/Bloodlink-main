@@ -25,12 +25,12 @@ export async function GET(
             );
         }
 
-        // Get lab results
-        const labResults = await LabService.getLabResults(hn);
+        // Get lab results history (all results for this HN)
+        const labHistory = await LabService.getLabHistory(hn);
 
         return NextResponse.json({
             patient,
-            labResults
+            results: labHistory
         });
     } catch (error) {
         console.error('API Error:', error);

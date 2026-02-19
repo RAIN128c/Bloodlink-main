@@ -43,6 +43,7 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS bio TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_type TEXT DEFAULT '';
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
@@ -250,6 +251,10 @@ CREATE TABLE IF NOT EXISTS lab_results (
     specimen_status TEXT,                   -- NOT "specimenStatus"
     -- Audit
     reporter_name TEXT,
+    -- Lab File Attachment
+    file_url TEXT,
+    file_type TEXT,
+    result_summary TEXT,                    -- 'Normal', 'Abnormal', 'Critical'
     -- Timestamps
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
@@ -327,6 +332,9 @@ ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS urine_albumin TEXT;
 ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS urine_sugar TEXT;
 ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS specimen_status TEXT;
 ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS reporter_name TEXT;
+ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS file_url TEXT;
+ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS file_type TEXT;
+ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS result_summary TEXT;
 ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE lab_results ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 
@@ -567,6 +575,11 @@ CREATE INDEX IF NOT EXISTS idx_user_tokens_token ON user_tokens(token);
 -- ============================================================
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('avatars', 'avatars', true)
+ON CONFLICT (id) DO NOTHING;
+
+-- Lab Reports Bucket (PRIVATE - requires signed URLs)
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('lab_reports', 'lab_reports', false)
 ON CONFLICT (id) DO NOTHING;
 
 

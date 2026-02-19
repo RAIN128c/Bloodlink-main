@@ -90,6 +90,11 @@ export interface LabResult {
     specimenStatus?: string;
     // Audit Trail
     reporter_name?: string;
+    // File Attachment
+    file_url?: string;
+    file_type?: string;
+    result_summary?: string;
+    created_at?: string;
 }
 
 export class LabService {
@@ -177,6 +182,11 @@ export class LabService {
                 urineAlbumin: item.urine_albumin,
                 urineSugar: item.urine_sugar,
                 specimenStatus: item.specimen_status,
+                // File Attachment
+                file_url: item.file_url,
+                file_type: item.file_type,
+                result_summary: item.result_summary,
+                created_at: item.created_at,
             }));
         } catch (error) {
             console.error('Get lab history error:', error);
