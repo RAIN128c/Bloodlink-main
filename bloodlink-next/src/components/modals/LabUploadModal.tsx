@@ -1,8 +1,10 @@
 'use client';
 
-import { useState, useRef } from 'react';
-import { X, Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { useState, useRef, useCallback } from 'react';
+import { X, Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import * as XLSX from 'xlsx';
+import html2canvas from 'html2canvas';
 
 interface LabUploadModalProps {
     isOpen: boolean;
@@ -28,22 +30,100 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
     const [preview, setPreview] = useState<string | null>(null);
     const [resultSummary, setResultSummary] = useState<ResultSummary | null>(null);
     const [isUploading, setIsUploading] = useState(false);
+    const [isConverting, setIsConverting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const excelRenderRef = useRef<HTMLDivElement>(null);
 
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Convert Excel ArrayBuffer to PNG File via html2canvas
+    const convertExcelToImage = useCallback(async (excelFile: File): Promise<File | null> => {
+        try {
+            setIsConverting(true);
+            const buffer = await excelFile.arrayBuffer();
+            const workbook = XLSX.read(buffer, { type: 'array' });
+            const firstSheet = workbook.SheetNames[0];
+            const worksheet = workbook.Sheets[firstSheet];
+            const htmlString = XLSX.utils.sheet_to_html(worksheet, { editable: false });
+
+            // Create a temporary container for rendering
+            const container = excelRenderRef.current;
+            if (!container) return null;
+
+            container.innerHTML = `
+                <div style="padding:24px;background:#fff;font-family:'Segoe UI',sans-serif;min-width:600px;">
+                    <h3 style="margin:0 0 12px;font-size:14px;color:#374151;">📄 ${excelFile.name}</h3>
+                    <style>
+                        table { border-collapse:collapse; width:100%; font-size:12px; }
+                        th, td { border:1px solid #D1D5DB; padding:6px 10px; text-align:left; }
+                        th { background:#F3F4F6; font-weight:600; color:#374151; }
+                        tr:nth-child(even) { background:#F9FAFB; }
+                    </style>
+                    ${htmlString}
+                </div>
+            `;
+
+            // Wait for DOM paint
+            await new Promise((r) => setTimeout(r, 200));
+
+            const canvas = await html2canvas(container, {
+                backgroundColor: '#ffffff',
+                scale: 2,
+                logging: false,
+            });
+
+            // Cleanup
+            container.innerHTML = '';
+
+            // Convert canvas to File
+            const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return null;
+
+            const pngName = excelFile.name.replace(/\.(xlsx?|xls)$/i, '.png');
+            return new File([blob], pngName, { type: 'image/png' });
+        } catch (err) {
+            console.error('Excel conversion error:', err);
+            toast.error('ไม่สามารถแปลงไฟล์ Excel ได้');
+            return null;
+        } finally {
+            setIsConverting(false);
+        }
+    }, []);
+
+    const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (!selectedFile) return;
 
         // Validate type
         const validTypes = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
-        if (!validTypes.includes(selectedFile.type)) {
-            toast.error('รองรับเฉพาะไฟล์ JPEG, PNG, WebP, PDF เท่านั้น');
+        const excelTypes = [
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+            'application/vnd.ms-excel', // .xls
+        ];
+        const isExcel = excelTypes.includes(selectedFile.type) || /\.(xlsx?|xls)$/i.test(selectedFile.name);
+
+        if (!validTypes.includes(selectedFile.type) && !isExcel) {
+            toast.error('รองรับเฉพาะไฟล์ JPEG, PNG, WebP, PDF, Excel เท่านั้น');
             return;
         }
 
         // Validate size (20MB)
         if (selectedFile.size > 20 * 1024 * 1024) {
             toast.error('ไฟล์ต้องมีขนาดไม่เกิน 20MB');
+            return;
+        }
+
+        // If Excel, convert to PNG first
+        if (isExcel) {
+            const pngFile = await convertExcelToImage(selectedFile);
+            if (!pngFile) {
+                toast.error('แปลงไฟล์ Excel ไม่สำเร็จ กรุณาลองอีกครั้ง');
+                return;
+            }
+            setFile(pngFile);
+            // Generate preview
+            const reader = new FileReader();
+            reader.onload = (ev) => setPreview(ev.target?.result as string);
+            reader.readAsDataURL(pngFile);
+            toast.success('แปลงไฟล์ Excel เป็นรูปภาพเรียบร้อย');
             return;
         }
 
@@ -128,12 +208,12 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                     {/* File Upload */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            ไฟล์ผลตรวจ (PDF / รูปภาพ)
+                            ไฟล์ผลตรวจ (PDF / รูปภาพ / Excel)
                         </label>
                         <input
                             ref={fileInputRef}
                             type="file"
-                            accept=".pdf,.jpg,.jpeg,.png,.webp"
+                            accept=".pdf,.jpg,.jpeg,.png,.webp,.xlsx,.xls"
                             onChange={handleFileChange}
                             className="hidden"
                         />
@@ -141,11 +221,21 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                         {!file ? (
                             <button
                                 onClick={() => fileInputRef.current?.click()}
+                                disabled={isConverting}
                                 className="w-full border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-xl p-8 flex flex-col items-center gap-3 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-all"
                             >
-                                <Upload className="w-10 h-10 text-gray-400" />
-                                <span className="text-sm text-gray-500 dark:text-gray-400">คลิกเพื่อเลือกไฟล์</span>
-                                <span className="text-xs text-gray-400">PDF, JPEG, PNG, WebP (สูงสุด 20MB)</span>
+                                {isConverting ? (
+                                    <>
+                                        <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
+                                        <span className="text-sm text-blue-500">กำลังแปลงไฟล์ Excel เป็นรูปภาพ...</span>
+                                    </>
+                                ) : (
+                                    <>
+                                        <Upload className="w-10 h-10 text-gray-400" />
+                                        <span className="text-sm text-gray-500 dark:text-gray-400">คลิกเพื่อเลือกไฟล์</span>
+                                        <span className="text-xs text-gray-400">PDF, JPEG, PNG, WebP, Excel (สูงสุด 20MB)</span>
+                                    </>
+                                )}
                             </button>
                         ) : (
                             <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4">
@@ -227,6 +317,12 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                     </button>
                 </div>
             </div>
+
+            {/* Hidden container for Excel-to-image rendering */}
+            <div
+                ref={excelRenderRef}
+                style={{ position: 'absolute', left: '-9999px', top: '-9999px', zIndex: -1 }}
+            />
         </div>
     );
 }

@@ -385,19 +385,21 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
     const [apptLimit, setApptLimit] = useState(5);
     const [labLimit, setLabLimit] = useState(5);
 
-    // Calculate days since last check
-    const daysSinceLastCheck = (() => {
-        if (!patientData?.lastCheck || patientData.lastCheck === '-') return null;
+    // Calculate days since last LAB TEST (from labHistory)
+    const daysSinceLabTest = (() => {
+        if (!labHistory || labHistory.length === 0) return null;
         try {
-            const lastDate = new Date(patientData.lastCheck);
+            const latestLab = labHistory[0]; // Already sorted desc
+            const labDate = new Date(latestLab.created_at || latestLab.timestamp);
             const today = new Date();
-            const diffTime = Math.abs(today.getTime() - lastDate.getTime());
+            const diffTime = Math.abs(today.getTime() - labDate.getTime());
             const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
             return diffDays;
         } catch {
             return null;
         }
     })();
+    const isLabOverdue = daysSinceLabTest !== null && daysSinceLabTest > 8;
 
     const handleSave = async () => {
         if (!editData || !patientData) return;
@@ -1103,46 +1105,17 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
 
                         {/* Labs Tab - With Graph and Table */}
                         {activeTab === 'labs' && (
-                            <div className="space-y-6">
-                                {/* Graph */}
-                                {labHistory.length > 0 && (
-                                    <div className="bg-white dark:bg-[#1F2937] p-4 rounded-xl border border-gray-200 dark:border-gray-700 h-[350px]">
-                                        <h3 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">กราฟแนวโน้มผลเลือด (Hb & WBC)</h3>
-                                        <ResponsiveContainer width="100%" height="85%">
-                                            <LineChart data={[...labHistory].reverse()}>
-                                                <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
-                                                <XAxis
-                                                    dataKey="timestamp"
-                                                    tickFormatter={(val) => new Date(val).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })}
-                                                    stroke="#9CA3AF"
-                                                    fontSize={12}
-                                                />
-                                                <YAxis stroke="#9CA3AF" fontSize={12} />
-                                                <Tooltip
-                                                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px', color: '#fff' }}
-                                                    labelFormatter={(label) => formatDateThai(label)}
-                                                />
-                                                <Legend />
-                                                <Line type="monotone" dataKey="hb" stroke="#EF4444" name="Hemoglobin (Hb)" strokeWidth={2} activeDot={{ r: 6 }} />
-                                                <Line type="monotone" dataKey="wbc" stroke="#3B82F6" name="WBC" strokeWidth={2} activeDot={{ r: 6 }} />
-                                            </LineChart>
-                                        </ResponsiveContainer>
-                                    </div>
-                                )}
-
-                                {/* Lab Table */}
+                            <div className="space-y-4">
+                                {/* Lab Table - Simplified */}
                                 <div className="bg-white dark:bg-[#1F2937] rounded-xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col">
                                     <div className={`overflow-x-auto ${labLimit > 5 ? 'max-h-[500px] overflow-y-auto custom-scrollbar' : ''}`}>
                                         <table className="w-full text-sm text-left">
                                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
                                                 <tr>
                                                     <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">วันที่</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">Hb</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">Hct</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">WBC</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">RBC</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">PLT</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">MCV</th>
+                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">สรุปผล</th>
+                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">ผู้รายงาน</th>
+                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap text-center">จัดการ</th>
                                                 </tr>
                                             </thead>
                                             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1150,19 +1123,31 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                                     labHistory.slice(0, labLimit).map((lab, i) => (
                                                         <tr key={i} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
                                                             <td className="px-4 py-3 text-gray-900 dark:text-white whitespace-nowrap">
-                                                                {formatDateThai(lab.timestamp)}
+                                                                {formatDateThai(lab.created_at || lab.timestamp)}
                                                             </td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.hb}</td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.hct}</td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.wbc}</td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.rbc}</td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.plt}</td>
-                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300">{lab.mcv}</td>
+                                                            <td className="px-4 py-3">
+                                                                {lab.result_summary === 'Normal' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">ปกติ</span>}
+                                                                {lab.result_summary === 'Abnormal' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">ผิดปกติ</span>}
+                                                                {lab.result_summary === 'Critical' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">วิกฤต</span>}
+                                                                {!lab.result_summary && <span className="text-xs text-gray-400">-</span>}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-xs">
+                                                                {lab.reporter_name || '-'}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                                <Link
+                                                                    href={`/results/${hn}`}
+                                                                    className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
+                                                                >
+                                                                    <Eye className="w-3 h-3" />
+                                                                    ดูผล
+                                                                </Link>
+                                                            </td>
                                                         </tr>
                                                     ))
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan={7} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                                             ไม่พบประวัติผลเลือด
                                                         </td>
                                                     </tr>
@@ -1229,13 +1214,20 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0 ml-4 border-l pl-4 border-gray-200 dark:border-gray-700 py-0.5">
                         <Link
-                            href={`/patients/${patientData.hn}`}
+                            href={`/results/${patientData.hn}`}
                             className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-5 py-1.5 rounded-[10px] font-bold transition-colors text-[13px] shadow-sm tracking-wide"
                         >
                             เช็คผลตรวจ
                         </Link>
-                        {daysSinceLastCheck !== null && (
-                            <span className="text-[10px] text-[#6B7280] dark:text-gray-400">นับตั้งแต่วันตรวจ {daysSinceLastCheck} วัน</span>
+                        {daysSinceLabTest !== null && (
+                            <span className={`text-[10px] font-medium ${isLabOverdue
+                                ? 'text-red-500 dark:text-red-400'
+                                : 'text-[#6B7280] dark:text-gray-400'
+                                }`}>
+                                {isLabOverdue && <AlertCircle className="w-3 h-3 inline mr-0.5 -mt-0.5" />}
+                                นับตั้งแต่วันตรวจ {daysSinceLabTest} วัน
+                                {isLabOverdue && ' (เกิน 8 วัน)'}
+                            </span>
                         )}
                     </div>
                 </div>
