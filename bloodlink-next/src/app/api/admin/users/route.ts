@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
-import { Permissions } from '@/lib/permissions';
+import { Permissions, isValidRole } from '@/lib/permissions';
 import { checkRateLimit, getClientIp, RATE_LIMIT_CONFIGS } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-        if (!Permissions.isAdmin(session.user.role)) {
-            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+        if (!isValidRole(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Valid role required' }, { status: 403 });
         }
 
         const searchParams = request.nextUrl.searchParams;
