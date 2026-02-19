@@ -2,12 +2,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
+import { Permissions } from '@/lib/permissions';
+import { checkRateLimit, getClientIp, RATE_LIMIT_CONFIGS } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {
     try {
+        // Rate limit check
+        const ip = getClientIp(request);
+        const rateLimitResult = checkRateLimit(`admin:${ip}`, RATE_LIMIT_CONFIGS.admin);
+        if (!rateLimitResult.success) {
+            return NextResponse.json(
+                { error: 'Too many requests. Please try again later.' },
+                { status: 429, headers: { 'Retry-After': String(Math.ceil(rateLimitResult.resetInMs / 1000)) } }
+            );
+        }
+
         const session = await auth();
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
         }
 
         const searchParams = request.nextUrl.searchParams;

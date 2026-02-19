@@ -19,10 +19,12 @@ const smtpOptions = process.env.EMAIL_HOST
         },
     };
 
+const isProduction = process.env.NODE_ENV === 'production';
+
 const transporter = nodemailer.createTransport({
     ...smtpOptions,
-    debug: true, // Show debug output
-    logger: true  // Log details to console
+    debug: !isProduction, // Show debug output only in development
+    logger: !isProduction  // Log details to console only in development
 } as any);
 
 const getBaseUrl = () => {

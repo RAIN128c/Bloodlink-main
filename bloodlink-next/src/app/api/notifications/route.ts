@@ -1,5 +1,6 @@
 import { NextResponse, NextRequest } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { auth } from '@/auth';
 
 export interface NotificationCounts {
     // ผลตรวจเลือด - count patients with results ready to view (process = 'ส่งผลตรวจ')
@@ -12,6 +13,11 @@ export interface NotificationCounts {
 
 export async function GET(request: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const searchParams = request.nextUrl.searchParams;
 
         // Get last viewed timestamps from query params (ISO strings)

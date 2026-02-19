@@ -3,6 +3,7 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { AuthService } from '@/lib/services/authService';
 import { EmailService } from '@/lib/services/emailService';
+import { passwordSchema } from '@/lib/validations/auth';
 import { randomUUID } from 'crypto';
 
 /**
@@ -58,6 +59,12 @@ export async function requestPasswordReset(email: string) {
  */
 export async function resetPassword(token: string, newPassword: string) {
     try {
+        // 0. Validate password policy
+        const passwordValidation = passwordSchema.safeParse(newPassword);
+        if (!passwordValidation.success) {
+            return { success: false, error: passwordValidation.error.issues[0].message };
+        }
+
         // 1. Validate Token
         const { data: tokenData, error } = await supabaseAdmin
             .from('user_tokens')

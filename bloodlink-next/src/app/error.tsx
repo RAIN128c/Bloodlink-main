@@ -37,7 +37,7 @@ export default function Error({
                     <div className="text-gray-500 dark:text-gray-400 text-sm">
                         <p className="mb-2">ระบบไม่สามารถดำเนินการต่อได้ในขณะนี้</p>
                         <p className="font-mono bg-gray-100 dark:bg-gray-800 p-2 rounded text-xs break-all mx-auto max-w-[300px] text-red-500">
-                            {error.message || "Unknown Error"}
+                            {process.env.NODE_ENV === 'development' ? (error.message || "Unknown Error") : "กรุณาลองใหม่อีกครั้ง หากยังพบปัญหากรุณาติดต่อผู้ดูแลระบบ"}
                         </p>
                     </div>
                 </div>

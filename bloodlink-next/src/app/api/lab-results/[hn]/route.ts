@@ -1,12 +1,19 @@
 import { NextResponse } from 'next/server';
 import { LabService } from '@/lib/services/labService';
 import { PatientService } from '@/lib/services/patientService';
+import { auth } from '@/auth';
+import { Permissions } from '@/lib/permissions';
 
 export async function GET(
     request: Request,
     { params }: { params: Promise<{ hn: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const { hn } = await params;
 
         // Get patient info
@@ -39,15 +46,17 @@ export async function PATCH(
     { params }: { params: Promise<{ hn: string }> }
 ) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.canEditLab(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Lab staff or Admin only' }, { status: 403 });
+        }
+
         const { hn } = await params;
         const body = await request.json();
         const { notify = false, ...updateData } = body;
-
-        // TODO: Add server-side RBAC check here
-        // const session = await auth();
-        // if (!Permissions.canEditLab(session?.user?.role)) {
-        //     return NextResponse.json({ error: 'Unauthorized' }, { status: 403 });
-        // }
 
         const result = await LabService.updateLabResult(hn, updateData, notify);
 

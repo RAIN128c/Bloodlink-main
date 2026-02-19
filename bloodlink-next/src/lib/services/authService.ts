@@ -165,7 +165,6 @@ export class AuthService {
                 .from('users')
                 .select('*')
                 .in('role', roles)
-                .in('role', roles)
                 .in('status', ['approved', 'Approved', 'อนุมัติ', 'ใช้งาน', 'Active', 'active']) // Only fetching approved staff
                 .order('created_at', { ascending: false });
 

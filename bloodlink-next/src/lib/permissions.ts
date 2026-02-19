@@ -67,9 +67,10 @@ const ROLE_OVERRIDE_KEY = 'debug_role_override';
 
 /**
  * Gets the effective role - checks for debug override first, then falls back to actual role
+ * Only Admin (ผู้ดูแล) can use the debug role override
  */
 export function getEffectiveRole(actualRole?: string): string | undefined {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && Permissions.isAdmin(actualRole)) {
         const override = sessionStorage.getItem(ROLE_OVERRIDE_KEY);
         if (override) return override;
     }
@@ -127,7 +128,7 @@ export const Permissions = {
     isAdmin: (role?: string) => {
         if (!role) return false;
         const trimmed = role.trim();
-        return trimmed.includes('ผู้ดูแล') || trimmed.toLowerCase() === 'admin';
+        return trimmed.includes('ผู้ดูแล') || trimmed.includes('ผู้ดูแลระบบ') || trimmed.toLowerCase() === 'admin';
     },
 
     /**

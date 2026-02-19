@@ -1,27 +1,21 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function GET() {
     try {
-        // Attempt to connect to a reliable external service to verify internet connectivity
-        // We use a simple fetch to 1.1.1.1 (Cloudflare) or fallback to google
-        // Using fetch with a short timeout
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 3000); // 3s timeout
+        // Check Supabase database connectivity with a lightweight query
+        const { error } = await supabase
+            .from('users')
+            .select('id', { count: 'exact', head: true });
 
-        // HEAD request to a highly available external service
-        // Using 1.1.1.1 or 8.8.8.8 (DNS) is reliable
-        // But fetch requires http/https
-        // Let's try fetching a tiny resource or just google
-        await fetch('https://www.google.com', {
-            method: 'HEAD',
-            signal: controller.signal,
-            cache: 'no-store'
-        });
+        if (error) {
+            console.error('Health check - DB connection failed:', error.message);
+            return new NextResponse('Database connection failed', { status: 503 });
+        }
 
-        clearTimeout(timeoutId);
         return new NextResponse('OK', { status: 200 });
     } catch (error) {
-        // If we can't reach the internet, return error
-        return new NextResponse('No Internet Connection', { status: 503 });
+        console.error('Health check error:', error);
+        return new NextResponse('Service unavailable', { status: 503 });
     }
 }

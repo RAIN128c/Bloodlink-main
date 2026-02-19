@@ -1,10 +1,16 @@
 import { supabase, supabaseAdmin } from '@/lib/supabase';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { Permissions } from '@/lib/permissions';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         // Use admin client if available to bypass RLS (server-side fetch)
         // Fallback to anon client (which might fail if RLS blocks anon)
         const db = supabaseAdmin || supabase;
@@ -31,6 +37,14 @@ export async function GET() {
 
 export async function PATCH(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.canManageLabSettings(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Lab staff or Admin only' }, { status: 403 });
+        }
+
         const body = await request.json();
         const { id, min_value, max_value, unit } = body;
 

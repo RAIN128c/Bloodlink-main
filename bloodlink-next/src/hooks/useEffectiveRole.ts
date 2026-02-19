@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import { Permissions } from '@/lib/permissions';
 
 // Key for debug role override in sessionStorage
 const ROLE_OVERRIDE_KEY = 'debug_role_override';
@@ -18,9 +19,9 @@ export function useEffectiveRole() {
 
     useEffect(() => {
         setMounted(true);
-        // Check for override on mount
+        // Check for override on mount — only Admin can use debug override
         const override = sessionStorage.getItem(ROLE_OVERRIDE_KEY);
-        if (override) {
+        if (override && Permissions.isAdmin(actualRole)) {
             setEffectiveRole(override);
         } else {
             setEffectiveRole(actualRole);
@@ -31,7 +32,7 @@ export function useEffectiveRole() {
     useEffect(() => {
         const handleStorageChange = () => {
             const override = sessionStorage.getItem(ROLE_OVERRIDE_KEY);
-            if (override) {
+            if (override && Permissions.isAdmin(actualRole)) {
                 setEffectiveRole(override);
             } else {
                 setEffectiveRole(actualRole);
@@ -52,7 +53,7 @@ export function useEffectiveRole() {
         effectiveRole: mounted ? effectiveRole : actualRole,
         actualRole,
         isLoading: status === 'loading',
-        isOverridden: mounted && effectiveRole !== actualRole && !!sessionStorage.getItem(ROLE_OVERRIDE_KEY),
+        isOverridden: mounted && effectiveRole !== actualRole && Permissions.isAdmin(actualRole) && !!sessionStorage.getItem(ROLE_OVERRIDE_KEY),
     };
 }
 
@@ -61,7 +62,7 @@ export function useEffectiveRole() {
  * Note: This may not work correctly on first SSR render
  */
 export function getEffectiveRole(actualRole?: string): string | undefined {
-    if (typeof window !== 'undefined') {
+    if (typeof window !== 'undefined' && Permissions.isAdmin(actualRole)) {
         const override = sessionStorage.getItem(ROLE_OVERRIDE_KEY);
         if (override) return override;
     }

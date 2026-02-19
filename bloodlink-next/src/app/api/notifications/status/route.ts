@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { NotificationService } from '@/lib/services/notificationService';
+import { auth } from '@/auth';
 
 export const dynamic = 'force-dynamic';
 
@@ -9,6 +10,11 @@ export const dynamic = 'force-dynamic';
  */
 export async function POST(request: NextRequest) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { patientHn, status, patientName, customSubject, customMessage } = body;
 
@@ -19,8 +25,6 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('Notification API called:', { patientHn, status, patientName, customSubject, customMessage });
-
         const result = await NotificationService.sendStatusNotification(
             patientHn,
             status,
@@ -28,8 +32,6 @@ export async function POST(request: NextRequest) {
             customSubject,
             customMessage
         );
-
-        console.log('Notification result:', result);
         return NextResponse.json(result);
     } catch (error: any) {
         console.error('Status notification API error:', error);

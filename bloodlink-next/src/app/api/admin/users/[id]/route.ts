@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
+import { Permissions } from '@/lib/permissions';
 
 export async function GET(
     request: NextRequest,
@@ -12,17 +13,12 @@ export async function GET(
         if (!session?.user) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
         }
-
-        // Support both English and Thai admin role names
-        const adminRoles = ['admin', 'ผู้ดูแล', 'ผู้ดูแลระบบ'];
-        if (!adminRoles.includes(session.user.role || '')) {
-            return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+        if (!Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
         }
 
         const { id } = await params;
-        console.log(`[API] Fetching user id: ${id}`);
         const user = await AuthService.getUserById(id);
-        console.log(`[API] Result for ${id}:`, user ? 'Found' : 'Not Found');
 
         if (user) {
             // Calculate sequential staff number
@@ -44,10 +40,8 @@ export async function DELETE(
 ) {
     try {
         const session = await auth();
-        // Support both English and Thai admin role names
-        const adminRoles = ['admin', 'ผู้ดูแล', 'ผู้ดูแลระบบ'];
-        if (!session?.user || !adminRoles.includes(session.user.role || '')) {
-            return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+        if (!session?.user || !Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
         }
 
         const { id } = await params;
@@ -70,10 +64,8 @@ export async function PATCH(
 ) {
     try {
         const session = await auth();
-        // Support both English and Thai admin role names
-        const adminRoles = ['admin', 'ผู้ดูแล', 'ผู้ดูแลระบบ'];
-        if (!session?.user || !adminRoles.includes(session.user.role || '')) {
-            return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+        if (!session?.user || !Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
         }
 
         const { id } = await params;

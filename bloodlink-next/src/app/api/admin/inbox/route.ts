@@ -1,8 +1,17 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { auth } from '@/auth';
+import { Permissions } from '@/lib/permissions';
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+        }
         const { data, error } = await supabase
             .from('admin_inbox')
             .select('*')
@@ -22,6 +31,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const body = await request.json();
         const { type, sender_email, sender_name, subject, message, tags } = body;
 
@@ -49,6 +63,14 @@ export async function POST(request: Request) {
 
 export async function PATCH(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+        }
+
         const { id, is_read } = await request.json();
 
         const { error } = await supabase

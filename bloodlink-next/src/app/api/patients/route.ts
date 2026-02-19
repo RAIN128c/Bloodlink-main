@@ -1,8 +1,14 @@
 import { NextResponse } from 'next/server';
 import { PatientService } from '@/lib/services/patientService';
+import { auth } from '@/auth';
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const patients = await PatientService.getPatients();
         return NextResponse.json(patients);
     } catch (error) {
@@ -16,6 +22,11 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+
         const data = await request.json();
         const result = await PatientService.addPatient(data);
 

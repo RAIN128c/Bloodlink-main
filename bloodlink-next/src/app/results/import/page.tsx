@@ -77,14 +77,14 @@ export default function ImportPage() {
                 setStatus(prev => ({
                     ...prev,
                     processed: parsedResults.length,
-                    success: result.successCount || 0,
+                    success: result.updated || 0,
                     errors: result.errors?.length || 0,
                     isProcessing: false
                 }));
 
                 const logs = [] as typeof importLogs;
-                if (result.successCount) {
-                    logs.push({ hn: 'Batch', message: `นำเข้าสำเร็จ ${result.successCount} รายการ`, type: 'success' });
+                if (result.updated) {
+                    logs.push({ hn: 'Batch', message: `นำเข้าสำเร็จ ${result.updated} รายการ`, type: 'success' });
                 }
                 result.errors?.forEach((err: any) => {
                     logs.push({ hn: err.hn, message: err.error, type: 'error' });

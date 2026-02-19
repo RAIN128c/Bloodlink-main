@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
 import { PatientService } from '@/lib/services/patientService';
+import { Permissions } from '@/lib/permissions';
 
 export async function GET(
     request: NextRequest,
@@ -9,10 +10,8 @@ export async function GET(
 ) {
     try {
         const session = await auth();
-        // Support both English and Thai admin role names
-        const adminRoles = ['admin', 'ผู้ดูแล', 'ผู้ดูแลระบบ'];
-        if (!session?.user || !adminRoles.includes(session.user.role || '')) {
-            return NextResponse.json({ error: 'Unauthorized: Admin only' }, { status: 403 });
+        if (!session?.user || !Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
         }
 
         const { id } = await params;

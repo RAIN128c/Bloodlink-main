@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { auth } from '@/auth';
+import { Permissions } from '@/lib/permissions';
 
 export interface UserActivityLog {
     id: string;
@@ -41,6 +43,14 @@ export interface ReportsData {
 
 export async function GET() {
     try {
+        const session = await auth();
+        if (!session?.user) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
+        if (!Permissions.isAdmin(session.user.role)) {
+            return NextResponse.json({ error: 'Forbidden: Admin only' }, { status: 403 });
+        }
+
         // Get today's date range
         const today = new Date();
         today.setHours(0, 0, 0, 0);
