@@ -3,7 +3,7 @@
 import { Header } from '@/components/layout/Header';
 import { MainLayout } from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { Activity, Loader2, Printer, FileImage, CheckCircle, X, Eye, CheckSquare, Square } from 'lucide-react';
+import { Activity, Loader2, Printer, FileImage, CheckCircle, X, Eye, CheckSquare, Square, Lock } from 'lucide-react';
 import { useState, useEffect, useCallback } from 'react';
 import { Patient } from '@/types';
 import { formatDateTimeThai } from '@/lib/utils';
@@ -14,6 +14,7 @@ interface LabFileInfo {
     file_type?: string;
     result_summary?: string;
     timestamp?: string;
+    approver_name?: string;
 }
 
 export default function ResultsPage() {
@@ -68,6 +69,7 @@ export default function ResultsPage() {
                                                 file_type: withFile.file_type,
                                                 result_summary: withFile.result_summary,
                                                 timestamp: withFile.timestamp,
+                                                approver_name: withFile.approver_name,
                                             };
                                         }
                                     }
@@ -115,8 +117,8 @@ export default function ResultsPage() {
         }
     };
 
-    // Selection helpers
-    const patientsWithFiles = patients.filter(p => latestFiles[p.hn]);
+    // Selection helpers — only approved results can be selected/printed
+    const patientsWithFiles = patients.filter(p => latestFiles[p.hn] && latestFiles[p.hn].approver_name);
 
     const toggleSelect = (hn: string) => {
         setSelectedHns(prev => {
@@ -328,6 +330,8 @@ export default function ResultsPage() {
                             ) : patients.length > 0 ? (
                                 patients.map((patient, idx) => {
                                     const hasFile = !!latestFiles[patient.hn];
+                                    const isApproved = !!latestFiles[patient.hn]?.approver_name;
+                                    const canPrint = hasFile && isApproved;
                                     const isSelected = selectedHns.has(patient.hn);
                                     return (
                                         <div
@@ -335,8 +339,8 @@ export default function ResultsPage() {
                                             className={`bg-white dark:bg-[#1F2937] rounded-[12px] p-4 flex items-center gap-3 shadow-sm border transition-all group card-animate hover-lift ${isSelected ? 'border-amber-300 dark:border-amber-600 bg-amber-50/50 dark:bg-amber-900/10' : 'border-transparent hover:border-[#E0E7FF] dark:hover:border-gray-600'}`}
                                             style={{ animationDelay: `${idx * 0.05}s` }}
                                         >
-                                            {/* Checkbox */}
-                                            {hasFile && (
+                                            {/* Checkbox — only if approved */}
+                                            {canPrint && (
                                                 <button
                                                     onClick={() => toggleSelect(patient.hn)}
                                                     className="flex-shrink-0 text-gray-400 hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
@@ -365,9 +369,8 @@ export default function ResultsPage() {
                                                 </div>
                                             </div>
 
-                                            {/* Actions */}
                                             <div className="flex items-center gap-2 flex-shrink-0">
-                                                {hasFile && (
+                                                {canPrint ? (
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handlePrintSingle(patient.hn); }}
                                                         disabled={printingHn === patient.hn}
@@ -381,7 +384,12 @@ export default function ResultsPage() {
                                                         )}
                                                         พิมพ์
                                                     </button>
-                                                )}
+                                                ) : hasFile && !isApproved ? (
+                                                    <span className="h-7 px-2.5 flex items-center gap-1 bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500 text-[11px] font-medium rounded-[6px]" title="รอแพทย์อนุมัติก่อนพิมพ์">
+                                                        <Lock className="w-3.5 h-3.5" />
+                                                        รออนุมัติ
+                                                    </span>
+                                                ) : null}
                                                 <Link
                                                     href={`/results/${patient.hn}`}
                                                     className="w-14 h-7 flex items-center justify-center bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#374151] dark:text-indigo-200 text-[11px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-800 transition-colors"
