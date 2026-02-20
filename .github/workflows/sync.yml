@@ -27,7 +27,7 @@ jobs:
         run: |
           # เพิ่ม upstream remote (ใช้ PAT สำหรับ private repo)
           if [ -n "${{ secrets.UPSTREAM_PAT }}" ]; then
-            git remote add upstream https://${{ secrets.UPSTREAM_PAT }}@github.com/RAIN128c/Bloodlink.git
+            git remote add upstream https://${{ secrets.UPSTREAM_PAT }}@github.com/RAIN128c/Bloodlink-main.git
             echo "🔑 ใช้ PAT สำหรับ private repo"
           else
             git remote add upstream https://github.com/RAIN128c/Bloodlink-main.git
