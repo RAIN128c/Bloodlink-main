@@ -5,30 +5,54 @@ on:
     - cron: '0 0 * * *' # รันทุกเที่ยงคืน (UTC) = 7 โมงเช้าไทย
   workflow_dispatch: # อนุญาตให้กดรันมือได้
 
+permissions:
+  contents: write  # จำเป็นสำหรับ force push
+
 jobs:
   sync:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout target repo
-        uses: actions/checkout@v3
+      - name: Checkout this repo
+        uses: actions/checkout@v4
         with:
-          # ต้องใช้ PAT หรือ Token ที่มีสิทธิ์เขียน (default token ของ action พอสำหรับ fork ตัวเอง)
           token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0  # ดึง history ทั้งหมดเพื่อ merge ได้ถูกต้อง
 
       - name: Setup Git Config
         run: |
           git config --global user.name "Bloodlink Auto Bot"
           git config --global user.email "bot@bloodlink.local"
 
-      - name: Add Upstream and Fetch
+      - name: Sync from Upstream
         run: |
-          # ชี้ไปที่ Repo ต้นฉบับ
-          git remote add upstream https://github.com/RAIN128c/Bloodlink.git
-          git fetch upstream
+          # เพิ่ม upstream remote (ใช้ PAT สำหรับ private repo)
+          if [ -n "${{ secrets.UPSTREAM_PAT }}" ]; then
+            git remote add upstream https://${{ secrets.UPSTREAM_PAT }}@github.com/RAIN128c/Bloodlink.git
+            echo "🔑 ใช้ PAT สำหรับ private repo"
+          else
+            git remote add upstream https://github.com/RAIN128c/Bloodlink.git
+            echo "🌐 ใช้ public access (ไม่มี PAT)"
+          fi
 
-      - name: Hard Reset to Upstream (Force Update)
-        run: |
-          # บังคับให้ Code เหมือนต้นฉบับ 100% (ข้อมูลเก่าใน Code จะหาย ถ้ามีการแก้เอง)
+          # ดึงข้อมูลจาก upstream
+          git fetch upstream || { echo "❌ ไม่สามารถ fetch upstream ได้ — ถ้า repo เป็น private ต้องเพิ่ม UPSTREAM_PAT secret"; exit 1; }
+
+          # ตรวจสอบว่า upstream มี branch main หรือ master
+          if git rev-parse --verify upstream/main >/dev/null 2>&1; then
+            UPSTREAM_BRANCH="upstream/main"
+          elif git rev-parse --verify upstream/master >/dev/null 2>&1; then
+            UPSTREAM_BRANCH="upstream/master"
+          else
+            echo "❌ ไม่พบ branch main หรือ master ใน upstream"
+            git branch -r | grep upstream
+            exit 1
+          fi
+
+          echo "✅ ใช้ branch: $UPSTREAM_BRANCH"
+
+          # บังคับให้ Code เหมือนต้นฉบับ 100%
           git checkout main
-          git reset --hard upstream/main
+          git reset --hard $UPSTREAM_BRANCH
           git push origin main --force
+
+          echo "✅ Sync สำเร็จ!"
