@@ -46,6 +46,7 @@ export function Sidebar() {
         newPatients: 0,
         upcomingAppointments: 0
     });
+    const [labQueueCount, setLabQueueCount] = useState(0);
 
     // Refs for state that shouldn't trigger re-renders or dependency cycles
     const lastViewedRef = useRef<LastViewedTimes>({
@@ -89,6 +90,17 @@ export function Sidebar() {
 
                 setNotifications(data);
             }
+
+            // Fetch lab queue count for Lab Staff/Admin
+            try {
+                const patientsRes = await fetch('/api/patients');
+                if (patientsRes.ok) {
+                    const allPatients = await patientsRes.json();
+                    const labStatuses = ['เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ'];
+                    const queueCount = allPatients.filter((p: any) => labStatuses.includes(p.process)).length;
+                    setLabQueueCount(queueCount);
+                }
+            } catch { /* non-critical */ }
         } catch (error) {
             console.error('Failed to fetch notifications:', error);
         }
@@ -280,7 +292,12 @@ export function Sidebar() {
                                 )}
                             >
                                 <FileText className="w-[18px] h-[18px] flex-shrink-0" />
-                                <span>คิวงาน Lab</span>
+                                <span className="flex-1">คิวงาน Lab</span>
+                                {labQueueCount > 0 && (
+                                    <span className="bg-[#EF4444] text-white text-[8px] font-semibold px-1.5 py-0.5 rounded-[8px] min-w-[18px] text-center">
+                                        {labQueueCount > 99 ? '99+' : labQueueCount}
+                                    </span>
+                                )}
                             </Link>
                         )}
                     </nav>

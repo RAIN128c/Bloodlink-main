@@ -330,42 +330,11 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
                                             <Mail className="w-5 h-5" />
                                         </div>
                                         <div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Email Support</p>
+                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Gmail</p>
                                             <a href={`mailto:${HELP_CONTENT.contact.email}`} className="text-blue-600 dark:text-blue-400 font-medium hover:underline block break-all">
                                                 {HELP_CONTENT.contact.email}
                                             </a>
                                         </div>
-                                    </div>
-
-                                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-xl flex items-start gap-4">
-                                        <div className="p-2 bg-green-100 dark:bg-green-800 rounded-lg text-green-600 dark:text-green-300">
-                                            <Phone className="w-5 h-5" />
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Call Center</p>
-                                            <a href={`tel:${HELP_CONTENT.contact.phone}`} className="text-green-600 dark:text-green-400 font-medium hover:underline block">
-                                                {HELP_CONTENT.contact.phone}
-                                            </a>
-                                        </div>
-                                    </div>
-
-                                    {HELP_CONTENT.contact.lineId && (
-                                        <div className="bg-[#06C755]/10 p-4 rounded-xl flex items-start gap-4">
-                                            <div className="p-2 bg-[#06C755]/20 rounded-lg text-[#06C755]">
-                                                <MessageCircle className="w-5 h-5" />
-                                            </div>
-                                            <div>
-                                                <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Line ID</p>
-                                                <p className="text-[#06C755] font-medium">
-                                                    {HELP_CONTENT.contact.lineId}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400 pt-2 border-t border-gray-100 dark:border-gray-700 justify-center">
-                                        <Clock className="w-4 h-4" />
-                                        <span>{HELP_CONTENT.contact.hours}</span>
                                     </div>
                                 </div>
                             ) : (

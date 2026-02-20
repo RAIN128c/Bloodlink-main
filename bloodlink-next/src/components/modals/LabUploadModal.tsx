@@ -158,6 +158,12 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                 body: formData,
             });
 
+            const contentType = res.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                const text = await res.text();
+                throw new Error(text || `Upload failed with status ${res.status}`);
+            }
+
             const data = await res.json();
 
             if (!res.ok) {

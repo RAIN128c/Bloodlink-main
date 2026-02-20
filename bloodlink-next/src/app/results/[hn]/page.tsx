@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import Link from 'next/link';
-import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye } from 'lucide-react';
+import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye, Printer, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LabResult {
@@ -40,6 +40,7 @@ export default function ResultPage() {
     const [patient, setPatient] = useState<PatientInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [approving, setApproving] = useState(false);
+    const [printing, setPrinting] = useState(false);
     const [fileUrl, setFileUrl] = useState<string | null>(null);
     const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
     const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
@@ -100,12 +101,60 @@ export default function ResultPage() {
                 throw new Error(data.error || 'Approval failed');
             }
 
-            toast.success('ยืนยันผลตรวจเรียบร้อย');
+            toast.success('อนุญาตให้พิมพ์ผลตรวจเรียบร้อย');
             fetchData(); // Refresh
         } catch (error: any) {
-            toast.error(error.message || 'เกิดข้อผิดพลาดในการยืนยัน');
+            toast.error(error.message || 'เกิดข้อผิดพลาดในการอนุญาต');
         } finally {
             setApproving(false);
+        }
+    };
+
+    const handlePrint = async () => {
+        if (!fileUrl || !hn) return;
+        setPrinting(true);
+        try {
+            const isImage = latestResult?.file_type?.startsWith('image/');
+            const printWindow = window.open('', '_blank', 'width=800,height=600');
+            if (!printWindow) {
+                toast.error('กรุณาอนุญาต Pop-up เพื่อสั่งพิมพ์');
+                return;
+            }
+
+            if (isImage) {
+                printWindow.document.write(`
+                    <!DOCTYPE html>
+                    <html><head><title>พิมพ์ผลตรวจ - HN: ${hn}</title>
+                    <style>
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: #fff; padding: 10mm; font-family: sans-serif; }
+                        .header { text-align: center; margin-bottom: 12px; font-size: 14px; color: #333; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; width: 100%; }
+                        img { max-width: 100%; height: auto; }
+                        @media print { body { padding: 5mm; } }
+                    </style></head><body>
+                        <div class="header"><strong>ผลตรวจเลือด</strong><br/>HN: ${hn} — ${patient?.name} ${patient?.surname}</div>
+                        <img src="${fileUrl}" onload="setTimeout(() => { window.print(); }, 500);" />
+                    </body></html>
+                `);
+            } else {
+                printWindow.location.href = fileUrl;
+            }
+            printWindow.document.close();
+
+            // Update status to "รายงานผล"
+            await fetch(`/api/patients/${hn}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ process: 'รายงานผล' }),
+            });
+
+            setPatient(prev => prev ? { ...prev, process: 'รายงานผล' } : prev);
+            toast.success('สั่งพิมพ์เรียบร้อย & อัปเดตสถานะ "รายงานผล"');
+        } catch (err) {
+            console.error('Print error:', err);
+            toast.error('เกิดข้อผิดพลาดในการพิมพ์');
+        } finally {
+            setPrinting(false);
         }
     };
 
@@ -274,15 +323,15 @@ export default function ResultPage() {
                                                 </span>
                                             </div>
                                             <div className="flex justify-between">
-                                                <span className="text-gray-500 dark:text-gray-400">ผู้อนุมัติ</span>
+                                                <span className="text-gray-500 dark:text-gray-400">ผู้อนุญาตพิมพ์</span>
                                                 <span className={`font-medium ${isApproved ? 'text-emerald-600 dark:text-emerald-400' : 'text-gray-400'}`}>
-                                                    {latestResult?.approver_name || 'ยังไม่อนุมัติ'}
+                                                    {latestResult?.approver_name || 'ยังไม่อนุญาต'}
                                                 </span>
                                             </div>
                                         </div>
                                     </div>
 
-                                    {/* Approve Button */}
+                                    {/* Authorize Print Button */}
                                     {canApprove && latestResult && !isApproved && (
                                         <button
                                             onClick={handleApprove}
@@ -292,21 +341,45 @@ export default function ResultPage() {
                                             {approving ? (
                                                 <>
                                                     <RefreshCw className="w-4 h-4 animate-spin" />
-                                                    กำลังยืนยัน...
+                                                    กำลังอนุญาต...
                                                 </>
                                             ) : (
                                                 <>
                                                     <CheckCircle className="w-4 h-4" />
-                                                    ยืนยันผลตรวจ
+                                                    อนุญาตให้พิมพ์
                                                 </>
                                             )}
                                         </button>
                                     )}
 
                                     {isApproved && (
-                                        <div className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
-                                            <CheckCircle className="w-4 h-4" />
-                                            อนุมัติแล้ว
+                                        <div className="space-y-3">
+                                            <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
+                                                <CheckCircle className="w-4 h-4" />
+                                                พร้อมพิมพ์
+                                            </div>
+                                            {fileUrl && (
+                                                <button
+                                                    onClick={handlePrint}
+                                                    disabled={printing}
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-amber-500 hover:bg-amber-600 rounded-xl transition shadow-lg shadow-amber-500/20 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98]"
+                                                >
+                                                    {printing ? (
+                                                        <>
+                                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                                            กำลังเตรียมพิมพ์...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Printer className="w-4 h-4" />
+                                                            🖨️ พิมพ์ผลตรวจ
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+                                            {patient?.process === 'รายงานผล' && (
+                                                <p className="text-xs text-center text-emerald-500 dark:text-emerald-400 font-medium">✅ พิมพ์และรายงานผลแล้ว</p>
+                                            )}
                                         </div>
                                     )}
 
@@ -323,8 +396,8 @@ export default function ResultPage() {
                                                         key={result.id}
                                                         onClick={() => handleViewHistory(result)}
                                                         className={`w-full text-left p-3 rounded-lg border transition ${selectedHistoryId === result.id
-                                                                ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20'
-                                                                : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
+                                                            ? 'border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20'
+                                                            : 'border-gray-100 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800'
                                                             }`}
                                                     >
                                                         <div className="flex items-center justify-between">
