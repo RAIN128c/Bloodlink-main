@@ -6,25 +6,26 @@ import { PatientForm } from '@/components/patient/PatientForm';
 import { addPatient } from '@/lib/actions/patient';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { SuccessPrintModal } from '@/components/modals/SuccessPrintModal';
-import { RequestSheet } from '@/components/features/print/RequestSheet';
-import { Patient } from '@/types';
+import { toast } from 'sonner';
 
 export default function AddPatientPage() {
     const router = useRouter();
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [savedPatient, setSavedPatient] = useState<Patient | null>(null);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
 
     const handleConfirm = async (data: any) => {
         setIsSubmitting(true);
         try {
             await addPatient(data);
-            setSavedPatient(data as Patient); // Use submitted data for printing
-            setShowSuccessModal(true);
+            toast.success('บันทึกข้อมูลสำเร็จ', {
+                description: `เพิ่มข้อมูลผู้ป่วย ${data.name} ${data.surname} เรียบร้อยแล้ว`,
+            });
+            router.push('/history');
+            router.refresh();
         } catch (error) {
             console.error('Error adding patient:', error);
-            alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+            toast.error('เกิดข้อผิดพลาด', {
+                description: 'ไม่สามารถบันทึกข้อมูลผู้ป่วยได้ กรุณาลองใหม่อีกครั้ง'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -32,24 +33,6 @@ export default function AddPatientPage() {
 
     const handleCancel = () => {
         router.push('/dashboard');
-    };
-
-    const handlePrintRequest = () => {
-        // Trigger browser print
-        // The RequestSheet component handles visibility via CSS
-        setTimeout(() => {
-            window.print();
-        }, 100);
-    };
-
-    const handleReset = () => {
-        setShowSuccessModal(false);
-        setSavedPatient(null);
-        // Reset form by reloading or key change. 
-        // Cheapest way: reload page or reset state if we lifted it up.
-        // Since PatientForm manages its own state internally, remounting it works.
-        // We can just reload the page for a fresh start.
-        window.location.reload();
     };
 
     return (
@@ -65,19 +48,6 @@ export default function AddPatientPage() {
                     />
                 </div>
             </div>
-
-            {/* Success Modal */}
-            <SuccessPrintModal
-                isOpen={showSuccessModal}
-                onClose={() => setShowSuccessModal(false)} // Or do nothing
-                onPrint={handlePrintRequest}
-                onBack={() => router.push('/dashboard')} // Or /history
-                onAddAnother={handleReset}
-                patientName={savedPatient ? `${savedPatient.name} ${savedPatient.surname}` : ''}
-            />
-
-            {/* Hidden Request Sheet for Printing */}
-            {savedPatient && <RequestSheet patient={savedPatient} />}
         </MainLayout>
     );
 }

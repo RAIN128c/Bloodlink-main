@@ -36,11 +36,8 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'File and HN are required' }, { status: 400 });
         }
 
-        // Validate result summary
-        const validSummaries = ['Normal', 'Abnormal', 'Critical'];
-        if (!validSummaries.includes(resultSummary)) {
-            return NextResponse.json({ error: 'Invalid result summary. Must be Normal, Abnormal, or Critical.' }, { status: 400 });
-        }
+        // Set default result summary if not provided
+        const finalResultSummary = resultSummary || 'รอตรวจสอบ';
 
         // Validate file size (20MB limit for lab reports)
         const MAX_FILE_SIZE = 20 * 1024 * 1024;
@@ -80,7 +77,7 @@ export async function POST(req: NextRequest) {
                 patient_name: patientName || null,
                 file_url: fileName,
                 file_type: file.type,
-                result_summary: resultSummary,
+                result_summary: finalResultSummary,
                 reporter_name: session.user.name || session.user.email,
             });
 
@@ -131,7 +128,9 @@ export async function POST(req: NextRequest) {
                             sender_id: sender?.id || null,
                             receiver_id: user.id,
                             subject: `ผลตรวจเลือด HN: ${hn} พร้อมตรวจสอบ`,
-                            content: `มีผลตรวจเลือดของผู้ป่วย HN: ${hn} (${patientName || '-'}) อัปโหลดเรียบร้อยแล้ว สถานะ: ${resultSummary === 'Normal' ? '🟢 ปกติ' : resultSummary === 'Abnormal' ? '🟡 ผิดปกติ' : '🔴 วิกฤต'}\n\nกรุณาตรวจสอบและยืนยันผล`,
+                            content: `มีผลตรวจเลือดของผู้ป่วย HN: ${hn} (${patientName || '-'}) อัปโหลดเรียบร้อยแล้ว
+
+กรุณาตรวจสอบและยืนยันผล: /results/${hn}`,
                             type: 'lab_result',
                         });
                     }
@@ -156,7 +155,7 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// GET: Generate signed URL for viewing a lab report file
+// GET: Generate signed URL for viewing a lab report file, OR fetch recent results
 export async function GET(req: NextRequest) {
     try {
         const session = await auth();
@@ -165,6 +164,33 @@ export async function GET(req: NextRequest) {
         }
 
         const { searchParams } = new URL(req.url);
+
+        // Handle fetch recent results
+        if (searchParams.get('recent') === 'true') {
+            const { data, error } = await supabaseAdmin
+                .from('lab_results')
+                .select('hn, patient_name, result_summary, timestamp, reporter_name')
+                .order('timestamp', { ascending: false })
+                .limit(20);
+
+            if (error) {
+                console.error('Fetch recent results error:', error);
+                return NextResponse.json({ error: 'Failed to fetch recent results' }, { status: 500 });
+            }
+
+            // Map DB fields to what components expect
+            const mappedResults = data?.map(row => ({
+                hn: row.hn,
+                patientName: row.patient_name,
+                resultSummary: row.result_summary,
+                createdAt: row.timestamp,
+                reporterName: row.reporter_name
+            })) || [];
+
+            return NextResponse.json({ results: mappedResults });
+        }
+
+        // Handle generate signed URL
         const filePath = searchParams.get('path');
 
         if (!filePath) {
@@ -184,7 +210,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ url: data.signedUrl });
 
     } catch (error) {
-        console.error('Lab file URL error:', error);
+        console.error('Lab GET API error:', error);
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

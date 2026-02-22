@@ -166,7 +166,7 @@ export default function ResultsPage() {
             // Show preview modal for single print
             setPreviewData([{
                 hn,
-                name: patient ? `${patient.name} ${patient.surname}` : hn,
+                name: patient ? `${patient.name} ${patient.surname || ''}`.trim() : hn,
                 url,
                 fileType: fileInfo.file_type,
             }]);
@@ -191,7 +191,7 @@ export default function ResultsPage() {
                     const res = await fetch(`/api/lab/upload?path=${encodeURIComponent(latestFiles[p.hn].file_url)}`);
                     if (!res.ok) throw new Error('Failed');
                     const { url } = await res.json();
-                    return { hn: p.hn, name: `${p.name} ${p.surname}`, url, fileType: latestFiles[p.hn].file_type };
+                    return { hn: p.hn, name: `${p.name} ${p.surname || ''}`.trim(), url, fileType: latestFiles[p.hn].file_type };
                 })
             );
 

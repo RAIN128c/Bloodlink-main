@@ -4,7 +4,7 @@ import { OfflineBanner } from '@/components/shared/OfflineBanner';
 import { HelpButton } from '@/components/shared/HelpButton';
 import { NotificationPopup } from '@/components/shared/NotificationPopup';
 import { useRouter } from 'next/navigation';
-import { SessionProvider } from 'next-auth/react';
+import { SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { NotificationProvider, useNotifications } from '@/components/providers/NotificationContext';
 import { InboxProvider } from '@/components/providers/InboxContext';
 import { RoleGuard } from '@/components/providers/RoleGuard';
@@ -46,13 +46,13 @@ function GlobalProviderInner({ children }: GlobalProviderProps) {
 
 export function GlobalProvider({ children }: GlobalProviderProps) {
     return (
-        <SessionProvider>
+        <SupabaseAuthProvider>
             <NotificationProvider>
                 <InboxProvider>
                     <GlobalProviderInner>{children}</GlobalProviderInner>
                 </InboxProvider>
             </NotificationProvider>
-        </SessionProvider>
+        </SupabaseAuthProvider>
     );
 }
 

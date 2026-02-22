@@ -6,7 +6,7 @@ import { updatePatientStatus } from '@/lib/actions/patient';
 import { Edit3, Calendar, Clock, FileText, Loader2, Lock, RefreshCw } from 'lucide-react';
 import clsx from 'clsx';
 import { toast } from 'sonner';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions, STATUS_ORDER } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';

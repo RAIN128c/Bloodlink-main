@@ -9,6 +9,7 @@ import Image from 'next/image';
 import { useTheme } from 'next-themes';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomCheckbox } from '@/components/ui/CustomCheckbox';
+import { Turnstile } from '@marsidev/react-turnstile';
 
 type FormMode = 'login' | 'register';
 
@@ -29,6 +30,7 @@ export default function LoginPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [errorMessage, setErrorMessage] = useState('');
     const [showPassword, setShowPassword] = useState(false);
+    const [captchaToken, setCaptchaToken] = useState<string | null>(null);
 
     // Register State
     const [regRole, setRegRole] = useState('แพทย์');
@@ -52,16 +54,23 @@ export default function LoginPage() {
         setRegError('');
         setRegSuccess('');
         setFieldErrors({});
+        setCaptchaToken(null);
     };
 
     const handleLoginSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!captchaToken) {
+            setErrorMessage('กรุณายืนยันว่าคุณไม่ใช่โปรแกรมอัตโนมัติ (CAPTCHA)');
+            return;
+        }
+
         setIsLoading(true);
         setErrorMessage('');
         setFieldErrors({});
 
         try {
-            const result = await authenticate(email, password);
+            const result = await authenticate(email, password, captchaToken);
             if (result?.error) {
                 setErrorMessage(result.error);
                 if (result.fieldErrors) {
@@ -79,6 +88,12 @@ export default function LoginPage() {
 
     const handleRegisterSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        if (!captchaToken) {
+            setRegError('กรุณายืนยันว่าคุณไม่ใช่โปรแกรมอัตโนมัติ (CAPTCHA)');
+            return;
+        }
+
         setRegError('');
         setRegSuccess('');
         setFieldErrors({});
@@ -103,7 +118,8 @@ export default function LoginPage() {
                 email: regEmail,
                 password: regPassword,
                 hospitalType: regHospitalType,
-                hospitalName: regHospitalName
+                hospitalName: regHospitalName,
+                captchaToken
             });
 
             if (result.error) {
@@ -222,6 +238,22 @@ export default function LoginPage() {
                                         {errorMessage}
                                     </div>
                                 )}
+
+                                {/* Cloudflare Turnstile */}
+                                <div className="flex justify-center my-4 min-h-[65px]">
+                                    {mounted && (
+                                        <Turnstile
+                                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+                                            onSuccess={(token) => {
+                                                console.log("Turnstile Login Token:", token.substring(0, 10) + "...");
+                                                setCaptchaToken(token);
+                                            }}
+                                            onError={() => setErrorMessage('Error loading CAPTCHA')}
+                                            onExpire={() => setCaptchaToken(null)}
+                                            options={{ theme: resolvedTheme === 'dark' ? 'dark' : 'light' }}
+                                        />
+                                    )}
+                                </div>
 
                                 {/* Login Button */}
                                 <button
@@ -356,6 +388,22 @@ export default function LoginPage() {
                                         {regSuccess}
                                     </div>
                                 )}
+
+                                {/* Cloudflare Turnstile */}
+                                <div className="flex justify-center my-4 min-h-[65px]">
+                                    {mounted && (
+                                        <Turnstile
+                                            siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
+                                            onSuccess={(token) => {
+                                                console.log("Turnstile Register Token:", token.substring(0, 10) + "...");
+                                                setCaptchaToken(token);
+                                            }}
+                                            onError={() => setRegError('Error loading CAPTCHA')}
+                                            onExpire={() => setCaptchaToken(null)}
+                                            options={{ theme: resolvedTheme === 'dark' ? 'dark' : 'light' }}
+                                        />
+                                    )}
+                                </div>
 
                                 {/* Register Button */}
                                 <button

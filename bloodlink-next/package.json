@@ -1,6 +1,6 @@
 {
   "name": "bloodlink-next",
-  "version": "0.9.5",
+  "version": "0.9.9",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -13,9 +13,12 @@
   },
   "dependencies": {
     "@hookform/resolvers": "^5.2.2",
+    "@marsidev/react-turnstile": "^1.4.2",
+    "@supabase/ssr": "^0.8.0",
     "@supabase/supabase-js": "^2.87.1",
     "@types/papaparse": "^5.5.2",
     "bcryptjs": "^3.0.3",
+    "browser-image-compression": "^2.0.2",
     "clsx": "^2.1.1",
     "date-fns": "^4.1.0",
     "framer-motion": "^12.23.26",
@@ -25,7 +28,6 @@
     "html2canvas": "^1.4.1",
     "lucide-react": "^0.556.0",
     "next": "^16.1.6",
-    "next-auth": "^5.0.0-beta.30",
     "next-themes": "^0.4.6",
     "nodemailer": "^7.0.12",
     "papaparse": "^5.5.3",
@@ -55,6 +57,7 @@
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.1.2",
     "baseline-browser-mapping": "^2.9.19",
+    "dotenv": "^17.3.1",
     "eslint": "^9",
     "eslint-config-next": "^16.1.6",
     "jsdom": "^27.3.0",

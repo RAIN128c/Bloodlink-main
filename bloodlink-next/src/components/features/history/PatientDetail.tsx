@@ -14,7 +14,7 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, Responsi
 
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import {
     Calendar,
     Clock,
@@ -48,13 +48,14 @@ import { CustomTimePicker } from '@/components/ui/CustomTimePicker';
 // Timeline icons mapping
 const STATUS_ICONS: Record<string, React.ReactNode> = {
     'นัดหมาย': <Calendar className="w-4 h-4" />,
-    'เจาะเลือด': <MessageSquare className="w-4 h-4" />,
+    'รอแล็บรับเรื่อง': <MessageSquare className="w-4 h-4" />,
+    'รอจัดส่ง': <ShoppingCart className="w-4 h-4" />,
     'กำลังจัดส่ง': <ShoppingCart className="w-4 h-4" />,
     'กำลังตรวจ': <Eye className="w-4 h-4" />,
     'เสร็จสิ้น': <Check className="w-4 h-4" />,
 };
 
-const STATUS_ORDER = ['นัดหมาย', 'เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'];
+const STATUS_ORDER = ['นัดหมาย', 'รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'];
 
 // NCD Mapping
 const NCD_MAP: Record<string, string> = {
@@ -468,7 +469,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
         setConfirmConfig({
             isOpen: true,
             title: 'ยืนยันการลบผู้ป่วย',
-            description: `คุณแน่ใจหรือไม่ที่จะลบข้อมูลผู้ป่วย ${patientData?.name} ${patientData?.surname} (HN: ${patientData?.hn})? การกระทำนี้ไม่สามารถย้อนกลับได้`,
+            description: `คุณแน่ใจหรือไม่ที่จะลบข้อมูลผู้ป่วย ${patientData?.name} ${patientData?.surname || ''} (HN: ${patientData?.hn})? การกระทำนี้ไม่สามารถย้อนกลับได้`,
             variant: 'danger',
             confirmText: 'ลบผู้ป่วย',
             action: handleDeletePatient
@@ -550,7 +551,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                 data.type = appointmentType;
             }
 
-            if (tempStatus === 'เจาะเลือด' && selectedAppointmentId) {
+            if (tempStatus === 'รอแล็บรับเรื่อง' && selectedAppointmentId) {
                 // Mark selected appointment as completed
                 await AppointmentService.updateStatus(selectedAppointmentId, 'completed');
 
@@ -1249,7 +1250,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
 
                         <div className="p-6">
                             <div className="flex flex-wrap gap-2 mb-4">
-                                {['รอตรวจ', 'นัดหมาย', 'เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'].map((option) => {
+                                {['รอตรวจ', 'นัดหมาย', 'รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'].map((option) => {
                                     const isDisabled = !Permissions.canUpdateToStatus(effectiveRole, patientData?.process, option) && option !== tempStatus;
                                     return (
                                         <label
@@ -1331,7 +1332,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                 </div>
                             )}
 
-                            {tempStatus === 'เจาะเลือด' && (
+                            {tempStatus === 'รอแล็บรับเรื่อง' && (
                                 <div className="bg-[#F8FAFC] dark:bg-gray-800 p-4 rounded-xl border border-[#E2E8F0] dark:border-gray-700 mb-4 animate-in slide-in-from-top-2">
                                     <label className="flex items-center gap-2 text-[#0F172A] dark:text-white font-medium text-sm mb-3">
                                         <Calendar className="w-4 h-4 text-[#6366F1] dark:text-indigo-400" />
@@ -1384,6 +1385,19 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                             ไม่ใช่การมาตามนัด (Walk-in / นอกเวลานัด)
                                         </label>
                                     </div>
+                                </div>
+                            )}
+                            {tempStatus === 'กำลังจัดส่ง' && (
+                                <div className="bg-[#FFFBEB] dark:bg-amber-900/20 p-4 rounded-xl border border-[#FDE68A] dark:border-amber-700/50 mb-4 animate-in slide-in-from-top-2">
+                                    <label className="flex items-center gap-2 text-[#92400E] dark:text-amber-400 font-medium text-sm mb-2">
+                                        <ShoppingCart className="w-4 h-4" />
+                                        สิ่งที่ต้องทำในขั้นตอน "กำลังจัดส่ง"
+                                    </label>
+                                    <ul className="text-sm text-[#B45309] dark:text-amber-300/80 list-disc list-inside space-y-1 ml-1">
+                                        <li>พิมพ์ใบส่งตรวจเลือด (จากหน้ารายการคิวงาน)</li>
+                                        <li>นำส่งตัวอย่างเลือดและใบส่งตรวจไปที่ห้อง Lab รพช.</li>
+                                        <li>รอให้ทางเจ้าหน้าที่ Lab ตรวจและอัปโหลดผลเข้าระบบ</li>
+                                    </ul>
                                 </div>
                             )}
 

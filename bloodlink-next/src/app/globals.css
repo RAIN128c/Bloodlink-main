@@ -491,22 +491,19 @@ input::-ms-clear {
 }
 
 /* ---------- Print Optimizations ---------- */
-/* ---------- Print Overhaul (Nuclear Option) ---------- */
+/* ---------- Print Overhaul ---------- */
 @media print {
 
   /* 1. Page Setup */
   @page {
-    margin: 1cm;
-    /* Standard professional margin */
+    margin: 10mm;
     size: A4 portrait;
   }
 
   /* 2. Global Resets for Layout Roots */
   html,
   body {
-    width: 210mm;
-    zoom: 0.95;
-    /* Slight scaling instead of extreme 0.75 */
+    width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     margin: 0 !important;
@@ -516,18 +513,16 @@ input::-ms-clear {
     font-size: 11pt;
     color: black !important;
     display: block !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
 
-  /* 3. Hide UI Noise */
+  /* 3. Hide UI Noise — scoped to navigation only, NOT all buttons */
   .no-print,
   .print-hide,
   .sidebar,
   nav,
-  header,
-  footer,
-  aside,
-  [role="button"],
-  button {
+  aside {
     display: none !important;
   }
 
@@ -539,19 +534,26 @@ input::-ms-clear {
   .print-card {
     display: block !important;
     position: static !important;
-    width: auto !important;
+    width: 100% !important;
     height: auto !important;
     min-height: 0 !important;
     overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
     box-shadow: none !important;
-    border: none !important;
-    background: transparent !important;
   }
 
-  /* 5. Specific Print Layout Adjustments */
-  .print-container {
+  /* 5. Admin layout: remove sidebar margin and overflow constraints */
+  .admin-main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+  }
+
+  .admin-main-content main {
+    overflow: visible !important;
+    height: auto !important;
     padding: 0 !important;
   }
 
@@ -565,15 +567,13 @@ input::-ms-clear {
   td,
   th {
     break-inside: avoid;
-    /* Keep rows together */
   }
 
   thead {
     display: table-header-group;
-    /* Repeat headers if table splits (shouldn't if fits on 1 page) */
   }
 
-  /* Tables */
+  /* 7. Tables */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
@@ -582,26 +582,26 @@ input::-ms-clear {
   th,
   td {
     padding: 4px 8px !important;
-    /* Compact padding */
     border: 1px solid #ddd !important;
     font-size: 10pt !important;
   }
 
-  /* Vital Signs Grid */
-  .grid {
-    display: grid !important;
-    /* Keep grid for vital signs */
-    grid-template-columns: repeat(5, 1fr) !important;
-    /* Force 5 columns */
-    gap: 0.5rem !important;
-  }
-
-  /* Headers */
+  /* 8. Headers */
   h1,
   h2,
   h3 {
     margin-top: 0 !important;
     margin-bottom: 0.5rem !important;
     page-break-after: avoid;
+  }
+
+  /* 9. Reports Dashboard: allow grids to flow naturally */
+  .report-print-grid {
+    display: block !important;
+  }
+
+  .report-print-grid>* {
+    width: 100% !important;
+    margin-bottom: 12px !important;
   }
 }

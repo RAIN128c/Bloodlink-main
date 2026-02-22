@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { addPatient } from '@/lib/actions/patient';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, User, Activity, ShieldX, UsersRound, X, UserPlus, AlertCircle } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import { CustomSelect } from '@/components/ui/CustomSelect';

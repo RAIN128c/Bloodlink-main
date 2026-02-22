@@ -1,68 +1,67 @@
-import NextAuth from 'next-auth';
-import Credentials from 'next-auth/providers/credentials';
-import { AuthService } from '@/lib/services/authService';
-import { authConfig } from './auth.config';
+import { createClient } from '@/utils/supabase/server';
+import { redirect } from 'next/navigation';
 
-export const { handlers, signIn, signOut, auth } = NextAuth({
-    ...authConfig,
-    trustHost: true, // Fix for Vercel behind proxy
-    providers: [
-        Credentials({
-            credentials: {
-                email: { label: "Email", type: "email" },
-                password: { label: "Password", type: "password" },
-            },
-            authorize: async (credentials) => {
-                if (!credentials?.email || !credentials?.password) {
-                    return null;
-                }
+/**
+ * A wrapper function mimicking NextAuth's `auth()` to minimize codebase changes.
+ * Returns a NextAuth-compatible session object constructed from Supabase auth state.
+ */
+export async function auth() {
+    const supabase = await createClient();
+    const { data: { user }, error } = await supabase.auth.getUser();
 
-                // Call our existing AuthService
-                const user = await AuthService.authenticateUser(
-                    credentials.email as string,
-                    credentials.password as string
-                );
-
-                if (!user) {
-                    return null; // Return null if auth fails
-                }
-
-                // Return user object compatible with NextAuth
-                return {
-                    id: user.userId || user.email, // NextAuth requires id
-                    userId: user.userId,
-                    name: user.name,
-                    surname: user.surname,
-                    email: user.email,
-                    role: user.role, // Custom property (needs type augmentation)
-                };
-            },
-        }),
-    ],
-    pages: {
-        signIn: '/login', // Custom login page
-    },
-    callbacks: {
-        async jwt({ token, user }) {
-            if (user) {
-                // console.log('JWT Callback - User:', user); // DEBUG
-                token.role = (user as any).role;
-                token.status = (user as any).status;
-                token.userId = (user as any).userId;
-                token.surname = (user as any).surname;
-            }
-            return token;
-        },
-        async session({ session, token }) {
-            // console.log('Session Callback - Token:', token); // DEBUG
-            if (session.user) {
-                // Ensure manual mapping matches the types we defined
-                session.user.role = token.role as string;
-                session.user.userId = token.userId as string;
-                session.user.surname = token.surname as string;
-                session.user.status = token.status as string; // Add status mapping
-            }
-            return session;
-        }
+    if (error || !user) {
+        return null;
     }
-});
+
+    // Fetch custom profile data from public.users table
+    // This allows existing components to continue using session.user.role, etc.
+    const { data: profile } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+    if (!profile) {
+        // Fallback if public profile isn't generated yet
+        return {
+            user: {
+                id: user.id,
+                userId: user.id,
+                email: user.email,
+                name: "Unknown",
+                surname: "User",
+                role: "user",
+                status: "active"
+            }
+        };
+    }
+
+    // Return NextAuth-compatible standard format
+    return {
+        user: {
+            id: user.id,
+            userId: user.id, // Keep for backwards compatibility
+            email: user.email,
+            name: profile.name,
+            surname: profile.surname,
+            role: profile.role,
+            status: profile.status
+        }
+    };
+}
+
+export async function signIn() {
+    throw new Error('NextAuth is deprecated. Please use supabase.auth.signInWithPassword');
+}
+
+export async function signOut() {
+    const supabase = await createClient();
+    await supabase.auth.signOut();
+    redirect('/login');
+}
+
+// Dummy handlers to prevent Next.js build errors for [...nextauth] route (which will be deleted)
+export const handlers = {
+    GET: () => new Response('NextAuth is deprecated', { status: 404 }),
+    POST: () => new Response('NextAuth is deprecated', { status: 404 })
+};

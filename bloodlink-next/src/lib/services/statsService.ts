@@ -67,7 +67,7 @@ export class StatsService {
                 const process = p.process?.trim();
                 if (process === 'นัดหมาย') {
                     appointment++;
-                } else if (process === 'เจาะเลือด' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
+                } else if (process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
                     inProcess++;
                 } else if (process === 'ส่งผลตรวจ' || process === 'เสร็จสิ้น' || process === 'รับยาแล้ว') {
                     tested++;
@@ -101,7 +101,7 @@ export class StatsService {
                     yearlyData[year] = { inProcess: 0, tested: 0, received: 0 };
                 }
                 const process = p.process?.trim();
-                if (process === 'เจาะเลือด' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
+                if (process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
                     yearlyData[year].inProcess++;
                 } else if (process === 'นัดหมาย') {
                     yearlyData[year].received++;
@@ -220,9 +220,9 @@ export class StatsService {
                     // Note: key might not exist in labels depending on range, but we only chart generated labels
                     if (dataMap[key]) {
                         const process = p.process?.trim();
-                        if (process === 'เจาะเลือด' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
+                        if (process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
                             dataMap[key].inProcess++;
-                        } else if (process === 'นัดหมาย' || process === 'กำลังจัดส่ง') {
+                        } else if (process === 'นัดหมาย') {
                             dataMap[key].received++;
                         } else if (process === 'ส่งผลตรวจ' || process === 'เสร็จสิ้น') {
                             dataMap[key].tested++;

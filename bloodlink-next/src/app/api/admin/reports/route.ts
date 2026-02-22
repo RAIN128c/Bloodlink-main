@@ -70,7 +70,8 @@ export async function GET() {
 
         const userActivityLogs: UserActivityLog[] = (auditLogs || []).map(log => {
             const date = new Date(log.created_at);
-            const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            const timeStr = `${dateStr} ${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
             const name = log.name || 'ผู้ใช้';
             const initials = name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).slice(0, 2).join('');
 
@@ -103,7 +104,8 @@ export async function GET() {
 
         const systemLogs: SystemLog[] = (systemData || []).map(log => {
             const date = new Date(log.created_at);
-            const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            const timeStr = `${dateStr} ${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
 
             // Determine status based on tags or subject
             let status: 'success' | 'error' | 'warning' | 'info' = 'info';
@@ -154,20 +156,21 @@ export async function GET() {
             const process = p.process?.trim();
             if (process === 'ส่งผลตรวจ' || process === 'เสร็จสิ้น' || process === 'รับยาแล้ว') {
                 completed++;
-            } else if (process === 'นัดหมาย' || process === 'เจาะเลือด' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
+            } else if (process === 'นัดหมาย' || process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
                 pending++;
             }
         });
 
         const orders: DailySummaryOrder[] = patients.slice(0, 20).map((p, index) => {
             const date = new Date(p.created_at || p.timestamp);
-            const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = date.toLocaleDateString('th-TH', { day: 'numeric', month: 'short', year: '2-digit' });
+            const timeStr = `${dateStr} ${date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' })}`;
 
             let status: 'Completed' | 'Processing' | 'Pending' = 'Pending';
             const process = p.process?.trim();
             if (process === 'ส่งผลตรวจ' || process === 'เสร็จสิ้น' || process === 'รับยาแล้ว') {
                 status = 'Completed';
-            } else if (process === 'เจาะเลือด' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
+            } else if (process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
                 status = 'Processing';
             }
 

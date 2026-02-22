@@ -116,14 +116,7 @@ export async function updatePatientStatus(
             }
         }
 
-        // Send status notification to responsible staff
-        const patientName = `${patient.name} ${patient.surname}`;
-        try {
-            await NotificationService.sendStatusNotification(hn, processStatus, patientName);
-            console.log(`[updatePatientStatus] Sent notification for ${hn} -> ${processStatus}`);
-        } catch (notifError) {
-            console.error('[updatePatientStatus] Failed to send notification:', notifError);
-        }
+        // Notification is already handled inside PatientService.updatePatientStatus
 
         revalidatePath('/dashboard');
         revalidatePath('/test-status');

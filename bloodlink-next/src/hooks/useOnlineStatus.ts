@@ -35,8 +35,8 @@ export function useOnlineStatus() {
         // Initial check
         checkConnection();
 
-        // Check every 5 seconds
-        const interval = setInterval(checkConnection, 5000);
+        // Check every 60 seconds (reduced from 5s to save API requests)
+        const interval = setInterval(checkConnection, 60000);
 
         const handleOnline = () => {
             // Browser says online, but verify connection immediately

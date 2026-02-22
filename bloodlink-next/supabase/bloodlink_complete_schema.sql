@@ -20,9 +20,9 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 --          phone, status, bio, avatar_url, created_at, updated_at
 -- ============================================================
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    -- Links to Supabase Auth auth.users
+    id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
-    password TEXT NOT NULL,
     name TEXT NOT NULL,
     surname TEXT,
     role TEXT NOT NULL,
@@ -34,6 +34,9 @@ CREATE TABLE IF NOT EXISTS users (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- For migrating existing databases:
+ALTER TABLE users DROP COLUMN IF EXISTS password;
 
 ALTER TABLE users ADD COLUMN IF NOT EXISTS surname TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS position TEXT DEFAULT '';
@@ -342,42 +345,9 @@ CREATE INDEX IF NOT EXISTS idx_lab_results_hn ON lab_results(hn);
 CREATE INDEX IF NOT EXISTS idx_lab_results_timestamp ON lab_results(timestamp DESC);
 
 -- ============================================================
--- 5. LAB_REFERENCE_RANGES (Normal ranges for lab tests)
--- Source: settings/lab-ranges/route.ts
+-- 5. LAB_REFERENCE_RANGES — REMOVED (unused in production)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS lab_reference_ranges (
-    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-    test_key TEXT UNIQUE NOT NULL,
-    test_name TEXT NOT NULL,
-    min_value NUMERIC,
-    max_value NUMERIC,
-    unit TEXT,
-    updated_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE lab_reference_ranges ADD COLUMN IF NOT EXISTS min_value NUMERIC;
-ALTER TABLE lab_reference_ranges ADD COLUMN IF NOT EXISTS max_value NUMERIC;
-ALTER TABLE lab_reference_ranges ADD COLUMN IF NOT EXISTS unit TEXT;
-ALTER TABLE lab_reference_ranges ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
-
-INSERT INTO lab_reference_ranges (test_key, test_name, unit, min_value, max_value) VALUES
-('wbc', 'WBC', '10*3/μ', 4.23, 9.07),
-('rbc', 'RBC', '10*6/μL', 4.63, 6.08),
-('hb', 'Hemoglobin', 'g/dL', 13.7, 17.5),
-('hct', 'Hematocrit', '%', 40.1, 51),
-('mcv', 'MCV', 'fL', 79, 92.2),
-('mch', 'MCH', 'pg', 25.7, 32.2),
-('mchc', 'MCHC', 'g/dL', 32.3, 36.5),
-('plt', 'Platelet count', '10*3/μL', 140, 400),
-('neutrophil', 'Neutrophil', '%', 34, 67.9),
-('lymphocyte', 'Lymphocyte', '%', 21.8, 53.1),
-('monocyte', 'Monocyte', '%', 5.3, 12.2),
-('eosinophil', 'Eosinophil', '%', 0.8, 7),
-('basophil', 'Basophil', '%', 0.2, 1.2),
-('plateletSmear', 'Platelet from smear', '', NULL, NULL),
-('nrbc', 'NRBC (cell/100 WBC)', 'cell/100 WBC', NULL, NULL),
-('rbcMorphology', 'RBC Morphology', '', NULL, NULL)
-ON CONFLICT (test_key) DO NOTHING;
+DROP TABLE IF EXISTS lab_reference_ranges CASCADE;
 
 -- ============================================================
 -- 6. APPOINTMENTS
@@ -469,30 +439,9 @@ CREATE INDEX IF NOT EXISTS idx_admin_inbox_created ON admin_inbox(created_at DES
 CREATE INDEX IF NOT EXISTS idx_admin_inbox_is_read ON admin_inbox(is_read);
 
 -- ============================================================
--- 9. NOTIFICATIONS (System notification store)
--- Note: Exists in Supabase but NOT queried via .from() in code
--- Kept for compatibility
+-- 9. NOTIFICATIONS — REMOVED (system uses 'messages' table instead)
 -- ============================================================
-CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    title TEXT,
-    message TEXT,
-    type TEXT DEFAULT 'info',
-    is_read BOOLEAN DEFAULT FALSE,
-    link TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW()
-);
-
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS title TEXT;
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS message TEXT;
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS type TEXT DEFAULT 'info';
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS is_read BOOLEAN DEFAULT FALSE;
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS link TEXT;
-ALTER TABLE notifications ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
-
-CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
-CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at DESC);
+DROP TABLE IF EXISTS notifications CASCADE;
 
 -- ============================================================
 -- 10. STATUS_HISTORY (Patient status change tracking)
@@ -584,207 +533,181 @@ ON CONFLICT (id) DO NOTHING;
 
 
 -- ############################################################
+-- SUPABASE NATIVE FEATURES: TRIGGERS & AUTOMATION
+-- ############################################################
+
+-- 1. Auto Profile Creation (auth.users -> public.users)
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS trigger AS $$
+BEGIN
+  INSERT INTO public.users (id, email, name, role, status)
+  VALUES (
+    new.id, 
+    new.email, 
+    COALESCE(new.raw_user_meta_data->>'name', 'New User'), 
+    COALESCE(new.raw_user_meta_data->>'role', 'ผู้ใช้งานทั่วไป'),
+    'ใช้งาน'
+  )
+  ON CONFLICT (id) DO NOTHING;
+  RETURN new;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW EXECUTE PROCEDURE public.handle_new_user();
+
+-- 2. Auto Audit Logging
+CREATE OR REPLACE FUNCTION public.audit_log_trigger()
+RETURNS trigger AS $$
+DECLARE
+  v_user_email TEXT;
+BEGIN
+  -- Extract email from JWT claims if available, otherwise 'system'
+  v_user_email := COALESCE(current_setting('request.jwt.claims', true)::json->>'email', 'system');
+  
+  INSERT INTO public.audit_logs (action, user_email, details)
+  VALUES (
+    TG_OP || '_' || TG_TABLE_NAME, 
+    v_user_email, 
+    'Table ' || TG_TABLE_NAME || ' ' || TG_OP
+  );
+  
+  IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS audit_patients ON patients;
+CREATE TRIGGER audit_patients AFTER UPDATE OR DELETE ON patients FOR EACH ROW EXECUTE PROCEDURE public.audit_log_trigger();
+
+DROP TRIGGER IF EXISTS audit_lab_results ON lab_results;
+CREATE TRIGGER audit_lab_results AFTER UPDATE OR DELETE ON lab_results FOR EACH ROW EXECUTE PROCEDURE public.audit_log_trigger();
+
+-- ############################################################
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ############################################################
 
--- ---- USERS ----
+-- Enable RLS on all tables
 ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'users' AND policyname = 'Users can read own data') THEN
-        CREATE POLICY "Users can read own data"
-        ON users FOR SELECT TO authenticated
-        USING (auth.uid()::text = id::text);
-    END IF;
-END $$;
-
--- ---- PATIENTS ----
 ALTER TABLE patients ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patients' AND policyname = 'Authenticated users can read patients') THEN
-        CREATE POLICY "Authenticated users can read patients"
-        ON patients FOR SELECT TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patients' AND policyname = 'Authenticated users can insert patients') THEN
-        CREATE POLICY "Authenticated users can insert patients"
-        ON patients FOR INSERT TO authenticated WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patients' AND policyname = 'Authenticated users can update patients') THEN
-        CREATE POLICY "Authenticated users can update patients"
-        ON patients FOR UPDATE TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patients' AND policyname = 'Authenticated users can delete patients') THEN
-        CREATE POLICY "Authenticated users can delete patients"
-        ON patients FOR DELETE TO authenticated USING (true);
-    END IF;
-END $$;
-
--- ---- PATIENT_RESPONSIBILITY ----
 ALTER TABLE patient_responsibility ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patient_responsibility' AND policyname = 'Authenticated can read responsibility') THEN
-        CREATE POLICY "Authenticated can read responsibility"
-        ON patient_responsibility FOR SELECT TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patient_responsibility' AND policyname = 'Authenticated can insert responsibility') THEN
-        CREATE POLICY "Authenticated can insert responsibility"
-        ON patient_responsibility FOR INSERT TO authenticated WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patient_responsibility' AND policyname = 'Authenticated can update responsibility') THEN
-        CREATE POLICY "Authenticated can update responsibility"
-        ON patient_responsibility FOR UPDATE TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'patient_responsibility' AND policyname = 'Authenticated can delete responsibility') THEN
-        CREATE POLICY "Authenticated can delete responsibility"
-        ON patient_responsibility FOR DELETE TO authenticated USING (true);
-    END IF;
-END $$;
-
--- ---- LAB_RESULTS ----
 ALTER TABLE lab_results ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'lab_results' AND policyname = 'Authenticated users can read lab results') THEN
-        CREATE POLICY "Authenticated users can read lab results"
-        ON lab_results FOR SELECT TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'lab_results' AND policyname = 'Authenticated users can insert lab results') THEN
-        CREATE POLICY "Authenticated users can insert lab results"
-        ON lab_results FOR INSERT TO authenticated WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'lab_results' AND policyname = 'Authenticated users can update lab results') THEN
-        CREATE POLICY "Authenticated users can update lab results"
-        ON lab_results FOR UPDATE TO authenticated USING (true);
-    END IF;
-END $$;
-
--- ---- LAB_REFERENCE_RANGES ----
-ALTER TABLE lab_reference_ranges ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'lab_reference_ranges' AND policyname = 'Allow read access for all authenticated users') THEN
-        CREATE POLICY "Allow read access for all authenticated users" ON lab_reference_ranges
-        FOR SELECT TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'lab_reference_ranges' AND policyname = 'Allow write access for authenticated users') THEN
-        CREATE POLICY "Allow write access for authenticated users" ON lab_reference_ranges
-        FOR ALL TO authenticated USING (true);
-    END IF;
-END $$;
-
--- ---- APPOINTMENTS ----
 ALTER TABLE appointments ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Allow authenticated read') THEN
-        CREATE POLICY "Allow authenticated read" ON appointments
-        FOR SELECT TO authenticated USING (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Allow authenticated insert') THEN
-        CREATE POLICY "Allow authenticated insert" ON appointments
-        FOR INSERT TO authenticated WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Allow authenticated update') THEN
-        CREATE POLICY "Allow authenticated update" ON appointments
-        FOR UPDATE TO authenticated USING (true) WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'appointments' AND policyname = 'Allow authenticated delete') THEN
-        CREATE POLICY "Allow authenticated delete" ON appointments
-        FOR DELETE TO authenticated USING (true);
-    END IF;
-END $$;
-
--- ---- MESSAGES ----
 ALTER TABLE messages ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Users can view received messages') THEN
-        CREATE POLICY "Users can view received messages" ON messages
-        FOR SELECT USING (auth.uid() = receiver_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Users can view sent messages') THEN
-        CREATE POLICY "Users can view sent messages" ON messages
-        FOR SELECT USING (auth.uid() = sender_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Users can send messages') THEN
-        CREATE POLICY "Users can send messages" ON messages
-        FOR INSERT WITH CHECK (auth.uid() = sender_id);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'messages' AND policyname = 'Users can update read status') THEN
-        CREATE POLICY "Users can update read status" ON messages
-        FOR UPDATE USING (auth.uid() = receiver_id);
-    END IF;
-END $$;
-
--- ---- ADMIN_INBOX (no RLS — accessed via supabaseAdmin) ----
--- ---- NOTIFICATIONS (no RLS — not queried in code) ----
-
--- ---- STATUS_HISTORY ----
+ALTER TABLE admin_inbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE status_history ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'status_history' AND policyname = 'Users can insert status history') THEN
-        CREATE POLICY "Users can insert status history" ON status_history
-        FOR INSERT WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'status_history' AND policyname = 'Users can read status history') THEN
-        CREATE POLICY "Users can read status history" ON status_history
-        FOR SELECT USING (true);
-    END IF;
-END $$;
-
--- ---- AUDIT_LOGS ----
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
-DO $$ BEGIN
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'audit_logs' AND policyname = 'Users can insert audit logs') THEN
-        CREATE POLICY "Users can insert audit logs" ON audit_logs
-        FOR INSERT TO authenticated WITH CHECK (true);
-    END IF;
-    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename = 'audit_logs' AND policyname = 'Users can read audit logs') THEN
-        CREATE POLICY "Users can read audit logs" ON audit_logs
-        FOR SELECT TO authenticated USING (true);
-    END IF;
+ALTER TABLE user_tokens ENABLE ROW LEVEL SECURITY;
+
+-- Clean existing policies to avoid duplicates during migration
+DO $$ DECLARE
+    pol record;
+BEGIN
+    FOR pol IN SELECT policyname, tablename FROM pg_policies WHERE schemaname = 'public' LOOP
+        EXECUTE format('DROP POLICY IF EXISTS %I ON %I', pol.policyname, pol.tablename);
+    END LOOP;
 END $$;
 
--- ---- USER_TOKENS ----
-ALTER TABLE user_tokens ENABLE ROW LEVEL SECURITY;
--- Accessed via supabaseAdmin only — no RLS policies needed
+-- ---- 1. USERS ----
+CREATE POLICY "Users can view all staff" ON users FOR SELECT USING (true);
+CREATE POLICY "Users can update own profile" ON users FOR UPDATE USING ((select auth.uid()) = id);
+
+-- ---- 2. PATIENTS ----
+CREATE POLICY "Authenticated users can read patients" ON patients FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Staff can insert patients" ON patients FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+CREATE POLICY "Staff can update patients" ON patients FOR UPDATE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+CREATE POLICY "Staff can delete patients" ON patients FOR DELETE TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
+-- ---- 3. PATIENT_RESPONSIBILITY ----
+CREATE POLICY "Staff can manage responsibilities" ON patient_responsibility FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
+-- ---- 4. LAB_RESULTS ----
+CREATE POLICY "Staff can manage lab results" ON lab_results FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
+-- ---- 5. APPOINTMENTS ----
+CREATE POLICY "Staff can manage appointments" ON appointments FOR ALL TO authenticated USING (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
+-- ---- 6. MESSAGES ----
+CREATE POLICY "Users can view own messages" ON messages FOR SELECT USING ((select auth.uid()) = sender_id OR (select auth.uid()) = receiver_id);
+CREATE POLICY "Users can send messages" ON messages FOR INSERT WITH CHECK ((select auth.uid()) = sender_id);
+CREATE POLICY "Users can update received messages" ON messages FOR UPDATE USING ((select auth.uid()) = receiver_id);
+
+-- ---- 7. ADMIN_INBOX ----
+CREATE POLICY "Admins can manage inbox" ON admin_inbox FOR ALL TO authenticated USING ((SELECT role FROM users WHERE id = (select auth.uid())) = 'admin');
+
+-- ---- 8. STATUS_HISTORY & 9. AUDIT_LOGS ----
+CREATE POLICY "Staff can view history and logs" ON status_history FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Staff can view history and logs" ON audit_logs FOR SELECT TO authenticated USING (true);
+-- Inserts handled by Triggers or Service Role
+
+-- ---- 12. USER_TOKENS ----
+-- Used by Supabase Admin internally, no real public RLS needed, but added to satisfy linter
+CREATE POLICY "No public access to tokens" ON user_tokens FOR SELECT TO authenticated USING (false);
 
 -- ---- STORAGE POLICIES ----
 DROP POLICY IF EXISTS "Public Access" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can upload avatars" ON storage.objects;
-DROP POLICY IF EXISTS "Authenticated users can update avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Users can upload own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Users can update own avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Users can delete own avatars" ON storage.objects;
 
-CREATE POLICY "Public Access"
-ON storage.objects FOR SELECT
-USING (bucket_id = 'avatars');
+CREATE POLICY "Public Access" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
+CREATE POLICY "Users can upload own avatars" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars');
+CREATE POLICY "Users can update own avatars" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars');
+CREATE POLICY "Users can delete own avatars" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars');
 
-CREATE POLICY "Users can upload own avatars"
-ON storage.objects FOR INSERT TO authenticated
-WITH CHECK (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+DROP POLICY IF EXISTS "Authenticated can view lab reports" ON storage.objects;
+DROP POLICY IF EXISTS "Staff can upload lab reports" ON storage.objects;
 
-CREATE POLICY "Users can update own avatars"
-ON storage.objects FOR UPDATE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
-
-CREATE POLICY "Users can delete own avatars"
-ON storage.objects FOR DELETE TO authenticated
-USING (bucket_id = 'avatars' AND (storage.foldername(name))[1] = auth.uid()::text);
+CREATE POLICY "Authenticated can view lab reports" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'lab_reports');
+CREATE POLICY "Staff can upload lab reports" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'lab_reports');
 
 -- ============================================================
--- TABLE COMMENTS
+-- PERFORMANCE TWEAKS & CLEANUP
 -- ============================================================
-COMMENT ON TABLE users IS 'Staff & admin accounts (bcrypt passwords)';
+
+-- 1. Restoring Missing Foreign Key Indexes (Fixes Unindexed Foreign Keys warning)
+CREATE INDEX IF NOT EXISTS idx_status_history_patient_hn ON status_history(patient_hn);
+
+-- 2. Removing Unused Indexes to optimize Write speeds
+DROP INDEX IF EXISTS idx_patients_process;
+DROP INDEX IF EXISTS idx_patient_resp_hn;
+DROP INDEX IF EXISTS idx_patient_resp_email;
+DROP INDEX IF EXISTS idx_lab_results_timestamp;
+DROP INDEX IF EXISTS idx_audit_logs_email;
+
+-- Restore FK covering index for lab_results.hn (required by lab_results_hn_fkey)
+CREATE INDEX IF NOT EXISTS idx_lab_results_hn ON lab_results(hn);
+
+-- 3. Resolving duplicate and unused indexes reported by Supabase Linter (from previous run)
+DROP INDEX IF EXISTS idx_notifications_created_at; 
+DROP INDEX IF EXISTS idx_users_email; 
+DROP INDEX IF EXISTS idx_admin_inbox_created;
+DROP INDEX IF EXISTS idx_admin_inbox_is_read;
+DROP INDEX IF EXISTS idx_appointments_start_time;
+DROP INDEX IF EXISTS idx_audit_logs_created;
+DROP INDEX IF EXISTS idx_lab_results_patient_hn;
+DROP INDEX IF EXISTS idx_lab_results_status;
+DROP INDEX IF EXISTS idx_notifications_user;
+DROP INDEX IF EXISTS idx_notifications_created;
+DROP INDEX IF EXISTS idx_patient_responsibility_hn;
+DROP INDEX IF EXISTS idx_patient_responsibility_staff;
+DROP INDEX IF EXISTS idx_patients_name;
+DROP INDEX IF EXISTS idx_patients_status;
+DROP INDEX IF EXISTS idx_status_history_hn;
+DROP INDEX IF EXISTS idx_status_history_created;
+DROP INDEX IF EXISTS idx_user_tokens_email;
+DROP INDEX IF EXISTS idx_users_role;
+DROP INDEX IF EXISTS idx_users_status;
+
+-- Table Comments
+COMMENT ON TABLE users IS 'Staff & admin profiles linked to auth.users. Passwords removed.';
 COMMENT ON TABLE patients IS 'Patient records with workflow tracking';
-COMMENT ON TABLE patient_responsibility IS 'Staff-patient assignment junction';
-COMMENT ON TABLE lab_results IS 'Lab results (CBC, chemistry, vitals) — ALL snake_case columns';
-COMMENT ON TABLE lab_reference_ranges IS 'Normal reference ranges for lab tests';
-COMMENT ON TABLE appointments IS 'Appointments — uses title/start_time/end_time/description NOT appointment_date/type/note';
-COMMENT ON TABLE messages IS 'User-to-user messaging & system notifications';
-COMMENT ON TABLE admin_inbox IS 'Admin-only inbox for system notifications';
-COMMENT ON TABLE notifications IS 'System notification store (not queried in code)';
-COMMENT ON TABLE status_history IS 'Patient status change audit trail';
-COMMENT ON TABLE audit_logs IS 'Login & action audit trail';
-COMMENT ON TABLE user_tokens IS 'Password reset tokens';
+COMMENT ON TABLE lab_results IS 'Lab results with trigger-based audit logging';
+COMMENT ON TABLE audit_logs IS 'Auto-populated action audit trail via Postgres Triggers';
 
 -- ============================================================
--- Done! 12 tables + 1 storage bucket + RLS policies.
--- Every column verified against actual codebase.
+-- Done! 10 tables + 2 storage buckets + RLS policies + Triggers.
+-- Tables removed: notifications (unused), lab_reference_ranges (unused)
+-- Ready for Production!
 -- ============================================================

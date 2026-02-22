@@ -7,8 +7,10 @@ export interface Message {
     receiver_id: string;
     sender_name?: string;
     sender_email?: string;
+    sender_avatar?: string;
     receiver_name?: string;
     receiver_email?: string;
+    receiver_avatar?: string;
     subject: string;
     content: string;
     type: string;
@@ -28,12 +30,14 @@ export class MessageService {
                     sender:sender_id (
                         name,
                         surname,
-                        email
+                        email,
+                        avatar_url
                     ),
                     receiver:receiver_id (
                         name,
                         surname,
-                        email
+                        email,
+                        avatar_url
                     )
                 `)
                 .or(`receiver_id.eq.${userId},sender_id.eq.${userId}`)
@@ -76,10 +80,12 @@ export class MessageService {
             // Map 'messages'
             const mappedMessages = messagesData.map(msg => ({
                 ...msg,
-                sender_name: msg.sender ? `${msg.sender.name} ${msg.sender.surname}` : 'System',
+                sender_name: msg.sender ? `${msg.sender.name} ${msg.sender.surname || ''}`.trim() : 'System',
                 sender_email: msg.sender?.email,
-                receiver_name: msg.receiver ? `${msg.receiver.name} ${msg.receiver.surname}` : 'Unknown',
-                receiver_email: msg.receiver?.email
+                sender_avatar: msg.sender?.avatar_url,
+                receiver_name: msg.receiver ? `${msg.receiver.name} ${msg.receiver.surname || ''}`.trim() : 'Unknown',
+                receiver_email: msg.receiver?.email,
+                receiver_avatar: msg.receiver?.avatar_url
             }));
 
             // Map 'admin_inbox'
@@ -89,8 +95,10 @@ export class MessageService {
                 receiver_id: userId,
                 sender_name: item.sender_name || 'System',
                 sender_email: item.sender_email,
+                sender_avatar: undefined,
                 receiver_name: 'Admin',
                 receiver_email: '',
+                receiver_avatar: undefined,
                 subject: item.subject,
                 content: item.message, // Mapped from 'message' column
                 type: item.type,
@@ -200,6 +208,34 @@ export class MessageService {
 
             return { success: true };
         } catch (error: any) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Bulk mark as read or unread
+    static async markBulkAsRead(messageIds: string[], isRead: boolean): Promise<{ success: boolean; error?: string }> {
+        try {
+            if (!messageIds.length) return { success: true };
+
+            // Try 'messages' table
+            const { error: msgError } = await supabaseAdmin
+                .from('messages')
+                .update({ is_read: isRead })
+                .in('id', messageIds);
+
+            if (msgError) throw msgError;
+
+            // Try 'admin_inbox' table just in case
+            const { error: adminError } = await supabaseAdmin
+                .from('admin_inbox')
+                .update({ is_read: isRead })
+                .in('id', messageIds);
+
+            if (adminError) throw adminError;
+
+            return { success: true };
+        } catch (error: any) {
+            console.error('Bulk update error:', error);
             return { success: false, error: error.message };
         }
     }

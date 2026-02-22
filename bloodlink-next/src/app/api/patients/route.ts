@@ -16,7 +16,8 @@ export async function GET(req: NextRequest) {
 
         // Filter for lab queue: patients waiting for lab results
         if (processFilter === 'pending_lab') {
-            const pendingStatuses = ['กำลังจัดส่ง', 'กำลังตรวจ'];
+            // Include standard pending statuses + new Lab workflow states
+            const pendingStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
             const filtered = patients.filter((p: any) => pendingStatuses.includes(p.process));
             return NextResponse.json({
                 patients: filtered.map((p: any) => ({
@@ -27,6 +28,19 @@ export async function GET(req: NextRequest) {
                     testType: p.testType,
                     updatedAt: p.timestamp,
                     caregiver: p.caregiver,
+                    // Additional fields required for PrintSummarySheet
+                    gender: p.gender,
+                    age: p.age,
+                    bloodType: p.bloodType,
+                    disease: p.disease,
+                    allergies: p.allergies,
+                    idCard: p.idCard,
+                    phone: p.phone,
+                    relativeName: p.relativeName,
+                    relativePhone: p.relativePhone,
+                    relativeRelationship: p.relativeRelationship,
+                    responsibleEmails: p.responsibleEmails,
+                    creatorEmail: p.creatorEmail
                 }))
             });
         }
