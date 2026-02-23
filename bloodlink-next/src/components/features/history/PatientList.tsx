@@ -9,7 +9,7 @@ import { formatDateThai } from '@/lib/utils';
 import { BulkImportModal } from '@/components/modals/BulkImportModal';
 import { BulkAssignModal } from '@/components/modals/BulkAssignModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import { deletePatient } from '@/lib/actions/patient'; // Import delete action
@@ -21,6 +21,7 @@ import { supabase } from '@/lib/supabase';
 import { useMemo } from 'react';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet'; // Import Print Sheet
 import { Printer } from 'lucide-react'; // Import Printer Icon
+import { updatePatientStatus } from '@/lib/actions/patient'; // Import update action
 
 // Severity color mapping based on days overdue
 const getSeverityColor = (daysOverdue: number) => {
@@ -78,6 +79,13 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
 
     // Print State
     const [isPrinting, setIsPrinting] = useState(false);
+
+    // Filter State
+    const [showOnlyMyPatients, setShowOnlyMyPatients] = useState(true);
+
+    // Order Lab confirm modal state
+    const [isOrderLabConfirmOpen, setIsOrderLabConfirmOpen] = useState(false);
+    const [isOrderingLab, setIsOrderingLab] = useState(false);
 
     const { data: session } = useSession();
     const { effectiveRole: role } = useEffectiveRole();
@@ -193,15 +201,67 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
     };
 
 
+    // Apply "My Patients" filter
+    const filteredPatients = useMemo(() => {
+        let result = patients;
+        if (showOnlyMyPatients && session?.user?.email) {
+            const userEmail = session.user.email.toLowerCase();
+            result = result.filter(patient => {
+                const isCreator = patient.creatorEmail && userEmail === patient.creatorEmail.toLowerCase();
+                const isResponsible = patient.responsibleEmails?.some(email => email.toLowerCase() === userEmail);
+                return isCreator || isResponsible;
+            });
+        }
+        return result;
+    }, [patients, showOnlyMyPatients, session]);
+
+    // Computed states for Bulk Action logic
+    const canOrderLab = useMemo(() => {
+        return Array.from(selectedPatients).some(hn => {
+            const p = patients.find(p => p.hn === hn);
+            return p && (p.process === 'รอตรวจ' || p.process === 'นัดหมาย');
+        });
+    }, [selectedPatients, patients]);
+
+    const canPrint = useMemo(() => {
+        return Array.from(selectedPatients).some(hn => {
+            const p = patients.find(p => p.hn === hn);
+            // Printing is ONLY allowed if the order has been submitted to the lab or further
+            return p && (p.process !== 'รอตรวจ' && p.process !== 'นัดหมาย');
+        });
+    }, [selectedPatients, patients]);
+
     const handlePrintSummary = () => {
         setIsPrinting(true);
         // Delay to allow component to render before printing
-        setTimeout(() => {
+        setTimeout(async () => {
             window.print();
-            // Reset after print dialog closes (or user cancels)
-            // Note: window.print() blocks execution in many browsers until dialog closes
             setIsPrinting(false);
-        }, 100);
+        }, 300); // slightly longer delay for rendering complex tables
+    };
+
+    const handleConfirmOrderLab = async () => {
+        setIsOrderingLab(true);
+        const selectedHns = Array.from(selectedPatients);
+        let hasError = false;
+        for (const hn of selectedHns) {
+            try {
+                const res = await updatePatientStatus(hn, 'รอแล็บรับเรื่อง', {});
+                if (!res.success) hasError = true;
+            } catch (err) {
+                console.error(err);
+                hasError = true;
+            }
+        }
+
+        if (hasError) {
+            alert('พบข้อผิดพลาดบางรายการ กรุณาตรวจสอบสถานะและลองใหม่หากจำเป็น');
+        } else {
+            setSelectedPatients(new Set());
+            window.location.reload();
+        }
+        setIsOrderingLab(false);
+        setIsOrderLabConfirmOpen(false);
     };
 
     if (isLoading) {
@@ -239,16 +299,23 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                     <div className="mb-3 flex-shrink-0 flex items-start justify-between gap-4 animate-fade-in-up">
                         <div>
                             <h1 className="text-[26px] font-bold text-[#111827] dark:text-white">{title}</h1>
-                            <h2 className="text-[16px] text-[#A59CFD] font-semibold">
-                                รายชื่อ ({patients.length} คน)
+                            <h2 className="text-[16px] text-[#A59CFD] font-semibold flex items-center gap-2">
+                                รายชื่อ ({filteredPatients.length} คน)
                                 {selectedPatients.size > 0 && (
-                                    <span className="ml-2 text-indigo-600 dark:text-indigo-400">
+                                    <span className="text-indigo-600 dark:text-indigo-400">
                                         • เลือก {selectedPatients.size} คน
                                     </span>
                                 )}
                             </h2>
                         </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="flex flex-wrap items-center gap-2 flex-shrink-0">
+                            <button
+                                onClick={() => setShowOnlyMyPatients(!showOnlyMyPatients)}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium rounded-lg transition-colors hover-scale ${showOnlyMyPatients ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300' : 'bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300'}`}
+                            >
+                                <Filter className="w-3.5 h-3.5" />
+                                {showOnlyMyPatients ? 'เฉพาะที่ฉันรับผิดชอบ' : 'ดูแลทั้งหมด'}
+                            </button>
                             {canUseBulkTools && selectedPatients.size > 0 && (
                                 <button
                                     onClick={() => setIsAssignModalOpen(true)}
@@ -265,13 +332,22 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                 <Upload className="w-3.5 h-3.5" />
                                 นำเข้า
                             </button>
-                            {selectedPatients.size > 0 && (
+                            {selectedPatients.size > 0 && canOrderLab && Permissions.isDoctorOrNurse(role) && (
+                                <button
+                                    onClick={() => setIsOrderLabConfirmOpen(true)}
+                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[12px] font-medium rounded-lg hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors hover-scale"
+                                >
+                                    <Square className="w-3.5 h-3.5" />
+                                    สั่งเจาะเลือด ({selectedPatients.size})
+                                </button>
+                            )}
+                            {selectedPatients.size > 0 && canPrint && (
                                 <button
                                     onClick={() => handlePrintSummary()}
                                     className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-[12px] font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors hover-scale"
                                 >
                                     <Printer className="w-3.5 h-3.5" />
-                                    พิมพ์ใบสรุป ({selectedPatients.size})
+                                    พิมพ์ใบส่งตรวจ ({selectedPatients.size})
                                 </button>
                             )}
                         </div>
@@ -279,8 +355,8 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
 
                     <StaggerContainer className="overflow-y-auto pr-2 space-y-3 custom-scrollbar h-full">
                         <ListAnimatePresence>
-                            {patients.length > 0 ? (
-                                patients.map((patient, idx) => {
+                            {filteredPatients.length > 0 ? (
+                                filteredPatients.map((patient, idx) => {
                                     const userEmail = session?.user?.email?.toLowerCase();
                                     const isCreator = userEmail && patient.creatorEmail && userEmail === patient.creatorEmail.toLowerCase();
                                     const isResponsible = userEmail && patient.responsibleEmails?.some(email => email.toLowerCase() === userEmail);
@@ -316,8 +392,19 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                             {/* Content */}
                                             <div className="flex-1 flex flex-col gap-1.5">
                                                 <div className="flex justify-between items-start">
-                                                    <div className="text-[16px] font-bold text-[#1F2937] dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                                        HN : {patient.hn}
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="text-[16px] font-bold text-[#1F2937] dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                                            HN : {patient.hn}
+                                                        </div>
+                                                        {patient.process === 'กำลังจัดส่ง' ? (
+                                                            <div title="เตรียมใบส่งตรวจแล้ว" className="flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 p-1 rounded-md">
+                                                                <Printer className="w-3.5 h-3.5" />
+                                                            </div>
+                                                        ) : patient.process === 'รอแล็บรับเรื่อง' ? (
+                                                            <div title="ส่งคำขอแล้ว (รอแล็บอนุมัติ)" className="flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 p-1 rounded-md border border-amber-200 dark:border-amber-800">
+                                                                <Printer className="w-3.5 h-3.5 opacity-50" />
+                                                            </div>
+                                                        ) : null}
                                                     </div>
                                                     <StatusBadge status={patient.process} />
                                                 </div>
@@ -429,6 +516,20 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                 variant="danger"
                 isLoading={isDeleting}
             />
+
+            {/* Custom Confirm Modal for Ordering Lab */}
+            <ConfirmModal
+                isOpen={isOrderLabConfirmOpen}
+                onClose={() => setIsOrderLabConfirmOpen(false)}
+                onConfirm={handleConfirmOrderLab}
+                title="ยืนยันการสั่งเจาะเลือด"
+                description="ต้องการสั่งเจาะเลือดผู้ป่วยที่เลือกใช่หรือไม่? (ระบบจะส่งเรื่องไปที่ห้องแล็บเพื่อรอรับเรื่อง)"
+                confirmText="สั่งเจาะเลือด"
+                cancelText="ยกเลิก"
+                variant="primary"
+                isLoading={isOrderingLab}
+            />
+
             {/* Print Summary Sheet - Rendered only when printing */}
             {
                 isPrinting && (

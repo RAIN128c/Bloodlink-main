@@ -19,6 +19,8 @@ const getIndicator = (process: string): string => {
             return 'testing';
         case 'กำลังจัดส่ง':
         case 'เจาะเลือด':
+        case 'รอแล็บรับเรื่อง':
+        case 'รอจัดส่ง':
             return 'received';
         default:
             return 'pending';

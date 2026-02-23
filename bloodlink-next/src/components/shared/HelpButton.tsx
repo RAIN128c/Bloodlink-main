@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from 'react';
 import { X, CheckCircle, Truck, Droplets, Bug, User, Phone, Mail, Clock, MessageCircle } from 'lucide-react';
 import { NotificationType } from '@/components/shared/NotificationPopup';
 import { Permissions } from '@/lib/permissions';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { usePathname } from 'next/navigation';
 import { HELP_CONTENT } from '@/config/helpData';
 
@@ -140,8 +140,8 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
 
                 {/* Help Menu */}
                 {isMenuOpen && (
-                    <div className="absolute bottom-14 right-0 w-64 bg-[#2D3748] rounded-[16px] shadow-xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
-                        <div className="text-white px-4 py-3 font-medium text-[13px] border-b border-gray-600 flex items-center gap-2">
+                    <div className="absolute bottom-14 right-0 w-64 max-h-[80vh] bg-[#2D3748] rounded-[16px] shadow-xl overflow-y-auto custom-scrollbar animate-in fade-in zoom-in-95 duration-200">
+                        <div className="text-white px-4 py-3 font-medium text-[13px] border-b border-gray-600 flex items-center gap-2 sticky top-0 bg-[#2D3748] z-10">
                             ช่วยเหลือ (Help)
                         </div>
 
@@ -207,21 +207,22 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
                                         {/* Status Workflow Permissions */}
                                         <div className="pt-2 border-t border-gray-600 text-[10px] text-gray-400">
                                             <p className="font-semibold mb-1">Status Workflow:</p>
-                                            <div className="space-y-1">
+                                            <div className="space-y-3 pl-4 border-l-2 border-slate-200">
                                                 {[
                                                     { from: 'รอตรวจ', to: 'นัดหมาย', label: 'รอตรวจ→นัดหมาย' },
-                                                    { from: 'นัดหมาย', to: 'เจาะเลือด', label: 'นัดหมาย→เจาะเลือด' },
-                                                    { from: 'เจาะเลือด', to: 'กำลังจัดส่ง', label: 'เจาะเลือด→จัดส่ง' },
+                                                    { from: 'นัดหมาย', to: 'รอแล็บรับเรื่อง', label: 'นัดหมาย→รอแล็บ' },
+                                                    { from: 'รอแล็บรับเรื่อง', to: 'รอจัดส่ง', label: 'รอแล็บ→รอจัดส่ง' },
+                                                    { from: 'รอจัดส่ง', to: 'กำลังจัดส่ง', label: 'รอจัดส่ง→กำลังจัดส่ง' },
                                                     { from: 'กำลังจัดส่ง', to: 'กำลังตรวจ', label: 'จัดส่ง→กำลังตรวจ' },
-                                                    { from: 'กำลังตรวจ', to: 'เสร็จสิ้น', label: 'กำลังตรวจ→เสร็จ' },
-                                                ].map(({ from, to, label }) => {
+                                                    { from: 'กำลังตรวจ', to: 'เสร็จสิ้น', label: 'กำลังตรวจ→เสร็จสิ้น' }
+                                                ].map((transition) => {
                                                     const currentRole = overrideRole || actualRole || '';
-                                                    const canDo = Permissions.canUpdateToStatus(currentRole, from, to);
-                                                    const requiredRole = Permissions.getRequiredRoleForTransition(from, to);
+                                                    const canDo = Permissions.canUpdateToStatus(currentRole, transition.from, transition.to);
+                                                    const requiredRole = Permissions.getRequiredRoleForTransition(transition.from, transition.to);
                                                     return (
-                                                        <div key={label} className="flex items-center justify-between">
+                                                        <div key={transition.label} className="flex items-center justify-between">
                                                             <span className={canDo ? 'text-green-400' : 'text-gray-500'}>
-                                                                {canDo ? '✓' : '✗'} {label}
+                                                                {canDo ? '✓' : '✗'} {transition.label}
                                                             </span>
                                                             {!canDo && (
                                                                 <span className="text-[8px] text-gray-500">
@@ -231,41 +232,6 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
                                                         </div>
                                                     );
                                                 })}
-                                            </div>
-                                        </div>
-
-                                        {/* Simulate Lab Update */}
-                                        <div className="pt-2 border-t border-gray-600">
-                                            <p className="text-[10px] text-gray-400 mb-2">Simulate Lab Update:</p>
-                                            <div className="grid grid-cols-4 gap-2">
-                                                <button
-                                                    onClick={() => triggerNotification('resultReady', 'ผลเลือดออก', 'ผลเลือด นางขวัญฤทัย อักษรทอง')}
-                                                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-center"
-                                                    title="Result Ready"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 text-green-400 mx-auto" />
-                                                </button>
-                                                <button
-                                                    onClick={() => triggerNotification('time', 'ส่งเลือดตรวจ', '')}
-                                                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-center"
-                                                    title="Sending Sample"
-                                                >
-                                                    <Truck className="w-4 h-4 text-blue-400 mx-auto" />
-                                                </button>
-                                                <button
-                                                    onClick={() => triggerNotification('time', 'เจาะเลือด', '')}
-                                                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-center"
-                                                    title="Collecting Sample"
-                                                >
-                                                    <Droplets className="w-4 h-4 text-blue-400 mx-auto" />
-                                                </button>
-                                                <button
-                                                    onClick={() => triggerNotification('sentSuccess', 'ส่งผลเลือดสำเร็จ', '')}
-                                                    className="p-2 bg-gray-700 hover:bg-gray-600 rounded text-center"
-                                                    title="Sent Success"
-                                                >
-                                                    <CheckCircle className="w-4 h-4 text-[#84CC16] mx-auto" />
-                                                </button>
                                             </div>
                                         </div>
                                     </div>

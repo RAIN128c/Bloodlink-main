@@ -160,6 +160,19 @@ export class PatientService {
                 }
             }
 
+            // Check for duplicate ID Card if provided
+            if (data.idCard) {
+                const { data: existingId } = await supabase
+                    .from('patients')
+                    .select('hn')
+                    .eq('id_card', data.idCard)
+                    .maybeSingle();
+
+                if (existingId) {
+                    return { success: false, error: 'มีผู้ป่วยที่ใช้เลขบัตรประชาชนนี้แล้วในระบบ' };
+                }
+            }
+
             const { error } = await supabase
                 .from('patients')
                 .insert([
@@ -178,7 +191,13 @@ export class PatientService {
                         process: 'รอตรวจ',
                         appointment_date: data.appointmentDate || null,
                         caregiver: data.caregiver || '',
-                        latest_receipt: ''
+                        latest_receipt: '',
+                        // New Fields
+                        id_card: data.idCard || null,
+                        phone: data.phone || null,
+                        relative_name: data.relativeName || null,
+                        relative_phone: data.relativePhone || null,
+                        relative_relationship: data.relativeRelationship || null
                     }
                 ]);
 
@@ -210,6 +229,19 @@ export class PatientService {
                 }
             }
 
+            // Check for duplicate ID Card if provided
+            if (data.idCard) {
+                const { data: existingId } = await supabase
+                    .from('patients')
+                    .select('hn')
+                    .eq('id_card', data.idCard)
+                    .maybeSingle();
+
+                if (existingId) {
+                    return { success: false, error: 'มีผู้ป่วยที่ใช้เลขบัตรประชาชนนี้แล้วในระบบ' };
+                }
+            }
+
             // First add the patient
             const { error: patientError } = await supabase
                 .from('patients')
@@ -229,7 +261,13 @@ export class PatientService {
                         process: 'รอตรวจ',
                         appointment_date: data.appointmentDate || null,
                         caregiver: data.caregiver || '',
-                        latest_receipt: ''
+                        latest_receipt: '',
+                        // New Fields
+                        id_card: data.idCard || null,
+                        phone: data.phone || null,
+                        relative_name: data.relativeName || null,
+                        relative_phone: data.relativePhone || null,
+                        relative_relationship: data.relativeRelationship || null
                     }
                 ]);
 
@@ -396,6 +434,12 @@ export class PatientService {
             bloodType?: string;
             disease?: string;
             allergies?: string;
+            // New Fields
+            idCard?: string;
+            phone?: string;
+            relativeName?: string;
+            relativePhone?: string;
+            relativeRelationship?: string;
         }
     ): Promise<boolean> {
         try {
@@ -408,6 +452,11 @@ export class PatientService {
             if (data.bloodType !== undefined) updateData.blood_type = data.bloodType;
             if (data.disease !== undefined) updateData.disease = data.disease;
             if (data.allergies !== undefined) updateData.allergies = data.allergies;
+            if (data.idCard !== undefined) updateData.id_card = data.idCard;
+            if (data.phone !== undefined) updateData.phone = data.phone;
+            if (data.relativeName !== undefined) updateData.relative_name = data.relativeName;
+            if (data.relativePhone !== undefined) updateData.relative_phone = data.relativePhone;
+            if (data.relativeRelationship !== undefined) updateData.relative_relationship = data.relativeRelationship;
 
             const { error } = await supabase
                 .from('patients')

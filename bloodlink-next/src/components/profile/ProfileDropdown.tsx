@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { User, LogOut, Settings, ChevronRight } from 'lucide-react';
-import Link from 'next/link';
+import { signOut } from '@/components/providers/SupabaseAuthProvider';
 import Image from 'next/image';
-import { signOut } from 'next-auth/react';
+import Link from 'next/link';
 
 export interface CurrentUser {
     id: string;

@@ -54,8 +54,8 @@ export function PatientList({ initialPatients }: { initialPatients: Patient[] })
         // Status matching logic
         if (filter === 'All') return true;
         if (filter === 'ใช้งาน') return p.status === 'ใช้งาน';
-        if (filter === 'In Process') {
-            return ['เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
+        if (filter === 'In Process') { // Assuming 'filter' is intended to be used here, not an undefined 'activeTab'
+            return ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
         }
         return p.status === filter;
     });

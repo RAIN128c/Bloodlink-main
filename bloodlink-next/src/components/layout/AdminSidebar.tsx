@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
 import { LayoutGrid, Users, Stethoscope, Mail, FileText, LogOut, Menu, X } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { useInbox } from '@/components/providers/InboxContext';
 import { useTheme } from 'next-themes';
 
@@ -84,7 +84,7 @@ export function AdminSidebar() {
 
             {/* Sidebar */}
             <aside className={clsx(
-                "w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-kanit)] transition-all duration-300",
+                "sidebar w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-kanit)] transition-all duration-300",
                 // Mobile: hidden by default, show when menu open
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}>

@@ -12,7 +12,7 @@ export const VALID_ROLES = [Role.DOCTOR, Role.NURSE, Role.LAB, Role.ADMIN] as co
 
 // ===== Status Workflow Configuration =====
 // Ordered list of all patient statuses
-export const STATUS_ORDER = ['รอตรวจ', 'นัดหมาย', 'เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'] as const;
+export const STATUS_ORDER = ['รอตรวจ', 'นัดหมาย', 'รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'] as const;
 export type PatientStatus = typeof STATUS_ORDER[number];
 
 // Role-based transition permissions
@@ -23,17 +23,25 @@ export const STATUS_TRANSITIONS: Record<string, { allowedRoles: string[], descri
         allowedRoles: ['แพทย์', 'พยาบาล'],
         description: 'แพทย์หรือพยาบาลนัดหมายเจาะเลือด'
     },
-    'นัดหมาย→เจาะเลือด': {
-        allowedRoles: ['พยาบาล'],
-        description: 'พยาบาลทำการเจาะเลือด'
+    'รอตรวจ→รอแล็บรับเรื่อง': {
+        allowedRoles: ['แพทย์', 'พยาบาล'],
+        description: 'สั่งเจาะเลือด (ส่งเรื่องให้แล็บ)'
     },
-    'เจาะเลือด→กำลังจัดส่ง': {
+    'นัดหมาย→รอแล็บรับเรื่อง': {
+        allowedRoles: ['แพทย์', 'พยาบาล'],
+        description: 'สั่งเจาะเลือดจากนัดหมาย (ส่งเรื่องให้แล็บ)'
+    },
+    'รอแล็บรับเรื่อง→รอจัดส่ง': {
         allowedRoles: ['เจ้าหน้าที่ห้องปฏิบัติการ'],
-        description: 'LAB รับตัวอย่างเลือด'
+        description: 'แล็บรับคำขอส่งตรวจ (พร้อมสำหรับการเจาะ/จัดส่ง)'
+    },
+    'รอจัดส่ง→กำลังจัดส่ง': {
+        allowedRoles: ['พยาบาล'],
+        description: 'พยาบาลแพ็คและจัดส่งตัวอย่าง'
     },
     'กำลังจัดส่ง→กำลังตรวจ': {
         allowedRoles: ['เจ้าหน้าที่ห้องปฏิบัติการ'],
-        description: 'LAB เริ่มตรวจวิเคราะห์'
+        description: 'แล็บได้รับตัวอย่าง เริ่มตรวจวิเคราะห์'
     },
     'กำลังตรวจ→เสร็จสิ้น': {
         allowedRoles: ['แพทย์'],
@@ -44,6 +52,15 @@ export const STATUS_TRANSITIONS: Record<string, { allowedRoles: string[], descri
         allowedRoles: ['แพทย์'],
         description: 'แพทย์สั่งตรวจซ้ำ'
     },
+    // Revert / Cancel Paths
+    'รอแล็บรับเรื่อง→รอตรวจ': {
+        allowedRoles: ['แพทย์', 'พยาบาล'],
+        description: 'ยกเลิกคำสั่งเจาะเลือด (แล็บยังไม่รับเรื่อง)'
+    },
+    'รอจัดส่ง→รอตรวจ': {
+        allowedRoles: ['แพทย์', 'พยาบาล', 'เจ้าหน้าที่ห้องปฏิบัติการ'],
+        description: 'ยกเลิกการส่ง / ปฏิเสธรับเรื่อง'
+    }
 };
 
 /**
@@ -222,11 +239,22 @@ export const Permissions = {
         // Invalid statuses
         if (currentIndex === -1 || targetIndex === -1) return false;
 
+        // Check if it's a valid manual revert/cancel transition
+        const isRevertTransition =
+            (currentStatus === 'รอแล็บรับเรื่อง' && targetStatus === 'รอตรวจ') ||
+            (currentStatus === 'รอจัดส่ง' && targetStatus === 'รอตรวจ');
+
         // Special case: Allow เสร็จสิ้น → รอตรวจ for recheck
         const isRecheckTransition = currentStatus === 'เสร็จสิ้น' && targetStatus === 'รอตรวจ';
 
-        // Must be exactly next step OR recheck transition
-        if (targetIndex !== currentIndex + 1 && !isRecheckTransition) return false;
+        // Must be exactly next step OR recheck transition OR revert transition
+        if (targetIndex !== currentIndex + 1 && !isRecheckTransition && !isRevertTransition) {
+            // Wait, also check `รอตรวจ` -> `รอแล็บรับเรื่อง` (skipping `นัดหมาย`)
+            const isSkipAppointment = currentStatus === 'รอตรวจ' && targetStatus === 'รอแล็บรับเรื่อง';
+            if (!isSkipAppointment) {
+                return false;
+            }
+        }
 
         // Check role permission for this transition
         const transitionKey = `${currentStatus}→${targetStatus}`;
@@ -292,10 +320,11 @@ export const Permissions = {
         if (!currentStatus || !targetStatus) return false;
         if (currentStatus === targetStatus) return false;
 
-        // Special case: Allow เสร็จสิ้น → รอตรวจ for recheck
-        if (currentStatus === 'เสร็จสิ้น' && targetStatus === 'รอตรวจ') {
-            return true;
-        }
+        // Special cases
+        if (currentStatus === 'เสร็จสิ้น' && targetStatus === 'รอตรวจ') return true;
+        if (currentStatus === 'รอตรวจ' && targetStatus === 'รอแล็บรับเรื่อง') return true;
+        if (currentStatus === 'รอแล็บรับเรื่อง' && targetStatus === 'รอตรวจ') return true;
+        if (currentStatus === 'รอจัดส่ง' && targetStatus === 'รอตรวจ') return true;
 
         const currentIndex = STATUS_ORDER.indexOf(currentStatus as PatientStatus);
         const targetIndex = STATUS_ORDER.indexOf(targetStatus as PatientStatus);

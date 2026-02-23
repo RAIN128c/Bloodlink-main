@@ -5,6 +5,7 @@ import { X, Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle, Aler
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
+import imageCompression from 'browser-image-compression';
 
 interface LabUploadModalProps {
     isOpen: boolean;
@@ -17,18 +18,12 @@ interface LabUploadModalProps {
     };
 }
 
-type ResultSummary = 'Normal' | 'Abnormal' | 'Critical';
+// Traffic lights removed completely
 
-const SUMMARY_OPTIONS: { value: ResultSummary; label: string; icon: typeof CheckCircle; color: string; bgColor: string; borderColor: string }[] = [
-    { value: 'Normal', label: '🟢 ปกติ', icon: CheckCircle, color: 'text-emerald-600 dark:text-emerald-400', bgColor: 'bg-emerald-50 dark:bg-emerald-900/30', borderColor: 'border-emerald-300 dark:border-emerald-600' },
-    { value: 'Abnormal', label: '🟡 ผิดปกติ', icon: AlertTriangle, color: 'text-amber-600 dark:text-amber-400', bgColor: 'bg-amber-50 dark:bg-amber-900/30', borderColor: 'border-amber-300 dark:border-amber-600' },
-    { value: 'Critical', label: '🔴 วิกฤต', icon: AlertCircle, color: 'text-red-600 dark:text-red-400', bgColor: 'bg-red-50 dark:bg-red-900/30', borderColor: 'border-red-300 dark:border-red-600' },
-];
 
 export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploadModalProps) {
     const [file, setFile] = useState<File | null>(null);
     const [preview, setPreview] = useState<string | null>(null);
-    const [resultSummary, setResultSummary] = useState<ResultSummary | null>(null);
     const [isUploading, setIsUploading] = useState(false);
     const [isConverting, setIsConverting] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
@@ -42,6 +37,12 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
             const workbook = XLSX.read(buffer, { type: 'array' });
             const firstSheet = workbook.SheetNames[0];
             const worksheet = workbook.Sheets[firstSheet];
+
+            // Check if the sheet is completely empty
+            if (!worksheet || !worksheet['!ref']) {
+                throw new Error("ไม่พบข้อมูลในไฟล์ Excel (Empty Sheet)");
+            }
+
             const htmlString = XLSX.utils.sheet_to_html(worksheet, { editable: false });
 
             // Create a temporary container for rendering
@@ -140,18 +141,37 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
     };
 
     const handleSubmit = async () => {
-        if (!file || !resultSummary) {
-            toast.error('กรุณาเลือกไฟล์และระบุสถานะผลตรวจ');
+        if (!file) {
+            toast.error('กรุณาเลือกไฟล์เพื่ออัปโหลด');
             return;
         }
 
         setIsUploading(true);
         try {
+            let processedFile = file;
+
+            // Compress image if it's not a PDF
+            if (file.type.startsWith('image/')) {
+                const options = {
+                    maxSizeMB: 2, // Max 2MB to preserve print quality
+                    maxWidthOrHeight: 2500, // Supports up to A4 300 DPI (approx 2480px width)
+                    useWebWorker: true,
+                    initialQuality: 0.9, // Higher initial quality for text readability
+                };
+                try {
+                    toast.info('กำลังบีบอัดรูปภาพ...');
+                    const compressedBlob = await imageCompression(file, options);
+                    // Ensure the compressed file has the original name
+                    processedFile = new File([compressedBlob], file.name, { type: file.type });
+                } catch (compressionError) {
+                    console.error('Compression failed, using original file:', compressionError);
+                }
+            }
+
             const formData = new FormData();
-            formData.append('file', file);
+            formData.append('file', processedFile);
             formData.append('hn', patient.hn);
-            formData.append('patientName', `${patient.name} ${patient.surname}`);
-            formData.append('resultSummary', resultSummary);
+            formData.append('patientName', `${patient.name} ${patient.surname || ''}`.trim());
 
             const res = await fetch('/api/lab/upload', {
                 method: 'POST',
@@ -184,7 +204,6 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
     const handleClose = () => {
         setFile(null);
         setPreview(null);
-        setResultSummary(null);
         onClose();
     };
 
@@ -266,30 +285,7 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                         )}
                     </div>
 
-                    {/* Traffic Light Tagging */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                            สรุปผลตรวจ <span className="text-red-500">*</span>
-                        </label>
-                        <div className="grid grid-cols-3 gap-2">
-                            {SUMMARY_OPTIONS.map((option) => (
-                                <button
-                                    key={option.value}
-                                    onClick={() => setResultSummary(option.value)}
-                                    className={`
-                                        flex flex-col items-center gap-1.5 p-3 rounded-xl border-2 transition-all
-                                        ${resultSummary === option.value
-                                            ? `${option.bgColor} ${option.borderColor} ${option.color} ring-2 ring-offset-1 ring-current`
-                                            : 'border-gray-200 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-300 dark:hover:border-gray-500'
-                                        }
-                                    `}
-                                >
-                                    <span className="text-xl">{option.label.split(' ')[0]}</span>
-                                    <span className="text-xs font-medium">{option.label.split(' ')[1]}</span>
-                                </button>
-                            ))}
-                        </div>
-                    </div>
+                    {/* Traffic Light Tagging - Removed per user request */}
                 </div>
 
                 {/* Footer */}
@@ -303,7 +299,7 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                     </button>
                     <button
                         onClick={handleSubmit}
-                        disabled={!file || !resultSummary || isUploading}
+                        disabled={!file || isUploading}
                         className="px-5 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     >
                         {isUploading ? (

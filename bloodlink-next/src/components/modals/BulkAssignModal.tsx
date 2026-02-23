@@ -126,7 +126,7 @@ export function BulkAssignModal({ isOpen, onClose, selectedPatients, onAssignCom
                             <span className="font-semibold">{selectedPatients.length}</span> ผู้ป่วยที่เลือก
                         </p>
                         <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-1">
-                            {selectedPatients.slice(0, 3).map(p => `${p.name} ${p.surname}`).join(', ')}
+                            {selectedPatients.slice(0, 3).map(p => `${p.name} ${p.surname || ''}`.trim()).join(', ')}
                             {selectedPatients.length > 3 && ` และอีก ${selectedPatients.length - 3} คน`}
                         </p>
                     </div>

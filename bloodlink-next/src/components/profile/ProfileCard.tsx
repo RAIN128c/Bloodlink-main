@@ -52,52 +52,72 @@ export function ProfileCard({ user, showEditButton = false, editPath, compact = 
 
     // Full profile card
     return (
-        <div className="bg-white dark:bg-[#1F2937] rounded-[16px] p-10 shadow-[0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none border border-[#E5E7EB] dark:border-gray-700 flex gap-10 transition-colors">
-            {/* Left: Avatar */}
-            <div className="flex flex-col items-center gap-4 min-w-[200px] pr-10 border-r border-[#E5E7EB] dark:border-gray-700">
-                <div className="w-[120px] h-[120px] rounded-full bg-[#E5E7EB] dark:bg-gray-700 flex items-center justify-center overflow-hidden">
+        <div className="bg-white dark:bg-[#111827] rounded-[24px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col md:flex-row transition-all hover:shadow-md">
+            {/* Left: Avatar Banner & Pic */}
+            <div className="md:w-[320px] relative flex flex-col items-center p-8 bg-gradient-to-b from-indigo-50/50 to-white dark:from-[#1F2937] dark:to-[#111827] border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
+                <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-10 dark:opacity-20 rounded-t-[24px] md:rounded-tr-none md:rounded-l-[24px]"></div>
+
+                <div className="w-[140px] h-[140px] rounded-full bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-gray-700 shadow-xl relative z-10 mb-4 transition-transform hover:scale-105">
                     {user.avatarUrl ? (
-                        <Image src={user.avatarUrl} alt={user.name} width={120} height={120} className="w-full h-full object-cover" />
+                        <Image src={user.avatarUrl} alt={user.name} width={140} height={140} priority className="w-full h-full object-cover" />
                     ) : (
-                        <User className="w-[60px] h-[60px] text-[#374151] dark:text-gray-400" />
+                        <User className="w-[60px] h-[60px] text-gray-300 dark:text-gray-500" />
                     )}
                 </div>
-                <div className="flex flex-col items-center gap-1">
-                    <span className="text-[14px] font-medium text-[#374151] dark:text-gray-300">
-                        {formatDisplayId(user.userId, user.role)}
+
+                <div className="flex flex-col items-center gap-1 z-10 relative mt-2">
+                    <span className="px-3 py-1 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold rounded-full uppercase tracking-wider">
+                        {user.role}
+                    </span>
+                    <span className="text-[14px] font-mono font-medium text-gray-500 dark:text-gray-400 mt-2">
+                        ID: {formatDisplayId(user.staffNumber || user.userId, user.role)}
                     </span>
                 </div>
             </div>
 
             {/* Right: Info */}
-            <div className="flex-1 flex flex-col gap-3">
-                <div className="text-[24px] font-bold text-[#111827] dark:text-white">
-                    {user.name} {user.surname}
-                </div>
-                <div className="text-[16px] text-[#9CA3AF] dark:text-gray-400">{user.position}</div>
-
-                {user.bio && (
-                    <div className="text-[14px] text-[#4B5563] dark:text-gray-300 leading-relaxed mt-2 mb-6">
-                        {user.bio}
+            <div className="flex-1 flex flex-col p-8 sm:p-10 justify-center">
+                <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+                    <div>
+                        <h1 className="text-[32px] sm:text-[36px] font-bold text-gray-900 dark:text-white leading-tight">
+                            {user.name} {user.surname}
+                        </h1>
+                        <p className="text-[18px] text-indigo-600 dark:text-indigo-400 font-medium mt-1">{user.position || 'เจ้าหน้าที่'}</p>
                     </div>
-                )}
 
-                <div className="text-[14px] text-[#4B5563] dark:text-gray-300 flex flex-col gap-1 mt-auto">
-                    {user.phone && <div>{user.phone}</div>}
-                    <div>{user.email}</div>
-                </div>
-
-                {showEditButton && editPath && (
-                    <div className="flex justify-end mt-4">
+                    {showEditButton && editPath && (
                         <Link
                             href={editPath}
-                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-gray-700 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] text-[#374151] dark:text-gray-200 text-[14px] font-medium shadow-[0_1px_2px_rgba(0,0,0,0.05)] dark:shadow-none hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                            className="flex items-center justify-center gap-2 px-5 py-2.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-200 text-sm font-semibold shadow-sm hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-indigo-300 dark:hover:border-indigo-600 transition-all flex-shrink-0"
                         >
                             <Edit2 className="w-4 h-4" />
-                            แก้ไขข้อมูล
+                            แก้ไขโปรไฟล์
                         </Link>
+                    )}
+                </div>
+
+                {user.bio ? (
+                    <div className="mt-6 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
+                        <p className="text-[15px] text-gray-600 dark:text-gray-300 leading-relaxed italic">
+                            "{user.bio}"
+                        </p>
                     </div>
+                ) : (
+                    <div className="mt-6 mb-2"></div>
                 )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-8">
+                    {user.phone && (
+                        <div className="flex flex-col">
+                            <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">เบอร์โทรศัพท์</span>
+                            <span className="text-[15px] text-gray-800 dark:text-gray-200 font-medium">{user.phone}</span>
+                        </div>
+                    )}
+                    <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">อีเมลติดต่อ</span>
+                        <span className="text-[15px] text-gray-800 dark:text-gray-200 font-medium">{user.email}</span>
+                    </div>
+                </div>
             </div>
         </div>
     );

@@ -7,8 +7,6 @@ import { useTheme } from 'next-themes';
 
 import { SearchModal } from '@/components/modals/SearchModal';
 import { ProfileDropdown, CurrentUser } from '@/components/profile/ProfileDropdown';
-import { NotificationBell } from '@/components/shared/NotificationBell';
-import { useNotifications } from '@/components/providers/NotificationContext';
 import { useInbox } from '@/components/providers/InboxContext';
 
 interface HeaderProps {
@@ -23,8 +21,7 @@ export function Header({ hideSearch = false, title, isAdminPage = false }: Heade
     const [isSearchModalOpen, setIsSearchModalOpen] = useState(false);
     const [currentUser, setCurrentUser] = useState<CurrentUser | null>(null);
 
-    // Notifications
-    const { notifications, markAsRead, markAllAsRead, deleteNotification, clearAll } = useNotifications();
+    // Inbox
     const { unreadCount } = useInbox();
 
     // Prevent hydration mismatch
@@ -139,15 +136,6 @@ export function Header({ hideSearch = false, title, isAdminPage = false }: Heade
                         </span>
                     )}
                 </Link>
-
-                {/* Notification Bell */}
-                <NotificationBell
-                    notifications={notifications}
-                    onMarkAsRead={markAsRead}
-                    onMarkAllAsRead={markAllAsRead}
-                    onDelete={deleteNotification}
-                    onClearAll={clearAll}
-                />
 
                 {/* Profile Dropdown */}
                 {currentUser && <ProfileDropdown user={currentUser} />}

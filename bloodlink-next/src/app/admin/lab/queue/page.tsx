@@ -1,12 +1,16 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { Header } from '@/components/layout/Header';
 import { RoleGuard } from '@/components/providers/RoleGuard';
 import { LabUploadModal } from '@/components/modals/LabUploadModal';
+import { LabBulkUploadModal } from '@/components/modals/LabBulkUploadModal';
 import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSession } from '@/components/providers/SupabaseAuthProvider';
+import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
+import { FileText, Eye } from 'lucide-react';
 
 interface PendingPatient {
     hn: string;
@@ -21,28 +25,45 @@ interface PendingPatient {
 interface CompletedResult {
     hn: string;
     patientName: string;
-    resultSummary: string;
     createdAt: string;
     reporterName: string;
 }
 
 export default function LabQueuePage() {
+    const { data: session } = useSession();
     const [pendingPatients, setPendingPatients] = useState<PendingPatient[]>([]);
+    const [myTasks, setMyTasks] = useState<PendingPatient[]>([]);
     const [recentResults, setRecentResults] = useState<CompletedResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedPatient, setSelectedPatient] = useState<PendingPatient | null>(null);
     const [showUploadModal, setShowUploadModal] = useState(false);
-    const [activeTab, setActiveTab] = useState<'pending' | 'completed'>('pending');
+    const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
+
+    // Digital Request Sheet Preview State
+    const [previewPatient, setPreviewPatient] = useState<PendingPatient | null>(null);
+    const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<'new_requests' | 'my_tasks' | 'completed'>('new_requests');
 
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
-            // Fetch pending patients (status: กำลังจัดส่ง or กำลังตรวจ)
+            // Fetch ALL pending lab patients (will be filtered locally for speed, or we can fetch separate)
             const patientsRes = await fetch('/api/patients?process=pending_lab');
             if (patientsRes.ok) {
                 const data = await patientsRes.json();
-                setPendingPatients(data.patients || []);
+                const allPending = data.patients || [];
+
+                // คำขอใหม่: รอแล็บรับเรื่อง
+                setPendingPatients(allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง'));
+
+                // งานของฉัน: รอจัดส่ง, กำลังจัดส่ง, กำลังตรวจ AND belongs to current user
+                setMyTasks(allPending.filter((p: any) => {
+                    const isMyStatus = ['รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
+                    const isMine = session?.user?.email && p.responsibleEmails?.includes(session.user.email);
+                    return isMyStatus && isMine;
+                }));
             }
 
             // Fetch recent completed results
@@ -57,7 +78,7 @@ export default function LabQueuePage() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [session?.user?.email]);
 
     useEffect(() => {
         fetchData();
@@ -72,24 +93,36 @@ export default function LabQueuePage() {
         fetchData();
     };
 
-    const filteredPatients = pendingPatients.filter(p =>
-        p.hn.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        p.surname.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-
-    const getSummaryBadge = (summary: string) => {
-        switch (summary) {
-            case 'Normal':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400"><CheckCircle className="w-3 h-3" /> ปกติ</span>;
-            case 'Abnormal':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"><AlertTriangle className="w-3 h-3" /> ผิดปกติ</span>;
-            case 'Critical':
-                return <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400"><AlertCircle className="w-3 h-3" /> วิกฤต</span>;
-            default:
-                return <span className="text-xs text-gray-400">-</span>;
+    const handleStatusUpdate = async (hn: string, newStatus: string) => {
+        try {
+            const res = await fetch(`/api/patients/${encodeURIComponent(hn)}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ process: newStatus })
+            });
+            if (res.ok) {
+                toast.success('อัปเดตสถานะสำเร็จ');
+                fetchData();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || 'ไม่สามารถอัปเดตสถานะได้');
+            }
+        } catch (err) {
+            toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         }
     };
+
+    const filteredPatients = useMemo(() => {
+        const lowerSearch = searchTerm.toLowerCase();
+        const sourceData = activeTab === 'new_requests' ? pendingPatients : myTasks;
+
+        return sourceData.filter(p =>
+            p.hn.toLowerCase().includes(lowerSearch) ||
+            p.name.toLowerCase().includes(lowerSearch) ||
+            p.surname.toLowerCase().includes(lowerSearch)
+        );
+    }, [pendingPatients, myTasks, searchTerm, activeTab]);
+
 
     const formatDate = (dateStr: string) => {
         try {
@@ -111,26 +144,44 @@ export default function LabQueuePage() {
                                 <h1 className="text-2xl font-bold text-gray-900 dark:text-white">คิวงาน Lab</h1>
                                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">รายการผู้ป่วยที่รอผลตรวจเลือด</p>
                             </div>
-                            <button
-                                onClick={fetchData}
-                                disabled={loading}
-                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
-                            >
-                                <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-                                รีเฟรช
-                            </button>
+                            <div className="flex items-center gap-2 text-nowrap">
+                                <button
+                                    onClick={() => setShowBulkUploadModal(true)}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition"
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    นำเข้าผลตรวจ (Bulk)
+                                </button>
+                                <button
+                                    onClick={fetchData}
+                                    disabled={loading}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-700 transition disabled:opacity-50"
+                                >
+                                    <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+                                    รีเฟรช
+                                </button>
+                            </div>
                         </div>
 
                         {/* Tabs */}
                         <div className="flex gap-1 mb-4 bg-gray-100 dark:bg-gray-800 p-1 rounded-xl w-fit">
                             <button
-                                onClick={() => setActiveTab('pending')}
-                                className={`px-4 py-2 text-sm font-medium rounded-lg transition ${activeTab === 'pending'
+                                onClick={() => setActiveTab('new_requests')}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition ${activeTab === 'new_requests'
                                     ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
                                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
                                     }`}
                             >
-                                รอผลตรวจ ({pendingPatients.length})
+                                คำขอใหม่ ({pendingPatients.length})
+                            </button>
+                            <button
+                                onClick={() => setActiveTab('my_tasks')}
+                                className={`px-4 py-2 text-sm font-medium rounded-lg transition ${activeTab === 'my_tasks'
+                                    ? 'bg-white dark:bg-gray-700 text-blue-600 dark:text-blue-400 shadow-sm'
+                                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                                    }`}
+                            >
+                                งานของฉัน ({myTasks.length})
                             </button>
                             <button
                                 onClick={() => setActiveTab('completed')}
@@ -143,7 +194,7 @@ export default function LabQueuePage() {
                             </button>
                         </div>
 
-                        {activeTab === 'pending' && (
+                        {(activeTab === 'new_requests' || activeTab === 'my_tasks') && (
                             <>
                                 {/* Search */}
                                 <div className="relative mb-4">
@@ -195,13 +246,47 @@ export default function LabQueuePage() {
                                                             </td>
                                                             <td className="px-5 py-4 text-xs text-gray-400">{patient.updatedAt ? formatDate(patient.updatedAt) : '-'}</td>
                                                             <td className="px-5 py-4 text-right">
-                                                                <button
-                                                                    onClick={() => handleUploadClick(patient)}
-                                                                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm"
-                                                                >
-                                                                    <Upload className="w-3.5 h-3.5" />
-                                                                    อัปโหลดผล
-                                                                </button>
+                                                                <div className="flex justify-end items-center gap-2">
+                                                                    {patient.process === 'รอแล็บรับเรื่อง' && (
+                                                                        <>
+                                                                            <button
+                                                                                onClick={() => {
+                                                                                    setPreviewPatient(patient);
+                                                                                    setShowPreviewModal(true);
+                                                                                }}
+                                                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition shadow-sm"
+                                                                            >
+                                                                                <FileText className="w-3.5 h-3.5" />
+                                                                                ดูใบส่งตรวจ
+                                                                            </button>
+                                                                            <button
+                                                                                onClick={() => handleStatusUpdate(patient.hn, 'รอจัดส่ง')}
+                                                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-lg transition shadow-sm"
+                                                                            >
+                                                                                <CheckCircle className="w-3.5 h-3.5" />
+                                                                                รับออร์เดอร์
+                                                                            </button>
+                                                                        </>
+                                                                    )}
+                                                                    {(patient.process === 'รอจัดส่ง' || patient.process === 'กำลังจัดส่ง') && (
+                                                                        <button
+                                                                            onClick={() => handleStatusUpdate(patient.hn, 'กำลังตรวจ')}
+                                                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-lg transition shadow-sm"
+                                                                        >
+                                                                            <Clock className="w-3.5 h-3.5" />
+                                                                            รับตัวอย่างเลือด
+                                                                        </button>
+                                                                    )}
+                                                                    {patient.process === 'กำลังตรวจ' && (
+                                                                        <button
+                                                                            onClick={() => handleUploadClick(patient)}
+                                                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg transition shadow-sm"
+                                                                        >
+                                                                            <Upload className="w-3.5 h-3.5" />
+                                                                            อัปโหลดผล
+                                                                        </button>
+                                                                    )}
+                                                                </div>
                                                             </td>
                                                         </tr>
                                                     ))}
@@ -227,7 +312,6 @@ export default function LabQueuePage() {
                                                 <tr className="border-b border-gray-100 dark:border-gray-700">
                                                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">HN</th>
                                                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ชื่อผู้ป่วย</th>
-                                                    <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">สรุปผล</th>
                                                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ผู้อัปโหลด</th>
                                                     <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">วันที่</th>
                                                 </tr>
@@ -237,7 +321,6 @@ export default function LabQueuePage() {
                                                     <tr key={`${result.hn}-${idx}`} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
                                                         <td className="px-5 py-4 text-sm font-mono font-medium text-gray-900 dark:text-white">{result.hn}</td>
                                                         <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{result.patientName || '-'}</td>
-                                                        <td className="px-5 py-4">{getSummaryBadge(result.resultSummary)}</td>
                                                         <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{result.reporterName || '-'}</td>
                                                         <td className="px-5 py-4 text-xs text-gray-400">{result.createdAt ? formatDate(result.createdAt) : '-'}</td>
                                                     </tr>
@@ -251,7 +334,6 @@ export default function LabQueuePage() {
                     </div>
                 </main>
 
-                {/* Upload Modal */}
                 {selectedPatient && (
                     <LabUploadModal
                         isOpen={showUploadModal}
@@ -262,6 +344,73 @@ export default function LabQueuePage() {
                         onSuccess={handleUploadSuccess}
                         patient={selectedPatient}
                     />
+                )}
+
+                {/* Bulk Upload Modal */}
+                <LabBulkUploadModal
+                    isOpen={showBulkUploadModal}
+                    onClose={() => setShowBulkUploadModal(false)}
+                    onSuccess={handleUploadSuccess}
+                    queuePatients={pendingPatients as any}
+                />
+
+                {/* Digital Request Sheet Preview Modal */}
+                {showPreviewModal && previewPatient && (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowPreviewModal(false)}>
+                        <div
+                            className="bg-white dark:bg-gray-900 w-full max-w-[1200px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
+                                <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-indigo-500" />
+                                    ตรวจสอบใบส่งตรวจ (Request Sheet)
+                                </h3>
+                                <button
+                                    onClick={() => setShowPreviewModal(false)}
+                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                                >
+                                    <span className="sr-only">Close</span>
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <div className="flex-1 overflow-auto p-8 bg-gray-200/50 dark:bg-gray-950/50 relative">
+                                {/* PrintSummarySheet assumes it's on a blank canvas. We wrap it nicely. */}
+                                <div className="bg-white mx-auto shadow-sm" style={{ width: '297mm', minHeight: '210mm', position: 'relative' }}>
+                                    {/* Override the CSS to force it to show on screen despite being 'print-only' */}
+                                    <style>{`
+                                        .print-only {
+                                            display: block !important;
+                                            position: static !important;
+                                        }
+                                    `}</style>
+                                    <PrintSummarySheet patients={[previewPatient as any]} />
+                                </div>
+                            </div>
+
+                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                                <button
+                                    onClick={() => setShowPreviewModal(false)}
+                                    className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+                                >
+                                    ปิดหน้าต่าง
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleStatusUpdate(previewPatient.hn, 'รอจัดส่ง');
+                                        setShowPreviewModal(false);
+                                    }}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    ยืนยันรับออร์เดอร์ (ข้อมูลถูกต้อง)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 )}
             </div>
         </RoleGuard>

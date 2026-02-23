@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
 import { Patient } from '@/types';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 

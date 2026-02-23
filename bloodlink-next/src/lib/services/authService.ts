@@ -403,21 +403,41 @@ export class AuthService {
 
     static async updateUserPassword(email: string, newPassword: string): Promise<boolean> {
         try {
-            // Hash new password
-            const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-            const { error } = await supabase
+            // First, find the user's auth.users ID from their email
+            const { data: profile } = await supabase
                 .from('users')
-                .update({
-                    password: hashedPassword,
-                    updated_at: new Date().toISOString()
-                })
-                .eq('email', email);
+                .select('id')
+                .eq('email', email)
+                .single();
+
+            if (!profile) {
+                console.error('Update password error: User not found for email', email);
+                return false;
+            }
+
+            // Use Supabase Admin API to update the password in auth.users
+            const { createClient } = await import('@supabase/supabase-js');
+            const supabaseAdmin = createClient(
+                process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+                process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+                { auth: { autoRefreshToken: false, persistSession: false } }
+            );
+
+            const { error } = await supabaseAdmin.auth.admin.updateUserById(profile.id, {
+                password: newPassword
+            });
 
             if (error) {
                 console.error('Update password error:', error);
                 return false;
             }
+
+            // Update the timestamp in public.users
+            await supabase
+                .from('users')
+                .update({ updated_at: new Date().toISOString() })
+                .eq('id', profile.id);
+
             return true;
         } catch (error) {
             console.error('Update password error:', error);

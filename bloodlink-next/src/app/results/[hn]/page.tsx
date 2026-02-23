@@ -7,7 +7,7 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import Link from 'next/link';
-import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye, Printer, Loader2 } from 'lucide-react';
+import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye, Printer, Loader2, X } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface LabResult {
@@ -106,6 +106,32 @@ export default function ResultPage() {
         } catch (error: any) {
             toast.error(error.message || 'เกิดข้อผิดพลาดในการอนุญาต');
         } finally {
+            setApproving(false);
+        }
+    };
+
+    const handleReject = async () => {
+        if (!latestResult || !hn) return;
+        const reason = window.prompt("ระบุสาเหตุที่ต้องการตีกลับผลตรวจนี้ (เช่น ภาพไม่ชัด, ผิดคน):");
+        if (reason === null) return; // User cancelled
+
+        setApproving(true);
+        try {
+            const res = await fetch(`/api/lab-results/${hn}/reject`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ resultId: latestResult.id, reason }),
+            });
+
+            if (!res.ok) {
+                const data = await res.json();
+                throw new Error(data.error || 'Rejection failed');
+            }
+
+            toast.success('ตีกลับผลตรวจกลับไปยัง รพช. เรียบร้อยแล้ว');
+            window.location.href = '/results'; // Redirect back to results queue
+        } catch (error: any) {
+            toast.error(error.message || 'เกิดข้อผิดพลาดในการตีกลับ');
             setApproving(false);
         }
     };
@@ -333,23 +359,34 @@ export default function ResultPage() {
 
                                     {/* Authorize Print Button */}
                                     {canApprove && latestResult && !isApproved && (
-                                        <button
-                                            onClick={handleApprove}
-                                            disabled={approving}
-                                            className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                                        >
-                                            {approving ? (
-                                                <>
-                                                    <RefreshCw className="w-4 h-4 animate-spin" />
-                                                    กำลังอนุญาต...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    อนุญาตให้พิมพ์
-                                                </>
-                                            )}
-                                        </button>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={handleReject}
+                                                disabled={approving}
+                                                className="w-1/3 flex items-center justify-center gap-1.5 px-3 py-3 text-sm font-semibold text-red-600 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                                title="ตีกลับให้ รพช. อัปโหลดใหม่"
+                                            >
+                                                <X className="w-4 h-4" />
+                                                ตีกลับ
+                                            </button>
+                                            <button
+                                                onClick={handleApprove}
+                                                disabled={approving}
+                                                className="w-2/3 flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition shadow-lg shadow-emerald-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                            >
+                                                {approving ? (
+                                                    <>
+                                                        <RefreshCw className="w-4 h-4 animate-spin" />
+                                                        กำลังดำเนินการ...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        อนุญาตให้พิมพ์
+                                                    </>
+                                                )}
+                                            </button>
+                                        </div>
                                     )}
 
                                     {isApproved && (

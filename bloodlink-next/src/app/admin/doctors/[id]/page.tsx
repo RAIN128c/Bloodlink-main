@@ -209,125 +209,136 @@ export default function DoctorDetailPage() {
                 </div>
 
                 {/* Main Profile Card */}
-                <div className="bg-white dark:bg-[#1F2937] rounded-[24px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-700 mb-6">
-                    <div className="flex flex-col md:flex-row">
-                        {/* Left Column: Avatar & ID */}
-                        <div className="w-full md:w-[280px] p-8 flex flex-col items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-700 gap-4">
-                            <div className="w-[140px] h-[140px] rounded-full bg-[#E5E7EB] dark:bg-gray-700 flex items-center justify-center overflow-hidden border-4 border-white dark:border-gray-600 shadow-sm">
-                                {user.avatarUrl ? (
-                                    <Image src={user.avatarUrl} alt={user.name} width={140} height={140} className="w-full h-full object-cover" />
-                                ) : (
-                                    <User className="w-[70px] h-[70px] text-[#9CA3AF] dark:text-gray-400" />
-                                )}
-                            </div>
-                            <div className="text-center">
-                                <p className="text-[#9CA3AF] dark:text-gray-400 text-sm font-medium">{formatDisplayId(user.staffNumber || user.userId, user.role)}</p>
-                            </div>
+                <div className="bg-white dark:bg-[#111827] rounded-[24px] overflow-hidden shadow-sm border border-gray-100 dark:border-gray-800 mb-6 flex flex-col md:flex-row transition-all hover:shadow-md">
+                    {/* Left Column: Avatar Banner & Pic */}
+                    <div className="md:w-[320px] relative flex flex-col items-center p-8 bg-gradient-to-b from-indigo-50/50 to-white dark:from-[#1F2937] dark:to-[#111827] border-b md:border-b-0 md:border-r border-gray-100 dark:border-gray-800">
+                        <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-r from-indigo-500 to-purple-500 opacity-10 dark:opacity-20 rounded-t-[24px] md:rounded-tr-none md:rounded-l-[24px]"></div>
 
-                            {/* Action Buttons (Admin Only) */}
-                            <div className="flex gap-2 mt-2">
-                                {/* Approve Button - Only if not approved */}
-                                {user?.status && !['approved', 'active', 'อนุมัติ', 'ใช้งาน'].includes(user.status.toLowerCase()) && (
-                                    <button
-                                        onClick={() => setIsApproveModalOpen(true)}
-                                        className="p-2 text-gray-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded-full transition-all"
-                                        title="อนุมัติผู้ใช้งาน"
-                                    >
-                                        <CheckCircle className="w-4 h-4" />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => setIsEditRoleModalOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/30 rounded-full transition-all"
-                                    title="แก้ไขตำแหน่ง/สิทธิ์"
-                                >
-                                    <Edit2 className="w-4 h-4" />
-                                </button>
-                                <button
-                                    onClick={() => setIsDeleteModalOpen(true)}
-                                    className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded-full transition-all"
-                                    title="ลบผู้ใช้งาน"
-                                >
-                                    <Trash2 className="w-4 h-4" />
-                                </button>
-                            </div>
+                        <div className="w-[140px] h-[140px] rounded-full bg-white dark:bg-gray-800 flex items-center justify-center overflow-hidden border-4 border-white dark:border-gray-700 shadow-xl relative z-10 mb-4 transition-transform hover:scale-105">
+                            {user.avatarUrl ? (
+                                <Image src={user.avatarUrl} alt={user.name} width={140} height={140} priority className="w-full h-full object-cover" />
+                            ) : (
+                                <User className="w-[70px] h-[70px] text-gray-300 dark:text-gray-500" />
+                            )}
+                        </div>
+                        <div className="flex flex-col items-center gap-1 z-10 relative mt-2 text-center">
+                            <span className="text-[14px] font-mono font-medium text-gray-500 dark:text-gray-400">
+                                ID: {formatDisplayId(user.staffNumber || user.userId, user.role)}
+                            </span>
                         </div>
 
-                        {/* Right Column: Info & Bio */}
-                        <div className="flex-1 p-8 flex flex-col">
-                            <div className="mb-6">
-                                <h2 className="text-[28px] font-bold text-[#1E1B4B] dark:text-white mb-1">
-                                    {user.name} {user.surname}
-                                </h2>
-                                <p className="text-[#9CA3AF] dark:text-gray-400 text-lg font-medium mb-3">{user.position || user.role || 'เจ้าหน้าที่'}</p>
+                        {/* Action Buttons (Admin Only) */}
+                        <div className="flex gap-2 mt-6 relative z-10">
+                            {/* Approve Button - Only if not approved */}
+                            {user?.status && !['approved', 'active', 'อนุมัติ', 'ใช้งาน'].includes(user.status.toLowerCase()) && (
+                                <button
+                                    onClick={() => setIsApproveModalOpen(true)}
+                                    className="p-2 text-emerald-600 bg-emerald-50 hover:bg-emerald-100 dark:text-emerald-400 dark:bg-emerald-900/30 dark:hover:bg-emerald-900/50 rounded-xl transition-all shadow-sm"
+                                    title="อนุมัติผู้ใช้งาน"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                </button>
+                            )}
+                            <button
+                                onClick={() => setIsEditRoleModalOpen(true)}
+                                className="p-2 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 dark:text-indigo-400 dark:bg-indigo-900/30 dark:hover:bg-indigo-900/50 rounded-xl transition-all shadow-sm"
+                                title="แก้ไขตำแหน่ง/สิทธิ์"
+                            >
+                                <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                                onClick={() => setIsDeleteModalOpen(true)}
+                                className="p-2 text-red-600 bg-red-50 hover:bg-red-100 dark:text-red-400 dark:bg-red-900/30 dark:hover:bg-red-900/50 rounded-xl transition-all shadow-sm"
+                                title="ลบผู้ใช้งาน"
+                            >
+                                <Trash2 className="w-4 h-4" />
+                            </button>
+                        </div>
+                    </div>
 
-                                {/* Status Badge */}
-                                <div className="flex">
-                                    <span className={`px-3 py-1 rounded-full text-xs font-semibold border ${['approved', 'active', 'อนุมัติ', 'ใช้งาน'].includes(user.status?.toLowerCase() || '')
-                                            ? 'bg-green-100 text-green-700 border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800'
-                                            : 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/30 dark:text-orange-400 dark:border-orange-800'
+                    {/* Right Column: Info & Bio */}
+                    <div className="flex-1 p-8 sm:p-10 flex flex-col justify-center">
+                        <div className="mb-6">
+                            <h2 className="text-[32px] sm:text-[36px] font-bold text-gray-900 dark:text-white leading-tight mb-2">
+                                {user.name} {user.surname}
+                            </h2>
+                            <div className="flex flex-wrap items-center gap-4">
+                                <p className="text-[18px] text-indigo-600 dark:text-indigo-400 font-medium capitalize">{user.position || user.role || 'เจ้าหน้าที่'}</p>
+
+                                <div className="flex mt-1">
+                                    <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${['approved', 'active', 'อนุมัติ', 'ใช้งาน'].includes(user.status?.toLowerCase() || '')
+                                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50'
+                                        : 'bg-amber-50 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800/50'
                                         }`}>
                                         {user.status || 'รอตรวจสอบ'}
                                     </span>
                                 </div>
                             </div>
+                        </div>
 
-                            {/* Bio Section */}
-                            <div className="flex-1 mb-8 relative group">
-                                {!isEditingBio ? (
-                                    <div
-                                        className="text-[#334155] dark:text-gray-300 text-[15px] leading-relaxed min-h-[80px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-2 -ml-2 rounded-lg transition-colors border border-transparent hover:border-gray-100 dark:hover:border-gray-700"
-                                        onClick={() => setIsEditingBio(true)}
-                                        title="คลิกเพื่อแก้ไขประวัติ"
-                                    >
-                                        {user.bio || (
-                                            <span className="text-gray-400 italic flex items-center gap-2">
-                                                <Edit2 className="w-4 h-4" />
-                                                เพิ่มประวัติหรือข้อมูลแนะนำตัว...
-                                            </span>
-                                        )}
+                        {/* Bio Section */}
+                        <div className="flex-1 mb-8 relative group">
+                            {!isEditingBio ? (
+                                <div
+                                    className="text-gray-600 dark:text-gray-300 text-[15px] leading-relaxed min-h-[80px] cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 p-4 -ml-4 rounded-xl transition-colors border border-transparent hover:border-gray-200 dark:hover:border-gray-700/50"
+                                    onClick={() => setIsEditingBio(true)}
+                                    title="คลิกเพื่อแก้ไขประวัติ"
+                                >
+                                    {user.bio ? (
+                                        <p className="italic">"{user.bio}"</p>
+                                    ) : (
+                                        <span className="text-gray-400 italic flex items-center gap-2">
+                                            <Edit2 className="w-4 h-4" />
+                                            เพิ่มประวัติหรือข้อมูลแนะนำตัว...
+                                        </span>
+                                    )}
+                                </div>
+                            ) : (
+                                <div className="relative">
+                                    <textarea
+                                        value={bioText}
+                                        onChange={(e) => setBioText(e.target.value)}
+                                        className="w-full h-32 p-3 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-indigo-200 dark:border-indigo-900 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                        placeholder="เขียนแนะนำตัวหรือข้อมูลเพิ่มเติม..."
+                                        autoFocus
+                                    />
+                                    <div className="flex justify-end gap-2 mt-2">
+                                        <button
+                                            onClick={() => { setIsEditingBio(false); setBioText(user.bio || ''); }}
+                                            className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                                            disabled={savingBio}
+                                        >
+                                            ยกเลิก
+                                        </button>
+                                        <button
+                                            onClick={handleSaveBio}
+                                            disabled={savingBio}
+                                            className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-1"
+                                        >
+                                            {savingBio && <Loader2 className="w-3 h-3 animate-spin" />}
+                                            บันทึก
+                                        </button>
                                     </div>
-                                ) : (
-                                    <div className="relative">
-                                        <textarea
-                                            value={bioText}
-                                            onChange={(e) => setBioText(e.target.value)}
-                                            className="w-full h-32 p-3 text-sm text-gray-700 dark:text-gray-200 bg-gray-50 dark:bg-gray-800 border border-indigo-200 dark:border-indigo-900 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                                            placeholder="เขียนแนะนำตัวหรือข้อมูลเพิ่มเติม..."
-                                            autoFocus
-                                        />
-                                        <div className="flex justify-end gap-2 mt-2">
-                                            <button
-                                                onClick={() => { setIsEditingBio(false); setBioText(user.bio || ''); }}
-                                                className="px-3 py-1.5 text-xs text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                                                disabled={savingBio}
-                                            >
-                                                ยกเลิก
-                                            </button>
-                                            <button
-                                                onClick={handleSaveBio}
-                                                disabled={savingBio}
-                                                className="px-3 py-1.5 text-xs bg-indigo-600 text-white rounded-md hover:bg-indigo-700 flex items-center gap-1"
-                                            >
-                                                {savingBio && <Loader2 className="w-3 h-3 animate-spin" />}
-                                                บันทึก
-                                            </button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                                </div>
+                            )}
+                        </div>
 
-                            {/* Contact Info */}
-                            <div className="mt-auto space-y-2">
-                                {user.phone && (
-                                    <div className="flex items-center gap-3 text-[#4B5563] dark:text-gray-400 text-[15px]">
-                                        <Phone className="w-4 h-4" />
+                        {/* Contact Info */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-auto pt-6 border-t border-gray-100 dark:border-gray-800">
+                            {user.phone && (
+                                <div className="flex flex-col">
+                                    <span className="text-[12px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">เบอร์โทรศัพท์</span>
+                                    <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200 text-[15px] font-medium">
+                                        <Phone className="w-4 h-4 text-indigo-500" />
                                         <span>{user.phone}</span>
                                     </div>
-                                )}
-                                <div className="flex items-center gap-3 text-[#4B5563] dark:text-gray-400 text-[15px]">
-                                    <Mail className="w-4 h-4" />
-                                    <span className="text-[#4338CA] dark:text-[#818cf8]">{user.email}</span>
+                                </div>
+                            )}
+                            <div className="flex flex-col">
+                                <span className="text-[12px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">อีเมลติดต่อ</span>
+                                <div className="flex items-center gap-2 text-gray-800 dark:text-gray-200 text-[15px] font-medium">
+                                    <Mail className="w-4 h-4 text-indigo-500" />
+                                    <span>{user.email}</span>
                                 </div>
                             </div>
                         </div>
@@ -335,7 +346,7 @@ export default function DoctorDetailPage() {
                 </div>
 
                 {/* Appointments Section */}
-                <div className="bg-white dark:bg-[#1F2937] rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-700 p-8">
+                <div className="bg-white dark:bg-[#111827] rounded-[24px] shadow-sm border border-gray-100 dark:border-gray-800 p-8 sm:p-10">
                     <h3 className="text-[22px] font-bold text-[#1E1B4B] dark:text-white mb-6">การนัดหมาย</h3>
 
                     {patients.length === 0 ? (

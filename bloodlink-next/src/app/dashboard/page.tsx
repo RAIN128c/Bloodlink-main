@@ -6,7 +6,7 @@ import { Heart, UserPlus, FileText, Search, ShieldCheck, Database, Calendar, Sma
 import Link from 'next/link';
 import { useEffect, useState, useCallback } from 'react';
 import { Patient } from '@/types';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { supabase } from '@/lib/supabase';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';

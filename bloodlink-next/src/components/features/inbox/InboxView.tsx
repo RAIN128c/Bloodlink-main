@@ -10,7 +10,8 @@ import {
     ChevronLeft, ChevronRight, Trash2, Reply, MailOpen, Clock, Inbox, ArrowUpRight, CheckSquare, Square,
     Check
 } from 'lucide-react';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import Image from 'next/image';
 import { supabase } from '@/lib/supabase';
 import { useInbox } from '@/components/providers/InboxContext';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
@@ -104,7 +105,7 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
             return;
         }
 
-        fetchMessages();
+        fetchMessages(false);
 
         const channel = supabase
             .channel('unified_inbox')
@@ -116,7 +117,7 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                     table: 'messages',
                     filter: `receiver_id=eq.${userId}`
                 },
-                () => fetchMessages()
+                () => fetchMessages(true)
             )
             .subscribe();
 
@@ -125,9 +126,9 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
         };
     }, [userId, status]);
 
-    const fetchMessages = async () => {
+    const fetchMessages = async (background = false) => {
         if (!userId) return;
-        setIsLoading(true);
+        if (!background) setIsLoading(true);
         try {
             const res = await fetch('/api/messages');
             if (!res.ok) throw new Error('Failed to fetch messages');
@@ -142,7 +143,7 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
         } catch (err) {
             console.error('Failed to fetch messages:', err);
         } finally {
-            setIsLoading(false);
+            if (!background) setIsLoading(false);
         }
     };
 
@@ -210,9 +211,10 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
 
     // Filter counts
     const filterCounts = useMemo(() => {
-        const counts: Record<string, number> = { all: messages.length };
+        const counts: Record<string, number> = { all: messages.length, unread: 0 };
         messages.forEach(m => {
             counts[m.type] = (counts[m.type] || 0) + 1;
+            if (!m.is_read) counts.unread++;
         });
         // Add sent count
         counts.sent = messages.filter(m => m.sender_id === userId).length;
@@ -230,6 +232,9 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
 
             if (filterType === 'sent') {
                 return matchesSearch && msg.sender_id === userId;
+            }
+            if (filterType === 'unread') {
+                return matchesSearch && !msg.is_read;
             }
 
             const matchesType = filterType === 'all' || msg.type === filterType;
@@ -262,10 +267,31 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
     };
 
     const handleSelectAll = () => {
-        if (selectedIds.size === paginatedMessages.length) {
+        if (selectedIds.size === filteredMessages.length) {
             setSelectedIds(new Set());
         } else {
-            setSelectedIds(new Set(paginatedMessages.map(m => m.id)));
+            setSelectedIds(new Set(filteredMessages.map(m => m.id)));
+        }
+    };
+
+    const handleBulkMarkRead = async (isRead: boolean) => {
+        if (selectedIds.size === 0) return;
+
+        try {
+            const res = await fetch(`/api/messages/bulk-read`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ messageIds: Array.from(selectedIds), is_read: isRead })
+            });
+            if (res.ok) {
+                setMessages(prev => prev.map(m =>
+                    selectedIds.has(m.id) ? { ...m, is_read: isRead } : m
+                ));
+                setSelectedIds(new Set());
+                refreshUnreadCount();
+            }
+        } catch (err) {
+            console.error('Bulk mark read error:', err);
         }
     };
 
@@ -357,12 +383,13 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
 
     const getDisplayInfo = (msg: Message) => {
         if (msg.type === 'system_update') {
-            return { isOwner: false, displayName: 'System' };
+            return { isOwner: false, displayName: 'System', avatarUrl: undefined };
         }
         const isOwner = msg.sender_id === userId;
         return {
             isOwner,
-            displayName: isOwner ? `ถึง: ${msg.receiver_name || 'Unknown'}` : (msg.sender_name || 'System')
+            displayName: isOwner ? `ถึง: ${msg.receiver_name || 'Unknown'}` : (msg.sender_name || 'System'),
+            avatarUrl: isOwner ? msg.receiver_avatar : msg.sender_avatar
         };
     };
 
@@ -420,6 +447,7 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                     <div className="flex gap-2 text-xs overflow-x-auto pb-1 hide-scrollbar">
                         {[
                             { key: 'all', label: 'ทั้งหมด', color: 'gray' },
+                            { key: 'unread', label: 'ยังไม่อ่าน', color: 'indigo' },
                             { key: 'message', label: 'ข้อความ', color: 'indigo' },
                             { key: 'sent', label: 'ส่งแล้ว', color: 'blue' },
                             { key: 'alert', label: 'ด่วน', color: 'red' },
@@ -453,37 +481,57 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                         <button
                             onClick={handleSelectAll}
                             className="p-1.5 rounded hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
-                            title={selectedIds.size === paginatedMessages.length ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมดในหน้านี้'}
+                            title={selectedIds.size === filteredMessages.length ? 'ยกเลิกทั้งหมด' : 'เลือกทั้งหมด (ตามตัวกรอง)'}
                         >
-                            {selectedIds.size === paginatedMessages.length && paginatedMessages.length > 0 ? (
+                            {selectedIds.size === filteredMessages.length && filteredMessages.length > 0 ? (
                                 <CheckSquare className="w-4 h-4 text-indigo-600" />
                             ) : (
                                 <Square className="w-4 h-4 text-gray-400" />
                             )}
                         </button>
                         {selectedIds.size > 0 && (
-                            <span className="text-xs text-gray-500">เลือกแล้ว {selectedIds.size} รายการ</span>
+                            <>
+                                <span className="text-xs text-gray-500 font-medium whitespace-nowrap hidden sm:inline">เลือกแล้ว {selectedIds.size} / {filteredMessages.length}</span>
+                                <span className="text-xs text-gray-500 font-medium whitespace-nowrap sm:hidden">{selectedIds.size}/{filteredMessages.length}</span>
+                            </>
                         )}
                     </div>
-                    <div className="flex items-center gap-2">
-                        {selectedIds.size > 0 && (
+                    <div className="flex items-center gap-1.5 overflow-x-auto hide-scrollbar">
+                        {selectedIds.size > 0 ? (
+                            <>
+                                <button
+                                    onClick={() => handleBulkMarkRead(true)}
+                                    className="px-2 py-1 text-xs bg-indigo-50 text-indigo-600 dark:bg-indigo-900/30 dark:text-indigo-400 rounded-lg hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors flex items-center gap-1 whitespace-nowrap"
+                                >
+                                    <MailOpen className="w-3 h-3" />
+                                    <span className="hidden sm:inline leading-none">อ่านแล้ว</span>
+                                </button>
+                                <button
+                                    onClick={() => handleBulkMarkRead(false)}
+                                    className="px-2 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1 whitespace-nowrap"
+                                >
+                                    <Mail className="w-3 h-3" />
+                                    <span className="hidden sm:inline leading-none">ยังไม่อ่าน</span>
+                                </button>
+                                <button
+                                    onClick={handleBulkDelete}
+                                    disabled={isDeleting}
+                                    className="px-2 py-1 text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                    <span className="hidden sm:inline leading-none">ลบ</span>
+                                </button>
+                            </>
+                        ) : (
                             <button
-                                onClick={handleBulkDelete}
-                                disabled={isDeleting}
-                                className="px-2.5 py-1 text-xs bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400 rounded-lg hover:bg-red-200 dark:hover:bg-red-900/50 transition-colors disabled:opacity-50 flex items-center gap-1"
+                                onClick={handleDeleteAllRead}
+                                disabled={isDeleting || messages.filter(m => m.is_read).length === 0}
+                                className="px-2.5 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-1 whitespace-nowrap"
                             >
-                                <Trash2 className="w-3 h-3" />
-                                ลบที่เลือก
+                                <MailOpen className="w-3 h-3" />
+                                ลบที่อ่านแล้ว
                             </button>
                         )}
-                        <button
-                            onClick={handleDeleteAllRead}
-                            disabled={isDeleting || messages.filter(m => m.is_read).length === 0}
-                            className="px-2.5 py-1 text-xs bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 flex items-center gap-1"
-                        >
-                            <MailOpen className="w-3 h-3" />
-                            ลบที่อ่านแล้ว
-                        </button>
                     </div>
                 </div>
 
@@ -513,13 +561,13 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                     ) : (
                         <div className="divide-y divide-gray-100 dark:divide-gray-800">
                             {paginatedMessages.map((msg) => {
-                                const { isOwner, displayName } = getDisplayInfo(msg);
+                                const { isOwner, displayName, avatarUrl } = getDisplayInfo(msg);
                                 const isSelected = selectedIds.has(msg.id);
                                 return (
                                     <div
                                         key={msg.id}
-                                        className={`w-full p-4 text-left transition-all hover:bg-gray-50 dark:hover:bg-gray-800/50 group relative flex items-center gap-2 ${selectedMessage?.id === msg.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-2 border-indigo-500' : ''
-                                            } ${!msg.is_read ? 'bg-white dark:bg-[#1F2937]' : 'bg-gray-50/30 dark:bg-gray-900/10'}`}
+                                        className={`w-full p-4 text-left transition-all duration-200 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 max-h-32 group relative flex items-center gap-2 ${selectedMessage?.id === msg.id ? 'bg-indigo-50 dark:bg-indigo-900/20 border-l-[3px] border-indigo-500' : 'border-l-[3px] border-transparent'
+                                            } ${!msg.is_read ? 'bg-white dark:bg-[#1F2937]' : 'bg-gray-50/50 dark:bg-[#111827]'}`}
                                     >
                                         {/* Checkbox */}
                                         <button
@@ -539,20 +587,23 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                                             className="flex-1 text-left flex gap-3 min-w-0"
                                         >
                                             {/* Avatar */}
-                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-white text-sm font-medium ${msg.type === 'system_update'
+                                            <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 overflow-hidden text-white text-sm font-medium ${msg.type === 'system_update'
                                                 ? 'bg-gradient-to-br from-orange-400 to-orange-600'
-                                                : getAvatarColor(displayName)
+                                                : avatarUrl ? 'bg-transparent border border-gray-200 dark:border-gray-700' : getAvatarColor(displayName)
                                                 }`}>
                                                 {msg.type === 'system_update' ? (
                                                     <RefreshCw className="w-5 h-5" />
+                                                ) : avatarUrl ? (
+                                                    <Image src={avatarUrl} alt={displayName} width={40} height={40} className="w-full h-full object-cover" />
                                                 ) : (
                                                     displayName.charAt(0).toUpperCase()
                                                 )}
                                             </div>
 
                                             <div className="flex-1 min-w-0">
-                                                <div className="flex justify-between items-start mb-0.5">
-                                                    <span className={`text-sm truncate max-w-[150px] ${!msg.is_read ? 'text-gray-900 dark:text-white font-semibold' : 'text-gray-600 dark:text-gray-400'}`}>
+                                                <div className="flex justify-between items-start mb-0.5 relative">
+                                                    <span className={`text-sm truncate max-w-[150px] flex items-center gap-1.5 ${!msg.is_read ? 'text-gray-900 dark:text-white font-bold' : 'text-gray-600 dark:text-gray-400 font-medium'}`}>
+                                                        {!msg.is_read && <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0" />}
                                                         {displayName}
                                                     </span>
                                                     <div className="flex items-center gap-1 text-[10px] text-gray-400 whitespace-nowrap">
@@ -627,12 +678,14 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                                         <ChevronLeft className="w-5 h-5" />
                                     </button>
 
-                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-white font-medium ${selectedMessage.type === 'system_update'
+                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 overflow-hidden text-white font-medium ${selectedMessage.type === 'system_update'
                                         ? 'bg-gradient-to-br from-orange-400 to-orange-600'
-                                        : getAvatarColor(getDisplayInfo(selectedMessage).displayName)
+                                        : getDisplayInfo(selectedMessage).avatarUrl ? 'bg-transparent border border-gray-200 dark:border-gray-700' : getAvatarColor(getDisplayInfo(selectedMessage).displayName)
                                         }`}>
                                         {selectedMessage.type === 'system_update' ? (
                                             <RefreshCw className="w-6 h-6" />
+                                        ) : getDisplayInfo(selectedMessage).avatarUrl ? (
+                                            <Image src={getDisplayInfo(selectedMessage).avatarUrl as string} alt="Avatar" width={48} height={48} className="w-full h-full object-cover" />
                                         ) : (
                                             <User className="w-6 h-6" />
                                         )}
@@ -713,13 +766,14 @@ export function InboxView({ role = 'user', title = 'กล่องข้อค�
                         </div>
                     </>
                 ) : (
-                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8">
-                        <div className="w-24 h-24 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4">
-                            <Mail className="w-12 h-12 text-gray-300 dark:text-gray-600" />
+                    <div className="flex-1 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 p-8 animate-in fade-in zoom-in duration-300">
+                        <div className="w-24 h-24 bg-gradient-to-tr from-indigo-50 to-purple-50 dark:from-indigo-900/20 dark:to-purple-900/20 rounded-full flex items-center justify-center mb-6 shadow-inner relative">
+                            <MessageSquare className="w-12 h-12 text-indigo-300 dark:text-indigo-600/50 absolute -bottom-1 -left-1 opacity-50" />
+                            <Mail className="w-12 h-12 text-indigo-500 dark:text-indigo-400 relative z-10 drop-shadow-sm" />
                         </div>
-                        <h3 className="text-lg font-medium text-gray-600 dark:text-gray-400 mb-1">เลือกข้อความ</h3>
-                        <p className="text-sm text-gray-400 dark:text-gray-500 text-center">
-                            คลิกที่ข้อความทางด้านซ้ายเพื่ออ่านรายละเอียด
+                        <h3 className="text-xl font-bold text-gray-800 dark:text-gray-200 mb-2">เลือกข้อความเพื่ออ่าน</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm leading-relaxed">
+                            คลิกที่ข้อความทางด้านซ้ายเพื่อเปิดอ่านรายละเอียด<br />หรือเลือกหลายข้อความเพื่อจัดการพร้อมกัน
                         </p>
                     </div>
                 )}

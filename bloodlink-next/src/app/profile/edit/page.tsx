@@ -10,6 +10,7 @@ import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { Camera, User } from 'lucide-react';
 import { toast } from 'sonner';
+import imageCompression from 'browser-image-compression';
 
 export default function ProfileEditPage() {
     const router = useRouter();
@@ -68,47 +69,19 @@ export default function ProfileEditPage() {
     };
 
     // Helper to compress image
-    const compressImage = (file: File): Promise<Blob> => {
-        return new Promise((resolve, reject) => {
-            const maxWidth = 1200; // Max width for profile
-            const maxHeight = 1200;
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
-            reader.onload = (event) => {
-                const img = document.createElement('img');
-                img.src = event.target?.result as string;
-                img.onload = () => {
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxWidth || height > maxHeight) {
-                        if (width > height) {
-                            height = Math.round((height * maxWidth) / width);
-                            width = maxWidth;
-                        } else {
-                            width = Math.round((width * maxHeight) / height);
-                            height = maxHeight;
-                        }
-                    }
-
-                    const canvas = document.createElement('canvas');
-                    canvas.width = width;
-                    canvas.height = height;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, width, height);
-
-                    canvas.toBlob((blob) => {
-                        if (blob) {
-                            resolve(blob);
-                        } else {
-                            reject(new Error('Compression failed'));
-                        }
-                    }, 'image/jpeg', 0.8); // 80% quality jpeg
-                };
-                img.onerror = (err) => reject(err);
-            };
-            reader.onerror = (err) => reject(err);
-        });
+    const compressImage = async (file: File): Promise<Blob> => {
+        const options = {
+            maxSizeMB: 0.2, // Max 200KB for avatars
+            maxWidthOrHeight: 512, // 512x512 is plenty for avatars
+            useWebWorker: true,
+            initialQuality: 0.8,
+        };
+        try {
+            return await imageCompression(file, options);
+        } catch (error) {
+            console.error('Image compression error', error);
+            throw error;
+        }
     };
 
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,142 +203,155 @@ export default function ProfileEditPage() {
                             </div>
 
                             {/* Edit Form Card */}
-                            <div className="bg-white dark:bg-[#1F2937] rounded-[16px] p-5 sm:p-10 shadow-[0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none border border-[#E5E7EB] dark:border-gray-700 transition-colors">
+                            <div className="bg-white dark:bg-[#111827] rounded-[24px] p-6 sm:p-12 shadow-sm border border-gray-100 dark:border-gray-800 transition-all">
 
 
                                 {/* Avatar Upload Section */}
-                                <div className="flex flex-col items-center gap-4 mb-8">
-                                    <div className="relative group cursor-pointer" onClick={handleAvatarClick}>
-                                        <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-white dark:border-gray-700 shadow-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                                <div className="flex flex-col md:flex-row items-center md:items-start gap-8 mb-10 pb-10 border-b border-gray-100 dark:border-gray-800">
+                                    <div className="relative group cursor-pointer flex-shrink-0" onClick={handleAvatarClick}>
+                                        <div className="w-32 h-32 sm:w-40 sm:h-40 rounded-full overflow-hidden border-[6px] border-white dark:border-gray-800 shadow-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center transition-transform group-hover:scale-105">
                                             {formData.avatarUrl ? (
                                                 <Image
                                                     src={formData.avatarUrl}
                                                     alt="Profile"
-                                                    width={128}
-                                                    height={128}
+                                                    width={160}
+                                                    height={160}
+                                                    priority
                                                     className="w-full h-full object-cover"
                                                 />
                                             ) : (
-                                                <User className="w-16 h-16 text-gray-400" />
+                                                <User className="w-16 h-16 sm:w-20 sm:h-20 text-gray-300 dark:text-gray-600" />
                                             )}
                                         </div>
                                         <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                            <Camera className="w-8 h-8 text-white" />
+                                            <Camera className="w-8 h-8 sm:w-10 sm:h-10 text-white" />
                                         </div>
                                         {uploading && (
                                             <div className="absolute inset-0 bg-black/60 rounded-full flex items-center justify-center">
-                                                <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                                             </div>
                                         )}
                                     </div>
-                                    <button
-                                        onClick={handleAvatarClick}
-                                        className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                                    >
-                                        เปลี่ยนรูปโปรไฟล์
-                                    </button>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileChange}
-                                        accept="image/*"
-                                        className="hidden"
-                                    />
+                                    <div className="flex flex-col items-center md:items-start text-center md:text-left pt-2">
+                                        <h3 className="text-[18px] sm:text-[20px] font-bold text-gray-900 dark:text-white mb-2">ภาพประจำตัว (Avatar)</h3>
+                                        <p className="text-[14px] sm:text-[15px] text-gray-500 dark:text-gray-400 mb-5 max-w-sm leading-relaxed">อัปโหลดภาพโปรไฟล์เพื่อให้เพื่อนร่วมงานจดจำคุณได้ง่ายขึ้น รองรับไฟล์ JPG, PNG ขนาดไม่เกิน 50MB</p>
+                                        <button
+                                            onClick={handleAvatarClick}
+                                            className="px-5 py-2.5 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-sm font-semibold rounded-xl hover:bg-indigo-100 dark:hover:bg-indigo-900/50 transition-colors shadow-sm"
+                                        >
+                                            อัปโหลดรูปภาพใหม่
+                                        </button>
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileChange}
+                                            accept="image/*"
+                                            className="hidden"
+                                        />
+                                    </div>
                                 </div>
 
                                 {/* Section: User Info */}
-                                <h2 className="text-[20px] font-bold text-[#111827] dark:text-white mb-6">ข้อมูลส่วนตัว</h2>
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
+                                <h2 className="text-[20px] font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                                    <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+                                    ข้อมูลส่วนตัว
+                                </h2>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8 mb-10">
                                     {/* Name */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">ชื่อ</label>
+                                    <div className="flex flex-col">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อ</label>
                                         <input
                                             type="text"
                                             name="name"
                                             value={formData.name}
                                             onChange={handleChange}
                                             placeholder="กรุณาใส่ชื่อ"
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#F3F4F6] dark:bg-[#374151] text-[#374151] dark:text-white text-[14px] outline-none focus:border-[#6366F1] transition-colors placeholder-gray-400 dark:placeholder-gray-500"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>
 
                                     {/* Surname */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">นามสกุล</label>
+                                    <div className="flex flex-col">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">นามสกุล</label>
                                         <input
                                             type="text"
                                             name="surname"
                                             value={formData.surname}
                                             onChange={handleChange}
                                             placeholder="กรุณาใส่นามสกุล"
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#F3F4F6] dark:bg-[#374151] text-[#374151] dark:text-white text-[14px] outline-none focus:border-[#6366F1] transition-colors placeholder-gray-400 dark:placeholder-gray-500"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>
 
                                     {/* Email (Read Only) */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">อีเมล</label>
+                                    <div className="flex flex-col">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                                            <span>อีเมล</span>
+                                            <span className="text-[12px] font-normal text-gray-400">(ไม่สามารถเปลี่ยนได้)</span>
+                                        </label>
                                         <input
                                             type="email"
                                             name="email"
                                             value={formData.email}
                                             readOnly
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#E5E7EB] dark:bg-[#4B5563] text-[#6B7280] dark:text-gray-400 text-[14px] outline-none cursor-not-allowed"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-100 dark:bg-[#374151]/50 text-gray-500 dark:text-gray-400 text-[15px] outline-none cursor-not-allowed"
                                         />
-                                        <span className="text-[12px] text-[#9CA3AF] dark:text-gray-500">อีเมลไม่สามารถเปลี่ยนได้</span>
                                     </div>
 
                                     {/* Phone */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">เบอร์โทร</label>
+                                    <div className="flex flex-col">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">เบอร์โทร</label>
                                         <input
                                             type="tel"
                                             name="phone"
                                             value={formData.phone}
                                             onChange={handleChange}
                                             placeholder="กรุณาใส่เบอร์โทร"
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#F3F4F6] dark:bg-[#374151] text-[#374151] dark:text-white text-[14px] outline-none focus:border-[#6366F1] transition-colors placeholder-gray-400 dark:placeholder-gray-500"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>
 
                                     {/* Position (Editable now) */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">ตำแหน่ง (ระบุเพิ่มเติม)</label>
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">ตำแหน่ง (ระบุเพิ่มเติม)</label>
                                         <input
                                             type="text"
                                             name="position"
                                             value={formData.position}
                                             onChange={handleChange}
                                             placeholder="เช่น จักษุแพทย์, หัวหน้าตึกผู้ป่วยใน"
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#F3F4F6] dark:bg-[#374151] text-[#374151] dark:text-white text-[14px] outline-none focus:border-[#6366F1] transition-colors placeholder-gray-400 dark:placeholder-gray-500"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>
 
                                     {/* System Role (Read Only) */}
-                                    <div className="flex flex-col gap-2">
-                                        <label className="text-[14px] font-medium text-[#374151] dark:text-gray-300">สิทธิ์การใช้งาน (Role)</label>
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2 flex items-center justify-between">
+                                            <span>สิทธิ์การใช้งาน (Role)</span>
+                                            <span className="text-[12px] font-normal text-gray-400">(ติดต่อแอดมินเพื่อแก้ไข)</span>
+                                        </label>
                                         <input
                                             type="text"
                                             value={formData.roleDisplay}
                                             readOnly
-                                            className="h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-[#E5E7EB] dark:bg-[#4B5563] text-[#6B7280] dark:text-gray-400 text-[14px] outline-none cursor-not-allowed"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-100 dark:bg-[#374151]/50 text-gray-500 dark:text-gray-400 text-[15px] outline-none cursor-not-allowed capitalize"
                                         />
-                                        <span className="text-[12px] text-[#9CA3AF] dark:text-gray-500">หากต้องการเปลี่ยนสิทธิ์การใช้งาน กรุณาติดต่อผู้ดูแลระบบ</span>
                                     </div>
                                 </div>
 
                                 {/* Buttons */}
-                                <div className="flex flex-col gap-3 mt-4 w-full">
+                                <div className="flex flex-col sm:flex-row gap-4 mt-8 pt-8 border-t border-gray-100 dark:border-gray-800">
                                     <button
                                         onClick={handleSubmit}
                                         disabled={isSaving}
-                                        className={`w-full py-3 bg-[#3B82F6] text-white text-[16px] font-medium rounded-[8px] shadow-[0_2px_4px_rgba(59,130,246,0.2)] hover:bg-[#2563EB] transition-colors flex justify-center items-center ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
+                                        className={`flex-1 sm:order-2 py-3.5 bg-indigo-600 text-white text-[16px] font-semibold rounded-xl shadow-sm hover:bg-indigo-700 hover:shadow transition-all flex justify-center items-center gap-2 ${isSaving ? 'opacity-70 cursor-wait' : ''}`}
                                     >
-                                        {isSaving ? 'กำลังบันทึก...' : 'บันทึก'}
+                                        {isSaving && <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+                                        {isSaving ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}
                                     </button>
                                     <Link
                                         href="/profile"
-                                        className="w-full py-3 text-[#6B7280] dark:text-gray-400 text-[16px] font-medium hover:bg-gray-50 dark:hover:bg-gray-700 rounded-[8px] transition-colors text-center"
+                                        className="flex-1 sm:order-1 py-3.5 text-gray-700 dark:text-gray-300 text-[16px] font-medium hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors text-center border border-gray-200 dark:border-gray-700"
                                     >
                                         ยกเลิก
                                     </Link>

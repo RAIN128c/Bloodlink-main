@@ -1,13 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { useNotifications } from '@/components/providers/NotificationContext';
 import { NotificationType } from '@/components/shared/NotificationPopup';
 import { supabase } from '@/lib/supabase';
 
 interface InboxContextType {
     unreadCount: number;
+    messages: any[];
     refreshUnreadCount: () => Promise<void>;
 }
 
@@ -24,6 +25,7 @@ export function useInbox() {
 export function InboxProvider({ children }: { children: ReactNode }) {
     const { data: session } = useSession();
     const [unreadCount, setUnreadCount] = useState(0);
+    const [messages, setMessages] = useState<any[]>([]);
     const { notify } = useNotifications();
     const userId = (session?.user as any)?.userId;
     const previousCountRef = useRef(0);
@@ -44,8 +46,8 @@ export function InboxProvider({ children }: { children: ReactNode }) {
         // Map status/content to notification type
         if (subject.includes('นัดหมาย') || content.includes('นัดหมาย')) {
             type = 'time'; // Clock
-        } else if (subject.includes('เจาะเลือด') || content.includes('เจาะเลือด')) {
-            type = 'time'; // Clock
+        } else if (subject.includes('รอแล็บรับเรื่อง') || content.includes('รอแล็บรับเรื่อง') || subject.includes('เจาะเลือด')) {
+            type = 'time'; // Clock (Lab Queue / Blood Test)
         } else if (subject.includes('กำลังตรวจ') || content.includes('กำลังตรวจ')) {
             type = 'time'; // Clock (Checking)
         } else if (subject.includes('ส่งผลเลือดสำเร็จ') || content.includes('ส่งผลเลือดสำเร็จ')) {
@@ -82,21 +84,14 @@ export function InboxProvider({ children }: { children: ReactNode }) {
                 const unreadMessages = messages.filter((m: any) => !m.is_read);
                 const newCount = unreadMessages.length;
 
-                // Trigger logic
-                if (!isFirstLoadRef.current) {
-                    // If not first load, and count increased, trigger
-                    if (newCount > previousCountRef.current) {
-                        const latestMessage = unreadMessages[0];
-                        if (latestMessage) {
-                            triggerPopup(latestMessage);
-                        }
-                    }
-                } else {
+                // We no longer trigger popups here because Supabase Realtime handles it directly.
+                if (isFirstLoadRef.current) {
                     isFirstLoadRef.current = false;
                 }
 
                 previousCountRef.current = newCount;
                 setUnreadCount(newCount);
+                setMessages(messages);
             }
         } catch (error) {
             console.error('Failed to update inbox count:', error);
@@ -108,12 +103,8 @@ export function InboxProvider({ children }: { children: ReactNode }) {
         refreshUnreadCount();
     }, [refreshUnreadCount]);
 
-    // Polling setup (2 seconds)
-    useEffect(() => {
-        if (!userId) return;
-        const interval = setInterval(refreshUnreadCount, 2000);
-        return () => clearInterval(interval);
-    }, [userId, refreshUnreadCount]);
+    // Remove aggressive 2-second polling to save Supabase REST / Auth requests.
+    // Realtime channel logic below will now handle updates exclusively.
 
     // Supabase Realtime subscription for instant notifications
     useEffect(() => {
@@ -153,7 +144,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
     }, [userId, refreshUnreadCount, triggerPopup]); // removed notify from deps as triggerPopup uses it
 
     return (
-        <InboxContext.Provider value={{ unreadCount, refreshUnreadCount }}>
+        <InboxContext.Provider value={{ unreadCount, messages, refreshUnreadCount }}>
             {children}
         </InboxContext.Provider>
     );

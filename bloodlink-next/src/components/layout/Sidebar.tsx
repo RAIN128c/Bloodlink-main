@@ -6,7 +6,7 @@ import Image from 'next/image';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import clsx from 'clsx';
 import { LayoutGrid, FileText, Calendar, LogOut, Plus, Menu, X, Home, Settings } from 'lucide-react';
-import { signOut } from 'next-auth/react';
+import { signOut, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { useTheme } from 'next-themes';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
@@ -96,7 +96,8 @@ export function Sidebar() {
                 const patientsRes = await fetch('/api/patients');
                 if (patientsRes.ok) {
                     const allPatients = await patientsRes.json();
-                    const labStatuses = ['เจาะเลือด', 'กำลังจัดส่ง', 'กำลังตรวจ'];
+                    // Specifically looking for these statuses indicating lab queues
+                    const labStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
                     const queueCount = allPatients.filter((p: any) => labStatuses.includes(p.process)).length;
                     setLabQueueCount(queueCount);
                 }
@@ -106,11 +107,10 @@ export function Sidebar() {
         }
     }, []);
 
-    // Set up interval - minimal dependencies to prevent reset
+    // Fetch notifications only on mount or when context signals a change.
+    // Avoid aggressive polling to reduce Supabase REST/Auth usage.
     useEffect(() => {
         fetchNotifications(); // Initial fetch
-        const interval = setInterval(fetchNotifications, 30000);
-        return () => clearInterval(interval);
     }, [fetchNotifications]);
 
     // Handle navigation actions

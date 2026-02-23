@@ -1,4 +1,4 @@
-import { SessionProvider } from 'next-auth/react';
+import { SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 
 export default function DashboardLayout({
     children,
@@ -6,8 +6,8 @@ export default function DashboardLayout({
     children: React.ReactNode;
 }) {
     return (
-        <SessionProvider>
+        <SupabaseAuthProvider>
             {children}
-        </SessionProvider>
+        </SupabaseAuthProvider>
     );
 }

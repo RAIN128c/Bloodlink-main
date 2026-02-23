@@ -1,6 +1,6 @@
 'use client';
 
-import { useSession, signOut } from 'next-auth/react';
+import { useSession, signOut, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { isValidRole, getEffectiveRole } from '@/lib/permissions';

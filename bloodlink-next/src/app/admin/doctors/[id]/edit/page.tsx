@@ -2,15 +2,20 @@
 
 import { Header } from '@/components/layout/Header';
 
-import { ChevronLeft, ChevronDown } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useParams, useRouter } from 'next/navigation';
 import { toast } from 'sonner';
+import { useState } from 'react';
+import { CustomSelect } from '@/components/ui/CustomSelect';
 
 export default function DoctorEditPage() {
     const params = useParams();
     const router = useRouter();
     const id = params.id as string;
+
+    // Add state for role selection
+    const [role, setRole] = useState('แพทย์');
 
     return (
         <div className="max-w-[1200px] w-full mx-auto flex flex-col h-full">
@@ -32,18 +37,20 @@ export default function DoctorEditPage() {
                 <div className="bg-white dark:bg-[#1F2937] rounded-[16px] p-10 shadow-[0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none border border-[#E5E7EB] dark:border-gray-700 transition-colors">
 
                     {/* Role Select */}
-                    <div className="flex justify-end mb-8">
+                    <div className="flex justify-end mb-8 z-20 relative">
                         <div className="w-[300px]">
                             <label className="block text-[14px] font-medium text-[#374151] dark:text-gray-300 mb-2">บทบาท</label>
-                            <div className="relative">
-                                <select className="w-full h-[44px] px-4 border border-[#E5E7EB] dark:border-gray-600 rounded-[8px] bg-white dark:bg-[#374151] text-[#374151] dark:text-white text-[14px] appearance-none outline-none focus:border-[#6366F1] transition-colors">
-                                    <option>กรุณาเลือกบทบาท</option>
-                                    <option selected>แพทย์</option>
-                                    <option>พยาบาล</option>
-                                    <option>เจ้าหน้าที่แลป</option>
-                                </select>
-                                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6B7280] dark:text-gray-400 w-5 h-5 pointer-events-none" />
-                            </div>
+                            <CustomSelect
+                                value={role}
+                                onChange={setRole}
+                                options={[
+                                    { value: 'แพทย์', label: 'แพทย์' },
+                                    { value: 'พยาบาล', label: 'พยาบาล' },
+                                    { value: 'เจ้าหน้าที่แลป', label: 'เจ้าหน้าที่แลป' }
+                                ]}
+                                placeholder="กรุณาเลือกบทบาท"
+                                className="w-full text-[14px]"
+                            />
                         </div>
                     </div>
 

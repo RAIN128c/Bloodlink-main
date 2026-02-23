@@ -94,22 +94,31 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Additional Info Section */}
-                    <div className="mt-6 bg-white dark:bg-[#1F2937] rounded-[16px] p-6 shadow-[0_2px_4px_rgba(0,0,0,0.05)] dark:shadow-none border border-[#E5E7EB] dark:border-gray-700 transition-colors animate-fade-in-up stagger-2 hover-lift">
-                        <h2 className="text-[18px] font-bold text-[#111827] dark:text-white mb-4">ข้อมูลการเข้าสู่ระบบ</h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                            <div>
-                                <label className="text-[12px] text-[#6B7280] dark:text-gray-400 block mb-1">อีเมล</label>
-                                <span className="text-[14px] font-medium text-[#374151] dark:text-white">{user.email}</span>
+                    <div className="mt-6 bg-white dark:bg-[#111827] rounded-[24px] p-8 sm:p-10 shadow-sm border border-gray-100 dark:border-gray-800 transition-all hover:shadow-md animate-fade-in-up stagger-2">
+                        <h2 className="text-[20px] font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-2">
+                            <span className="w-1.5 h-6 bg-indigo-500 rounded-full"></span>
+                            ข้อมูลระบบและบทบาท
+                        </h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+                            <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">บัญชีผู้ใช้ (อีเมล)</span>
+                                <span className="text-[16px] font-medium text-gray-800 dark:text-gray-200">{user.email}</span>
                             </div>
-                            <div>
-                                <label className="text-[12px] text-[#6B7280] dark:text-gray-400 block mb-1">บทบาท</label>
-                                <span className="text-[14px] font-medium text-[#374151] dark:text-white">{user.position}</span>
+                            <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">บทบาทในระบบ</span>
+                                <span className="text-[16px] font-medium text-gray-800 dark:text-gray-200 capitalize">{user.role}</span>
                             </div>
-                            <div>
-                                <label className="text-[12px] text-[#6B7280] dark:text-gray-400 block mb-1">สถานะ</label>
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[12px] font-medium bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">
-                                    ใช้งาน
-                                </span>
+                            <div className="flex flex-col">
+                                <span className="text-[13px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-2">สถานะการใช้งาน</span>
+                                <div className="flex items-center gap-2">
+                                    <span className="relative flex h-3 w-3">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+                                    </span>
+                                    <span className="inline-flex items-center px-2.5 py-1 rounded-full text-[13px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800/50">
+                                        ปกติ (Active)
+                                    </span>
+                                </div>
                             </div>
                         </div>
                     </div>
