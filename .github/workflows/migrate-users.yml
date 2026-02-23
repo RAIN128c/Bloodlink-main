@@ -3,8 +3,6 @@ description: "Workflow to manually or automatically run the legacy user migratio
 
 on:
   workflow_dispatch: # อนุญาตให้กดรันแบบแมนนวลได้จากหน้า GitHub Actions
-  schedule:
-    - cron: '0 1 * * *' # รันอัตโนมัติทุกๆ 1:00 AM UTC (8:00 AM เวลาไทย)
 
 jobs:
   migrate-users:
