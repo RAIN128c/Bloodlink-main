@@ -54,6 +54,13 @@ jobs:
           # บังคับให้ Code เหมือนต้นฉบับ 100%
           git checkout main
           git reset --hard $UPSTREAM_BRANCH
+
+          # อัปเดต origin remote url ให้ใช้ SYNC_PAT เพื่อให้มีสิทธิ์ push ทับ workflow ไฟล์ได้
+          if [ -n "${{ secrets.SYNC_PAT }}" ]; then
+            git remote set-url origin https://${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
+            echo "🔑 อัปเดต origin URL ให้เชื่อมต่อด้วย SYNC_PAT แล้วในขั้นตอน Push"
+          fi
+
           git push origin main --force
 
           echo "✅ Sync สำเร็จ!"
