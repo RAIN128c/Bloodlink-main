@@ -540,13 +540,15 @@ ON CONFLICT (id) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.users (id, email, name, role, status)
+  INSERT INTO public.users (id, email, name, surname, role, status, hospital_type)
   VALUES (
     new.id, 
     new.email, 
     COALESCE(new.raw_user_meta_data->>'name', 'New User'), 
+    COALESCE(new.raw_user_meta_data->>'surname', ''),
     COALESCE(new.raw_user_meta_data->>'role', 'ผู้ใช้งานทั่วไป'),
-    'ใช้งาน'
+    'รอตรวจสอบ',
+    COALESCE(new.raw_user_meta_data->>'hospitalType', '')
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
@@ -705,6 +707,18 @@ COMMENT ON TABLE users IS 'Staff & admin profiles linked to auth.users. Password
 COMMENT ON TABLE patients IS 'Patient records with workflow tracking';
 COMMENT ON TABLE lab_results IS 'Lab results with trigger-based audit logging';
 COMMENT ON TABLE audit_logs IS 'Auto-populated action audit trail via Postgres Triggers';
+
+-- ============================================================
+-- DATA BACKFILL (For Migrations)
+-- ============================================================
+-- Backfill missing surname and hospitalType from auth.users (if missing in public.users)
+UPDATE public.users pu
+SET 
+  surname = COALESCE(NULLIF(au.raw_user_meta_data->>'surname', ''), pu.surname),
+  hospital_type = COALESCE(NULLIF(au.raw_user_meta_data->>'hospitalType', ''), pu.hospital_type)
+FROM auth.users au
+WHERE pu.id = au.id
+  AND (pu.surname IS NULL OR pu.surname = '' OR pu.hospital_type IS NULL OR pu.hospital_type = '');
 
 -- ============================================================
 -- Done! 10 tables + 2 storage buckets + RLS policies + Triggers.

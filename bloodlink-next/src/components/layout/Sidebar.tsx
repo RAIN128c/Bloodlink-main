@@ -92,13 +92,15 @@ export function Sidebar() {
             }
 
             // Fetch lab queue count for Lab Staff/Admin
+            // Only count 'รอแล็บรับเรื่อง' (new requests) to match the default "คำขอใหม่" tab
+            // on the queue page. Other statuses (รอจัดส่ง, กำลังจัดส่ง, กำลังตรวจ) are only
+            // visible in the "งานของฉัน" tab when assigned to the current user.
             try {
-                const patientsRes = await fetch('/api/patients');
+                const patientsRes = await fetch('/api/patients?process=pending_lab');
                 if (patientsRes.ok) {
-                    const allPatients = await patientsRes.json();
-                    // Specifically looking for these statuses indicating lab queues
-                    const labStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
-                    const queueCount = allPatients.filter((p: any) => labStatuses.includes(p.process)).length;
+                    const data = await patientsRes.json();
+                    const allPending = data.patients || [];
+                    const queueCount = allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง').length;
                     setLabQueueCount(queueCount);
                 }
             } catch { /* non-critical */ }
