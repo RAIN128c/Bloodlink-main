@@ -26,41 +26,27 @@ jobs:
 
       - name: Sync from Upstream
         run: |
-          # เพิ่ม upstream remote (ใช้ PAT สำหรับ private repo)
-          if [ -n "${{ secrets.UPSTREAM_PAT }}" ]; then
-            git remote add upstream https://${{ secrets.UPSTREAM_PAT }}@github.com/RAIN128c/Bloodlink-main.git
-            echo "🔑 ใช้ PAT สำหรับ private repo"
-          else
-            git remote add upstream https://github.com/RAIN128c/Bloodlink-main.git
-            echo "🌐 ใช้ public access (ไม่มี PAT)"
-          fi
+          # 1. เชื่อมต่อ Repo ต้นฉบับ
+          git remote add upstream https://github.com/RAIN128c/Bloodlink-main.git
+          git fetch upstream || exit 1
 
-          # ดึงข้อมูลจาก upstream
-          git fetch upstream || { echo "❌ ไม่สามารถ fetch upstream ได้ — ถ้า repo เป็น private ต้องเพิ่ม UPSTREAM_PAT secret"; exit 1; }
-
-          # ตรวจสอบว่า upstream มี branch main หรือ master
-          if git rev-parse --verify upstream/main >/dev/null 2>&1; then
-            UPSTREAM_BRANCH="upstream/main"
-          elif git rev-parse --verify upstream/master >/dev/null 2>&1; then
-            UPSTREAM_BRANCH="upstream/master"
-          else
-            echo "❌ ไม่พบ branch main หรือ master ใน upstream"
-            git branch -r | grep upstream
-            exit 1
-          fi
-
+          # 2. ค้นหา Master/Main สาขาที่ถูกต้อง
+          if git rev-parse --verify upstream/main >/dev/null 2>&1; then UPSTREAM_BRANCH="upstream/main"; else UPSTREAM_BRANCH="upstream/master"; fi
           echo "✅ ใช้ branch: $UPSTREAM_BRANCH"
 
-          # บังคับให้ Code เหมือนต้นฉบับ 100%
+          # 3. เตรียมการ Reset Code 
           git checkout main
           git reset --hard $UPSTREAM_BRANCH
 
-          # อัปเดต origin remote url ให้ใช้ SYNC_PAT เพื่อให้มีสิทธิ์ push ทับ workflow ไฟล์ได้
+          # 4. 🔥 กู้คืนไฟล์ Workflows ของเครื่องเราเองกลับมา เพื่อไม่ให้พยายามเขียนทับ Workflow ฝั่ง banyangyuan121 
+          # วิธีนี้หลีกเลี่ยงข้อความ [remote rejected] แบบเด็ดขาด
+          git checkout HEAD@{1} -- .github/workflows/ || echo "No workflows to restore"
+          git commit --amend --no-edit || echo "Nothing to amend"
+
+          # 5. ใส่ SYNC_PAT และสั่ง Push
           if [ -n "${{ secrets.SYNC_PAT }}" ]; then
             git remote set-url origin https://${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
-            echo "🔑 อัปเดต origin URL ให้เชื่อมต่อด้วย SYNC_PAT แล้วในขั้นตอน Push"
           fi
-
           git push origin main --force
 
-          echo "✅ Sync สำเร็จ!"
+          echo "✅ Sync สำเร็จ (ข้ามไฟล์ Workflows)"
