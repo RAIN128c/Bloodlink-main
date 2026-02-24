@@ -24,14 +24,14 @@ export interface Patient {
     relativeName?: string;
     relativePhone?: string;
     relativeRelationship?: string;
-    // Vital Signs
-    weight?: string;
-    height?: string;
-    waist?: string;
-    bp?: string; // "120/80"
-    pulse?: string;
-    temperature?: string;
-    dtx?: string;
+    // Vital Signs (Removed, will be handled per-visit)
+    // weight?: string;
+    // height?: string;
+    // waist?: string;
+    // bp?: string;
+    // pulse?: string;
+    // temperature?: string;
+    // dtx?: string;
     // Kidney Function
     creatinine?: string;
     egfr?: string;

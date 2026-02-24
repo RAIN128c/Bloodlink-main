@@ -49,7 +49,21 @@ import { AppointmentService } from '@/lib/services/appointmentService';
 export async function updatePatientStatus(
     hn: string,
     processStatus: string,
-    data: { history?: string, date?: string, time?: string, type?: string, pin?: string }
+    data: {
+        history?: string,
+        date?: string,
+        time?: string,
+        type?: string,
+        pin?: string,
+        // Vital Signs
+        weight?: string,
+        height?: string,
+        waist?: string,
+        bp?: string,
+        pulse?: string,
+        temperature?: string,
+        dtx?: string
+    }
 ) {
     const session = await auth();
     const user = session?.user as any;
@@ -112,6 +126,17 @@ export async function updatePatientStatus(
     if (success) {
         console.log(`[Action] Status update success. Checking appointment creation...`);
 
+        // Extract Vitals
+        const vitals = {
+            weight: data.weight,
+            height: data.height,
+            waist: data.waist,
+            bp: data.bp,
+            pulse: data.pulse,
+            temperature: data.temperature,
+            dtx: data.dtx
+        };
+
         // IF status is Appointment, Create actual Appointment Record
         if (processStatus === 'นัดหมาย' && data.date) {
             console.log(`[Action] Creating appointment record...`);
@@ -125,11 +150,51 @@ export async function updatePatientStatus(
 
             if (!apptResult.success) {
                 console.error(`[Action] Appointment creation failed: ${apptResult.error}`);
-                // Note: We don't fail the whole status update if just the appointment record fails, 
-                // but we should probably warn. 
-                // For now, let's return success but log it.
             } else {
                 console.log(`[Action] Appointment created successfully.`);
+            }
+        }
+
+        // IF status is 'รอแล็บรับเรื่อง' (Lab Processing Started), Capture Vitals
+        if (processStatus === 'รอแล็บรับเรื่อง') {
+            console.log(`[Action] Patient arrived for Lab, processing Vitals...`);
+
+            // Check if there is an active pending appointment to attach these vitals to
+            const pendingAppts = await AppointmentService.getAppointmentsByHn(hn);
+            const activeAppt = pendingAppts.find(a => a.status === 'pending');
+
+            if (activeAppt && activeAppt.id) {
+                // Update existing appointment with V/S and set to completed
+                console.log(`[Action] Attaching V/S to existing appointment ${activeAppt.id}`);
+                await AppointmentService.updateStatus(activeAppt.id, 'completed', vitals);
+
+                // Cancel any other lingering ones
+                for (const appt of pendingAppts) {
+                    if (appt.id && appt.id !== activeAppt.id && appt.status === 'pending') {
+                        await AppointmentService.updateStatus(appt.id, 'cancelled');
+                    }
+                }
+            } else {
+                // Walk-in scenario: Create a completed appointment right now to hold the V/S
+                console.log(`[Action] Creating a Walk-In appointment to hold V/S`);
+                const today = new Date();
+                const apptResult = await AppointmentService.createAppointment({
+                    patient_hn: hn,
+                    appointment_date: today.toISOString().split('T')[0],
+                    appointment_time: today.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                    type: 'ตรวจทั่วไป (Walk-in)',
+                    note: data.history,
+                    ...vitals
+                });
+
+                if (apptResult.success) {
+                    // Fetch it again to mark it completed
+                    const freshAppts = await AppointmentService.getAppointmentsByHn(hn);
+                    const newAppt = freshAppts.find(a => a.status === 'pending');
+                    if (newAppt && newAppt.id) {
+                        await AppointmentService.updateStatus(newAppt.id, 'completed', vitals);
+                    }
+                }
             }
         }
 

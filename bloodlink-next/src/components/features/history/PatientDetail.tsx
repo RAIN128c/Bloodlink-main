@@ -8,6 +8,7 @@ import { AppointmentService, Appointment } from '@/lib/services/appointmentServi
 import { PatientService } from '@/lib/services/patientService';
 import { updatePatientStatus as updatePatientStatusAction } from '@/lib/actions/patient';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
 
 // ... (inside component)
 
@@ -35,7 +36,7 @@ import {
     History,
     Plus,
     UserPlus,
-    ArrowLeft, MessageSquare, ShoppingCart, Eye, Check, Users, Search
+    ArrowLeft, MessageSquare, ShoppingCart, Eye, Check, Users, Search, Printer
 } from 'lucide-react';
 import { formatDateThai } from '@/lib/utils';
 import { useRouter } from 'next/navigation';
@@ -118,6 +119,15 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
     const [appointmentType, setAppointmentType] = useState('Check-up'); // Default type
     const [selectedAppointmentId, setSelectedAppointmentId] = useState<string | null>(null);
     const [isUpdating, setIsUpdating] = useState(false);
+
+    // Vital Signs State (For 'รอแล็บรับเรื่อง')
+    const [vsWeight, setVsWeight] = useState('');
+    const [vsHeight, setVsHeight] = useState('');
+    const [vsWaist, setVsWaist] = useState('');
+    const [vsBp, setVsBp] = useState('');
+    const [vsPulse, setVsPulse] = useState('');
+    const [vsTemp, setVsTemp] = useState('');
+    const [vsDtx, setVsDtx] = useState('');
 
     // Responsibility State
     const [responsiblePersons, setResponsiblePersons] = useState<{ email: string; role: string; assignedAt: string; name?: string; surname?: string }[]>([]);
@@ -212,6 +222,11 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
 
     // PIN Verification State
     const [showPinModal, setShowPinModal] = useState(false);
+
+    // Single Print Request Sheet State
+    const [isPrintingSheet, setIsPrintingSheet] = useState(false);
+    const [printSheetSignature, setPrintSheetSignature] = useState<{ qr_token: string, signature_text: string } | null>(null);
+    const [printSheetVitals, setPrintSheetVitals] = useState<Record<string, Partial<Appointment>>>({});
 
     // Trigger next-round modal when patient is เสร็จสิ้น and role can restart
     useEffect(() => {
@@ -590,7 +605,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
         setIsUpdating(true);
         try {
             // Initialize data object with common properties
-            const data: { history: string; date?: string; time?: string; type?: string; pin?: string } = {
+            const data: any = {
                 history: statusNote,
                 pin
             };
@@ -607,20 +622,17 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
             }
 
             if (tempStatus === 'รอแล็บรับเรื่อง') {
-                if (selectedAppointmentId) {
-                    // Mark selected appointment as completed
-                    await AppointmentService.updateStatus(selectedAppointmentId, 'completed');
-                } else {
-                    // ไม่ใช่การมาตามนัด (Walk-in) - Cancel any pending appointments 
-                    const pendingAppts = appointmentHistory.filter(appt => appt.status === 'pending' || appt.status === undefined);
-                    for (const appt of pendingAppts) {
-                        if (appt.id) await AppointmentService.updateStatus(appt.id, 'cancelled');
-                    }
-                }
+                data.weight = vsWeight;
+                data.height = vsHeight;
+                data.waist = vsWaist;
+                data.bp = vsBp;
+                data.pulse = vsPulse;
+                data.temperature = vsTemp;
+                data.dtx = vsDtx;
 
-                // Refresh history
-                const history = await AppointmentService.getAppointmentsByHn(hn);
-                setAppointmentHistory(history);
+                // For existing appointments, we now do the assignment in the server action.
+                // The server action will search for pending appointment and apply the V/S OR create a walk-in.
+                // We no longer need to execute AppointmentService.updateStatus from the client side here.
             }
 
             // Use server action for role validation and status history logging
@@ -1233,13 +1245,44 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                 </div>
 
                 {/* Timeline + Action Section */}
-                <div className="flex justify-start -mb-2.5 z-10 relative pl-4">
+                <div className="flex justify-start -mb-2.5 z-10 relative pl-4 gap-2">
                     {canEditLab && canUpdateStatus && (
                         <button
                             onClick={() => setShowStatusModal(true)}
                             className="text-[#6366F1] dark:text-indigo-400 text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:text-[#4F46E5] dark:hover:text-indigo-300 bg-[#F3F4F6] dark:bg-gray-800 px-2 py-0.5 rounded-full border-none outline-none"
                         >
                             <Edit2 className="w-3 h-3" /> อัปเดตสถานะ
+                        </button>
+                    )}
+                    {patientData && ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง'].includes(patientData.process) && (
+                        <button
+                            onClick={async () => {
+                                setIsPrintingSheet(true);
+                                try {
+                                    const sigRes = await fetch(`/api/patients/${encodeURIComponent(hn)}/signature`);
+                                    if (sigRes.ok) {
+                                        const sigData = await sigRes.json();
+                                        setPrintSheetSignature(sigData.signature);
+                                    }
+                                    const appts = await AppointmentService.getAppointmentsByHn(hn);
+                                    const latestAppt = appts.length > 0 ? appts[0] : null;
+                                    if (latestAppt) {
+                                        setPrintSheetVitals({ [hn]: latestAppt });
+                                    }
+                                    setTimeout(() => {
+                                        window.print();
+                                        setTimeout(() => setIsPrintingSheet(false), 1000);
+                                    }, 500);
+                                } catch (err) {
+                                    console.error('Failed to load request sheet data', err);
+                                    toast.error('เกิดข้อผิดพลาดในการดึงข้อมูลใบนำส่ง');
+                                    setIsPrintingSheet(false);
+                                }
+                            }}
+                            className="text-emerald-600 dark:text-emerald-400 text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full border-none outline-none"
+                            disabled={isPrintingSheet}
+                        >
+                            {isPrintingSheet ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />} พิมพ์ใบส่งตรวจ (เดี่ยว)
                         </button>
                     )}
                 </div>
@@ -1295,7 +1338,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
             {showStatusModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm" onClick={() => setShowStatusModal(false)}>
                     <div
-                        className="bg-white dark:bg-[#1F2937] rounded-xl w-[calc(100%-2rem)] max-w-[400px] mx-4 shadow-2xl dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 border border-transparent dark:border-gray-700 flex flex-col"
+                        className="bg-white dark:bg-[#1F2937] rounded-xl w-[calc(100%-2rem)] max-w-[400px] mx-4 shadow-2xl dark:shadow-[0_10px_40px_rgba(0,0,0,0.5)] animate-in fade-in zoom-in-95 border border-transparent dark:border-gray-700 flex flex-col max-h-[90vh]"
                         onClick={e => e.stopPropagation()}
                     >
                         <div className="bg-white dark:bg-[#1F2937] px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex justify-between items-center rounded-t-xl">
@@ -1305,7 +1348,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                             </button>
                         </div>
 
-                        <div className="p-6">
+                        <div className="p-6 overflow-y-auto flex-1">
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {['รอตรวจ', 'นัดหมาย', 'รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'].map((option) => {
                                     const isCurrentProcess = patientData?.process === option;
@@ -1438,11 +1481,49 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                             id="noAppt"
                                             checked={selectedAppointmentId === null}
                                             onChange={(e) => e.target.checked && setSelectedAppointmentId(null)}
-                                            className="rounded text-indigo-600 focus:ring-indigo-500"
+                                            className="w-4 h-4 text-indigo-600 border-gray-300 focus:ring-indigo-500 rounded"
                                         />
-                                        <label htmlFor="noAppt" className="text-xs text-gray-500 dark:text-gray-400">
-                                            ไม่ใช่การมาตามนัด (Walk-in / นอกเวลานัด)
+                                        <label htmlFor="noAppt" className="text-sm text-gray-700 dark:text-gray-300 cursor-pointer">
+                                            ไม่ใช่การมาตามนัด (Walk-in) หรือ ไม่ระบุ
                                         </label>
+                                    </div>
+
+                                    {/* Vital Signs Input Block */}
+                                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700 animate-in slide-in-from-top-2">
+                                        <label className="flex items-center gap-2 text-[#0F172A] dark:text-white font-medium text-sm mb-3">
+                                            <Activity className="w-4 h-4 text-rose-500" />
+                                            สัญญาณชีพรอบนี้ (Vital Signs) <span className="text-xs text-gray-500 font-normal ml-2">(ถ้ามี จะไปแสดงในใบนำส่ง)</span>
+                                        </label>
+                                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">BP (mmHg)</label>
+                                                <input type="text" value={vsBp} onChange={e => setVsBp(e.target.value)} placeholder="120/80" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">Pulse (bpm)</label>
+                                                <input type="text" value={vsPulse} onChange={e => setVsPulse(e.target.value.replace(/\D/g, ''))} placeholder="80" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">Temp (°C)</label>
+                                                <input type="text" value={vsTemp} onChange={e => setVsTemp(e.target.value.replace(/[^\d.]/g, ''))} placeholder="36.5" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">DTX (mg/dL)</label>
+                                                <input type="text" value={vsDtx} onChange={e => setVsDtx(e.target.value.replace(/\D/g, ''))} placeholder="98" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">น้ำหนัก (kg)</label>
+                                                <input type="text" value={vsWeight} onChange={e => setVsWeight(e.target.value.replace(/[^\d.]/g, ''))} placeholder="65" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">ส่วนสูง (cm)</label>
+                                                <input type="text" value={vsHeight} onChange={e => setVsHeight(e.target.value.replace(/[^\d.]/g, ''))} placeholder="170" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <label className="text-xs text-gray-500 dark:text-gray-400">รอบเอว (นิ้ว)</label>
+                                                <input type="text" value={vsWaist} onChange={e => setVsWaist(e.target.value.replace(/[^\d.]/g, ''))} placeholder="32" className="w-full p-2 rounded-lg border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-700 text-sm focus:outline-none focus:border-indigo-500" />
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             )}

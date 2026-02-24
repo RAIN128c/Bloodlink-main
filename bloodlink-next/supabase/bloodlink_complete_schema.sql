@@ -367,6 +367,14 @@ CREATE TABLE IF NOT EXISTS appointments (
     end_time TIMESTAMPTZ,                   -- Null = pending, set = completed
     description TEXT,                       -- Maps to "note" in app
     status VARCHAR(20) DEFAULT 'pending',
+    -- Vital Signs (per-visit)
+    weight TEXT,
+    height TEXT,
+    waist TEXT,
+    bp TEXT,
+    pulse TEXT,
+    temperature TEXT,
+    dtx TEXT,
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -376,6 +384,13 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS start_time TIMESTAMPTZ;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS end_time TIMESTAMPTZ;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS description TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS status VARCHAR(20) DEFAULT 'pending';
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS weight TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS height TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS waist TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS bp TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS pulse TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS temperature TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS dtx TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 

@@ -92,14 +92,14 @@ export const RequestSheet = ({ patient, hospitalName = 'โรงพยาบา
 
                 {/* Vitals Grid */}
                 <div className="grid grid-cols-7 gap-0 mb-4 text-center">
-                    <GridCell label="น้ำหนัก" value={patient.weight} unit="kg" />
-                    <GridCell label="ส่วนสูง" value={patient.height} unit="cm" />
-                    <GridCell label="รอบเอว" value={patient.waist} unit="cm" />
+                    <GridCell label="น้ำหนัก" value="" unit="kg" />
+                    <GridCell label="ส่วนสูง" value="" unit="cm" />
+                    <GridCell label="รอบเอว" value="" unit="cm" />
                     <GridCell label="สพ." value="" unit="cm" /> {/* Hip - placeholder if needed or remove */}
-                    <GridCell label="BP" value={patient.bp} unit="mmHg" />
-                    <GridCell label="Pulse" value={patient.pulse} unit="/min" />
-                    <GridCell label="Temp" value={patient.temperature} unit="C" />
-                    <GridCell label="DTX" value={patient.dtx} unit="mg/dL" />
+                    <GridCell label="BP" value="" unit="mmHg" />
+                    <GridCell label="Pulse" value="" unit="/min" />
+                    <GridCell label="Temp" value="" unit="C" />
+                    <GridCell label="DTX" value="" unit="mg/dL" />
                     {/* Fill empty cells to make row complete if 7 cols doesn't fit perfectly or adjust cols */}
                 </div>
 

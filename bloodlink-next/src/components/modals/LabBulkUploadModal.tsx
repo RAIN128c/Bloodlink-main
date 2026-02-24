@@ -43,9 +43,9 @@ export function LabBulkUploadModal({ isOpen, onClose, onSuccess, queuePatients }
 
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
 
-    // Include all lab workflow statuses so the patient selector shows all patients in the lab pipeline
-    const labStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
-    const activeQueue = queuePatients.filter(p => labStatuses.includes(p.process));
+    // Only allow uploading for patients currently in 'กำลังตรวจ' status
+    const uploadableStatuses = ['กำลังตรวจ'];
+    const activeQueue = queuePatients.filter(p => uploadableStatuses.includes(p.process));
 
     const handleClose = () => {
         if (isUploading || isProcessing) {

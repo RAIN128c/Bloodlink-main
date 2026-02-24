@@ -5,12 +5,9 @@ import QRCode from 'react-qr-code';
 // A5 Landscape Print Styles for Request Sheet
 const printStyles = `
     @media print {
-        @page request {
-            size: A5 landscape;
+        @page {
+            size: A4 portrait;
             margin: 10mm;
-        }
-        .request-sheet-container {
-            page: request;
         }
         body {
             print-color-adjust: exact;
@@ -37,9 +34,10 @@ interface PrintRequestSheetProps {
     patients: Patient[]; // Usually array of 1 for this sheet format, but accepts array for batch printing
     hospitalName?: string;
     signatures?: Record<string, { qr_token: string; signature_text: string; } | null>;
+    vitals?: Record<string, any>; // Record<hn, VitalsObject>
 }
 
-export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล' }: PrintRequestSheetProps) => {
+export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล' }: PrintRequestSheetProps) => {
     return (
         <div className="print-only fixed inset-0 bg-white z-[9999] p-2 text-black font-[family-name:var(--font-kanit)]">
             <style dangerouslySetInnerHTML={{ __html: printStyles }} />
@@ -64,8 +62,17 @@ export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โร
                 const checkIcon = (keyword: string) => testTypes.includes(keyword.toLowerCase()) ? <div className="absolute inset-0 flex items-center justify-center font-bold text-[14px] pointer-events-none">✓</div> : null;
                 const checkList = (keywords: string[]) => keywords.some(k => testTypes.includes(k.toLowerCase())) ? <div className="absolute inset-0 flex items-center justify-center font-bold text-[14px] pointer-events-none -mt-1 -ml-1">✓</div> : null;
 
+                const extractNameFromSignature = (text?: string) => {
+                    if (!text) return null;
+                    const match = text.match(/Digitally Signed by:\s*(.*?)\s*\|/);
+                    return match ? match[1].trim() : null;
+                };
+
+                const signerName = extractNameFromSignature(patientSignature?.signature_text);
+                const creatorDisplay = signerName || patient.creatorEmail || '.......................................';
+
                 return (
-                    <div key={pageIndex} className={`request-sheet-container relative w-full max-w-[210mm] mx-auto ${pageIndex < patients.length - 1 ? 'page-break' : ''}`}>
+                    <div key={pageIndex} className={`request-sheet-container relative w-full mx-auto ${pageIndex < patients.length - 1 ? 'page-break' : ''}`}>
                         {/* Header Info */}
                         <div className="flex flex-col gap-2 text-[14px] leading-tight mb-4">
                             <div className="flex gap-2 items-end border-b border-black pb-1">
@@ -73,7 +80,7 @@ export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โร
                                 <span className="flex-1 border-b border-dotted border-black px-2">อ.เฉลิมพระเกียรติ จ.นครศรีธรรมราช</span>
                             </div>
 
-                            <div className="flex gap-2 items-end">
+                            <div className="flex flex-wrap gap-2 items-end">
                                 <span className="font-bold">ชื่อ-สกุล</span>
                                 <span className="min-w-[200px] border-b border-dotted border-black px-2">{patient.name} {patient.surname}</span>
                                 <span className="font-bold">อายุ</span>
@@ -85,44 +92,41 @@ export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โร
                                 <span className="flex-1 border-b border-dotted border-black text-center tracking-widest">{patient.idCard || '-'}</span>
                             </div>
 
-                            <div className="flex gap-2 items-end mt-1">
+                            <div className="flex flex-wrap gap-2 items-end mt-1">
                                 <span className="font-bold">วัน/เดือน/ปี</span>
                                 <span className="w-32 border-b border-dotted border-black text-center">{formattedDate}</span>
                                 <span className="font-bold">เวลา</span>
-                                <span className="w-20 border-b border-dotted border-black text-center">............</span>
+                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.appointment_time || '............'}</span>
                                 <span className="font-bold ml-4">Diagnosis</span>
-                                <span className="min-w-[150px] border-b border-dotted border-black px-2">{patient.disease || '-'}</span>
-                                <span className="font-bold ml-4">Specimen</span>
+                                <span className="flex-1 min-w-[150px] border-b border-dotted border-black px-2">{patient.disease || '-'}</span>
+                            </div>
+
+                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                                <span className="font-bold">Specimen</span>
                                 <span className="flex-1 border-b border-dotted border-black px-2">{patient.testType || '-'}</span>
                             </div>
 
-                            <div className="flex gap-2 items-end mt-1">
-                                <span className="font-bold">V/S BP1</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{patient.bp || '......./.......'}</span>
+                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                                <span className="font-bold">BP</span>
+                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.bp || '......./.......'}</span>
                                 <span>mmHg</span>
-                                <span className="font-bold ml-2">BP2</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">......./.......</span>
-                                <span>mmHg</span>
-                                <span className="font-bold ml-2">P</span>
-                                <span className="w-16 border-b border-dotted border-black text-center">{patient.pulse || '........'}</span>
+                                <span className="font-bold ml-4">Pulse</span>
+                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.pulse || '........'}</span>
                                 <span>/min</span>
-                                <span className="font-bold ml-2">RR</span>
-                                <span className="w-16 border-b border-dotted border-black text-center">........</span>
-                                <span>/min</span>
-                                <span className="font-bold ml-2">T</span>
-                                <span className="w-16 border-b border-dotted border-black text-center">{patient.temperature || '........'}</span>
+                                <span className="font-bold ml-4">Temp</span>
+                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.temperature || '........'}</span>
                                 <span>°C</span>
                             </div>
 
-                            <div className="flex gap-2 items-end mt-1">
+                            <div className="flex flex-wrap gap-2 items-end mt-1">
                                 <span className="font-bold">น้ำหนัก</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{patient.weight || '........'}</span>
-                                <span>กิโลกรัม</span>
-                                <span className="font-bold ml-4">ส่วนสูง</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{patient.height || '........'}</span>
-                                <span>ซม.</span>
-                                <span className="font-bold ml-4">รอบเอว</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{patient.waist || '........'}</span>
+                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.weight || '........'}</span>
+                                <span className="mr-2">กิโลกรัม</span>
+                                <span className="font-bold ml-2">ส่วนสูง</span>
+                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.height || '........'}</span>
+                                <span className="mr-2">ซม.</span>
+                                <span className="font-bold ml-2">รอบเอว</span>
+                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.waist || '........'}</span>
                                 <span>ซม.</span>
                             </div>
                         </div>
@@ -219,8 +223,8 @@ export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โร
                         </div>
 
                         {/* Footer / Specimen Status / Signature */}
-                        <div className="flex justify-between items-end mt-4 text-[13px] font-bold">
-                            <div className="flex gap-4 items-center">
+                        <div className="flex flex-wrap justify-between items-end mt-4 text-[13px] font-bold gap-4">
+                            <div className="flex flex-wrap gap-4 items-center">
                                 <span>ลักษณะ Specimen</span>
                                 <label className="flex items-center gap-1 font-normal"><div className="w-4 h-4 border border-black"></div> Normal</label>
                                 <label className="flex items-center gap-1 font-normal"><div className="w-4 h-4 border border-black"></div> Clot</label>
@@ -229,24 +233,26 @@ export const PrintRequestSheet = ({ patients, signatures, hospitalName = 'โร
 
                             <div className="flex items-center gap-2">
                                 <span>ผู้บันทึก</span>
-                                <span className="w-40 border-b border-dotted border-black inline-block text-center text-blue-700">
-                                    {patient.creatorEmail || '.......................................'}
+                                <span className="w-48 border-b border-dotted border-black inline-block text-center text-blue-700 whitespace-nowrap overflow-hidden text-ellipsis">
+                                    {creatorDisplay}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Signature Block (if signed digitally) */}
+                        {/* Signature Block (if signed digitally) - Moved to flow normally below the grid */}
                         {patientSignature && (
-                            <div className="absolute right-4 top-4 flex flex-col items-end opacity-80">
-                                <QRCode
-                                    value={`${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${patientSignature.qr_token}`}
-                                    size={40}
-                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
-                                />
-                                <div className="text-[8px] font-mono mt-1 w-24 text-right break-all">
-                                    <span className="text-indigo-600 font-bold">E-Signed</span>
-                                    <br />
-                                    {patientSignature.signature_text.split('.')[0]}...
+                            <div className="flex justify-end mt-4 pr-4">
+                                <div className="flex items-center gap-3 opacity-90 border border-gray-300 p-2 rounded-lg max-w-full">
+                                    <div className="text-[10px] font-mono text-right">
+                                        <span className="text-indigo-600 font-bold text-[12px]">E-Signed Authenticated</span>
+                                        <br />
+                                        <span className="text-gray-600 inline-block max-w-[280px] sm:max-w-md break-words whitespace-pre-wrap">{patientSignature.signature_text}</span>
+                                    </div>
+                                    <QRCode
+                                        value={`${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${patientSignature.qr_token}`}
+                                        size={48}
+                                        style={{ height: "auto", maxWidth: "100%", width: "48px" }}
+                                    />
                                 </div>
                             </div>
                         )}

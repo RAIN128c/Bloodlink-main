@@ -11,7 +11,9 @@ import { toast } from 'sonner';
 import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
+import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
 import { FileText, Eye } from 'lucide-react';
+import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
 
 interface PendingPatient {
     hn: string;
@@ -44,9 +46,15 @@ export default function LabQueuePage() {
     // Digital Request Sheet Preview State
     const [previewPatient, setPreviewPatient] = useState<PendingPatient | null>(null);
     const [previewSignatures, setPreviewSignatures] = useState<Record<string, { qr_token: string; signature_text: string } | null>>({});
+    const [previewVitals, setPreviewVitals] = useState<Record<string, Partial<Appointment>>>({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
     const [activeTab, setActiveTab] = useState<'new_requests' | 'my_tasks' | 'completed'>('new_requests');
+
+    // PIN Verification for receiving specimen
+    const [showPinModal, setShowPinModal] = useState(false);
+    const [selectedReceiveHn, setSelectedReceiveHn] = useState<string | null>(null);
+    const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -114,6 +122,35 @@ export default function LabQueuePage() {
         }
     };
 
+    const handleVerifyPin = async (pin: string) => {
+        if (!selectedReceiveHn) return;
+        setIsVerifyingPin(true);
+        try {
+            // Verify PIN
+            const res = await fetch('/api/profile/pin', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pin })
+            });
+
+            if (!res.ok) {
+                toast.error('รหัส PIN ไม่ถูกต้อง');
+                setIsVerifyingPin(false);
+                return;
+            }
+
+            // Success PIN, now proceed to accept specimen
+            setShowPinModal(false);
+            await handleStatusUpdate(selectedReceiveHn, 'กำลังตรวจ');
+            toast.success('ตรวจสอบ PIN สำเร็จ');
+        } catch (err) {
+            toast.error('เกิดข้อผิดพลาดในการตรวจสอบรหัส PIN');
+        } finally {
+            setIsVerifyingPin(false);
+            setSelectedReceiveHn(null);
+        }
+    };
+
     const filteredPatients = useMemo(() => {
         const lowerSearch = searchTerm.toLowerCase();
         const sourceData = activeTab === 'new_requests' ? pendingPatients : myTasks;
@@ -136,6 +173,7 @@ export default function LabQueuePage() {
     const handleOpenPreview = async (patient: PendingPatient) => {
         setPreviewPatient(patient);
         setPreviewSignatures({}); // Reset
+        setPreviewVitals({});
         setShowPreviewModal(true);
         try {
             const res = await fetch(`/api/patients/${encodeURIComponent(patient.hn)}/signature`);
@@ -143,8 +181,13 @@ export default function LabQueuePage() {
                 const data = await res.json();
                 setPreviewSignatures({ [patient.hn]: data.signature });
             }
+            const appts = await AppointmentService.getAppointmentsByHn(patient.hn);
+            const latestAppt = appts.length > 0 ? appts[0] : null;
+            if (latestAppt) {
+                setPreviewVitals({ [patient.hn]: latestAppt });
+            }
         } catch (err) {
-            console.error('Failed to fetch signature', err);
+            console.error('Failed to fetch preview data', err);
         }
     };
 
@@ -284,7 +327,10 @@ export default function LabQueuePage() {
                                                                     )}
                                                                     {(patient.process === 'รอจัดส่ง' || patient.process === 'กำลังจัดส่ง') && (
                                                                         <button
-                                                                            onClick={() => handleStatusUpdate(patient.hn, 'กำลังตรวจ')}
+                                                                            onClick={() => {
+                                                                                setSelectedReceiveHn(patient.hn);
+                                                                                setShowPinModal(true);
+                                                                            }}
                                                                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-lg transition shadow-sm"
                                                                         >
                                                                             <Clock className="w-3.5 h-3.5" />
@@ -406,7 +452,7 @@ export default function LabQueuePage() {
                                         background: white;
                                     }
                                 `}</style>
-                                <PrintRequestSheet patients={[previewPatient as any]} signatures={previewSignatures} />
+                                <PrintRequestSheet patients={[previewPatient as any]} signatures={previewSignatures} vitals={previewVitals} />
                             </div>
 
                             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
@@ -430,6 +476,18 @@ export default function LabQueuePage() {
                         </div>
                     </div>
                 )}
+
+                {/* PIN Verification Modal */}
+                <PinVerificationModal
+                    isOpen={showPinModal}
+                    onClose={() => {
+                        setShowPinModal(false);
+                        setSelectedReceiveHn(null);
+                    }}
+                    onVerify={handleVerifyPin}
+                    title="ยืนยันการรับตัวอย่างเลือด"
+                    description="กรุณากรอกรหัส PIN 6 หลักเพื่อยืนยันตัวตนในการรับตัวอย่างเลือด (Electronic Signature)"
+                />
             </div>
         </RoleGuard>
     );

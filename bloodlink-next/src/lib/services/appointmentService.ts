@@ -10,6 +10,13 @@ interface DBAppointment {
     description: string | null;
     created_at: string | null;
     status?: string | null; // Optional status column
+    weight?: string | null;
+    height?: string | null;
+    waist?: string | null;
+    bp?: string | null;
+    pulse?: string | null;
+    temperature?: string | null;
+    dtx?: string | null;
 }
 
 export interface Appointment {
@@ -22,6 +29,14 @@ export interface Appointment {
     note?: string; // Mapped to description
     created_at?: string;
     users?: { name: string; surname: string };
+    // Vital Signs
+    weight?: string;
+    height?: string;
+    waist?: string;
+    bp?: string;
+    pulse?: string;
+    temperature?: string;
+    dtx?: string;
 }
 
 export class AppointmentService {
@@ -61,7 +76,14 @@ export class AppointmentService {
                     type: row.title || 'นัดหมายทั่วไป',
                     note: row.description || '',
                     status: status,
-                    created_at: row.created_at || ''
+                    created_at: row.created_at || '',
+                    weight: row.weight || '',
+                    height: row.height || '',
+                    waist: row.waist || '',
+                    bp: row.bp || '',
+                    pulse: row.pulse || '',
+                    temperature: row.temperature || '',
+                    dtx: row.dtx || ''
                 };
             });
         } catch (error) {
@@ -91,6 +113,13 @@ export class AppointmentService {
                 title: data.type || 'นัดหมาย',
                 description: data.note,
                 start_time: start_time,
+                weight: data.weight,
+                height: data.height,
+                waist: data.waist,
+                bp: data.bp,
+                pulse: data.pulse,
+                temperature: data.temperature,
+                dtx: data.dtx
                 // STATUS REMOVED: Table does not have status column.
                 // New pending appointments have null end_time by default.
             };
@@ -129,13 +158,24 @@ export class AppointmentService {
      * Update appointment status
      * Uses end_time to mark completion
      */
-    static async updateStatus(id: string, status: string): Promise<boolean> {
+    static async updateStatus(id: string, status: string, vitals?: Partial<Appointment>): Promise<boolean> {
         try {
             // Update the status column which is standard
             const updateData: any = {
                 updated_at: new Date().toISOString(),
                 status: status
             };
+
+            // If vitals are provided (when marking 'รอแล็บรับเรื่อง'), include them
+            if (vitals) {
+                if (vitals.weight !== undefined) updateData.weight = vitals.weight;
+                if (vitals.height !== undefined) updateData.height = vitals.height;
+                if (vitals.waist !== undefined) updateData.waist = vitals.waist;
+                if (vitals.bp !== undefined) updateData.bp = vitals.bp;
+                if (vitals.pulse !== undefined) updateData.pulse = vitals.pulse;
+                if (vitals.temperature !== undefined) updateData.temperature = vitals.temperature;
+                if (vitals.dtx !== undefined) updateData.dtx = vitals.dtx;
+            }
 
             // NOTE: We try to update end_time if it exists, but since checking existence is hard,
             // we will stick to 'status' which is in the migration file.

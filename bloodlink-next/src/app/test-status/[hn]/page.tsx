@@ -11,6 +11,7 @@ import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, Re
 import { toast } from 'sonner';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
+import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
 
 interface LabResult {
     id: number;
@@ -47,9 +48,10 @@ export default function ResultPage() {
     const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
     const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
 
-    // Request Sheet (ใบรีเควช) preview state
+    // For Digital Request Sheet
     const [showRequestSheet, setShowRequestSheet] = useState(false);
-    const [requestSheetSignature, setRequestSheetSignature] = useState<{ qr_token: string; signature_text: string } | null>(null);
+    const [requestSheetSignature, setRequestSheetSignature] = useState<{ qr_token: string, signature_text: string } | null>(null);
+    const [requestSheetVitals, setRequestSheetVitals] = useState<Record<string, Partial<Appointment>>>({});
 
     const fetchData = useCallback(async () => {
         if (!hn) return;
@@ -229,6 +231,12 @@ export default function ResultPage() {
             if (sigRes.ok) {
                 const sigData = await sigRes.json();
                 setRequestSheetSignature(sigData.signature);
+            }
+            // Fetch latest appointment for vitals
+            const appts = await AppointmentService.getAppointmentsByHn(hn);
+            const latestAppt = appts.length > 0 ? appts[0] : null;
+            if (latestAppt) {
+                setRequestSheetVitals({ [hn]: latestAppt });
             }
         } catch (err) {
             console.error('Failed to load request sheet data', err);
@@ -511,7 +519,7 @@ export default function ResultPage() {
                                                 }
                                             `}</style>
                                             <div className="print-area">
-                                                <PrintRequestSheet patients={[patient as any]} signatures={requestSheetSignature ? { [patient.hn]: requestSheetSignature } : undefined} />
+                                                <PrintRequestSheet patients={[patient as any]} signatures={requestSheetSignature ? { [patient.hn]: requestSheetSignature } : undefined} vitals={requestSheetVitals} />
                                             </div>
                                         </div>
                                     ) : (

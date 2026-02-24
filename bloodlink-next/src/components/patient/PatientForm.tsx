@@ -46,14 +46,14 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, title = "�
         relativeName: initialData.relativeName || '',
         relativePhone: initialData.relativePhone || '',
         relativeRelationship: initialData.relativeRelationship || '',
-        // Vital Signs
-        weight: initialData.weight || '',
-        height: initialData.height || '',
-        waist: initialData.waist || '',
-        bp: initialData.bp || '',
-        pulse: initialData.pulse || '',
-        temperature: initialData.temperature || '',
-        dtx: initialData.dtx || ''
+        // Vital Signs (Handled per-visit instead)
+        // weight: initialData.weight || '',
+        // height: initialData.height || '',
+        // waist: initialData.waist || '',
+        // bp: initialData.bp || '',
+        // pulse: initialData.pulse || '',
+        // temperature: initialData.temperature || '',
+        // dtx: initialData.dtx || ''
     });
 
     const [errors, setErrors] = useState<Record<string, string>>({});
@@ -170,37 +170,12 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, title = "�
         <div className="w-full flex justify-center items-start font-[family-name:var(--font-kanit)]">
             <div className="w-full bg-white dark:bg-[#1F2937] rounded-[24px] shadow-[0_20px_40px_rgba(15,23,42,0.04)] dark:shadow-none p-[32px_40px_28px_40px] flex flex-col gap-6 relative transition-colors">
 
-                {/* Section: Vital Signs (New) */}
+                {/* Section: Vital Signs (Moved to Per-Visit Flow) */}
+                {/* 
                 <div className="space-y-4 pt-4">
-                    <div className="border-b border-gray-100 dark:border-gray-700 pb-2">
-                        <label className="text-[18px] font-bold text-[#111827] dark:text-white">สัญญาณชีพ (Vital Signs)</label>
-                    </div>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[
-                            { name: 'weight', label: 'น้ำหนัก (kg)' },
-                            { name: 'height', label: 'ส่วนสูง (cm)' },
-                            { name: 'waist', label: 'รอบเอว (cm)' },
-                            { name: 'bp', label: 'ความดัน (BP)' },
-                            { name: 'pulse', label: 'ชีพจร (Pulse)' },
-                            { name: 'temperature', label: 'อุณหภูมิ (Temp)' },
-                            { name: 'dtx', label: 'DTX (mg/dL)' },
-                        ].map((field) => (
-                            <div key={field.name} className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                                    {field.label}
-                                </label>
-                                <input
-                                    type="text"
-                                    name={field.name}
-                                    value={formData[field.name as keyof Patient] || ''}
-                                    onChange={handleChange}
-                                    disabled={!canEdit}
-                                    className="w-full p-[10px_14px] rounded-[12px] border border-[#E5E7EB] dark:border-gray-600 bg-[#F9FAFB] dark:bg-[#374151] text-[14px] text-[#111827] dark:text-white focus:outline-none focus:border-[#6366F1] transition-all disabled:opacity-50 disabled:cursor-not-allowed font-mono"
-                                />
-                            </div>
-                        ))}
-                    </div>
+                    ... Vital signs fields were here ...
                 </div>
+                */}
 
                 {/* Section: Diagnosis (Updated) */}
                 <div className="space-y-4">
