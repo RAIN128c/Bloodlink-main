@@ -24,15 +24,16 @@ export default function PrivacyPolicyPage() {
                         </p>
 
                         <section>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">1. ข้อมูลที่เราเก็บรวบรวม</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">1. ข้อมูลที่เราเก็บรวบรวม (หลักการเก็บรวมรวบข้อมูลเท่าที่จำเป็น - Data Minimization)</h2>
                             <p>
-                                เราอาจเก็บรวบรวมข้อมูลต่อไปนี้เมื่อคุณลงทะเบียนหรือใช้งานแอปพลิเคชัน:
+                                ภายใต้ พ.ร.บ. คุ้มครองข้อมูลส่วนบุคคล (PDPA) เรามุ่งมั่นที่จะเก็บข้อมูลส่วนบุคคลเท่าที่จำเป็นต่อการให้บริการเท่านั้น ได้แก่:
                             </p>
                             <ul className="list-disc pl-5 mt-2 space-y-1">
                                 <li>ชื่อและนามสกุล</li>
                                 <li>ที่อยู่อีเมล</li>
                                 <li>ตำแหน่งงาน (แพทย์, พยาบาล, เจ้าหน้าที่ห้องปฏิบัติการ)</li>
                                 <li>ข้อมูลโรงพยาบาล (ชื่อและประเภท)</li>
+                                <li>หมายเลขใบประกอบวิชาชีพ หรือ รหัสพนักงาน (เพื่อการยืนยันตัวตนสำหรับลงนามอิเล็กทรอนิกส์)</li>
                             </ul>
                         </section>
 
@@ -71,7 +72,55 @@ export default function PrivacyPolicyPage() {
                         </section>
 
                         <section>
-                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">6. การเปลี่ยนแปลงนโยบาย</h2>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">6. การลงลายมือชื่ออิเล็กทรอนิกส์ (E-Signature)</h2>
+                            <p>
+                                ระบบ BloodLink รองรับการลงนามอิเล็กทรอนิกส์ในแบบฟอร์มหรือเอกสารผ่านการใช้รหัส PIN 6 หลัก โดยระบบได้รับการออกแบบตาม <strong>พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 (และที่แก้ไขเพิ่มเติม)</strong>:
+                            </p>
+                            <ul className="list-disc pl-5 mt-2 space-y-1 pb-2">
+                                <li><strong>มาตรา 9 (ความสมบูรณ์ของลายมือชื่อ):</strong> ลายมือชื่ออิเล็กทรอนิกส์ที่เกิดจากการใช้รหัส PIN ส่วนบุคคล ซึ่งเชื่อมโยงกับบัญชีผู้ใช้ที่ได้รับการยืนยันตัวตน มีผลทางกฎหมายเช่นเดียวกับการลงลายมือชื่อบนเอกสารกระดาษ สามารถใช้ระบุตัวเจ้าของและแสดงเจตนาต่อข้อความได้</li>
+                                <li><strong>มาตรา 26 (ความน่าเชื่อถือของระบบ):</strong> ระบบให้บริการมีกระบวนการดูแลรักษาความปลอดภัยที่เชื่อถือได้ (Reliable System) รวมถึงบันทึกข้อมูลการตรวจสอบย้อนกลับ (Audit Trail) เช่น การบันทึกเวลาที่ลงนาม (Timestamp) หมายเลข IP Address และรหัสดิจิทัล (QR Token) เพื่อใช้ตรวจสอบและยืนยันความถูกต้องของลายมือชื่ออิเล็กทรอนิกส์ได้อย่างรัดกุม</li>
+                            </ul>
+                        </section>
+
+                        <section>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">7. ความโปร่งใสของข้อมูล (Transparency Notice)</h2>
+                            <p className="mb-3">
+                                เพื่อให้เป็นไปตามหลักความโปร่งใสภายใต้ PDPA เราขอแจ้งรายละเอียดเกี่ยวกับการเก็บข้อมูลในระบบลงนามอิเล็กทรอนิกส์ ดังนี้:
+                            </p>
+
+                            <div className="space-y-3">
+                                <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-xl border border-blue-100 dark:border-blue-800/50">
+                                    <h3 className="text-sm font-bold text-blue-800 dark:text-blue-300 mb-1">📋 เราเก็บอะไร</h3>
+                                    <p className="text-sm text-blue-700 dark:text-blue-400">
+                                        ชื่อ-นามสกุล, เลขใบประกอบวิชาชีพ / รหัสพนักงาน, เวลาที่กดลงนาม (Timestamp), หมายเลข IP Address, และรหัสดิจิทัล (QR Token)
+                                    </p>
+                                </div>
+
+                                <div className="bg-emerald-50 dark:bg-emerald-900/20 p-4 rounded-xl border border-emerald-100 dark:border-emerald-800/50">
+                                    <h3 className="text-sm font-bold text-emerald-800 dark:text-emerald-300 mb-1">🎯 เก็บไปทำไม</h3>
+                                    <p className="text-sm text-emerald-700 dark:text-emerald-400">
+                                        เพื่อยืนยันความถูกต้องและความน่าเชื่อถือของเอกสารอิเล็กทรอนิกส์ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์ พ.ศ. 2544 รวมถึงเพื่อใช้ในการตรวจสอบย้อนกลับ (Audit Trail) และป้องกันการปลอมแปลงเอกสาร
+                                    </p>
+                                </div>
+
+                                <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-xl border border-purple-100 dark:border-purple-800/50">
+                                    <h3 className="text-sm font-bold text-purple-800 dark:text-purple-300 mb-1">👁️ ใครเห็นได้บ้าง</h3>
+                                    <p className="text-sm text-purple-700 dark:text-purple-400">
+                                        เฉพาะผู้ที่สแกน QR Code บนเอกสารเพื่อตรวจสอบความถูกต้อง โดยจะเห็นข้อมูลเพียงบางส่วนเท่านั้น (ชื่อผู้ลงนาม, บทบาท, และวันเวลา) ข้อมูลละเอียดอื่นๆ เช่น IP Address จะถูกเก็บไว้ภายในระบบเพื่อการตรวจสอบทางเทคนิคเท่านั้น
+                                    </p>
+                                </div>
+
+                                <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-xl border border-amber-100 dark:border-amber-800/50">
+                                    <h3 className="text-sm font-bold text-amber-800 dark:text-amber-300 mb-1">⏳ เก็บนานแค่ไหน</h3>
+                                    <p className="text-sm text-amber-700 dark:text-amber-400">
+                                        ข้อมูลลายมือชื่ออิเล็กทรอนิกส์จะถูกเก็บรักษาตามอายุความของเอกสารทางการแพทย์ (5–10 ปี ตามประเภทเอกสาร) หรือตามที่กฎหมายกำหนด หลังจากนั้นข้อมูลจะถูกลบออกจากระบบโดยอัตโนมัติ
+                                    </p>
+                                </div>
+                            </div>
+                        </section>
+
+                        <section>
+                            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">8. การเปลี่ยนแปลงนโยบาย</h2>
                             <p>
                                 เราอาจปรับปรุงนโยบายความเป็นส่วนตัวนี้เป็นครั้งคราว เราแนะนำให้คุณตรวจสอบหน้านี้เป็นระยะเพื่อให้ทราบถึงการเปลี่ยนแปลงใดๆ
                             </p>

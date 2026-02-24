@@ -22,6 +22,7 @@ export default function ProfileEditPage() {
         email: '',
         phone: '',
         position: '',
+        professionalId: '',
 
         roleDisplay: '', // System Role (e.g. Doctor) - Read Only
         username: '',
@@ -43,6 +44,7 @@ export default function ProfileEditPage() {
                         email: data.email || '',
                         phone: data.phone || '', // Need to add phone to DB if not present
                         position: data.position || '', // Actual job title
+                        professionalId: data.professionalId || '',
                         roleDisplay: data.roleDisplay || data.role || '',
                         username: data.email ? data.email.split('@')[0] : '',
                         avatarUrl: data.avatarUrl || '',
@@ -153,6 +155,7 @@ export default function ProfileEditPage() {
                     surname: formData.surname,
                     phone: formData.phone,
                     position: formData.position,
+                    professionalId: formData.professionalId,
                     avatarUrl: formData.avatarUrl
                 }),
             });
@@ -320,6 +323,19 @@ export default function ProfileEditPage() {
                                             value={formData.position}
                                             onChange={handleChange}
                                             placeholder="เช่น จักษุแพทย์, หัวหน้าตึกผู้ป่วยใน"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* Professional ID */}
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">เลขใบประกอบวิชาชีพ / รหัสพนักงาน</label>
+                                        <input
+                                            type="text"
+                                            name="professionalId"
+                                            value={formData.professionalId}
+                                            onChange={handleChange}
+                                            placeholder="ระบุเพื่อใช้ในระบบ E-Document"
                                             className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>

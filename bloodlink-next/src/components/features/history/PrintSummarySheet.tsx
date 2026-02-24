@@ -1,13 +1,17 @@
 import { Patient } from '@/types';
 import { formatDateThai } from '@/lib/utils';
 import { useMemo } from 'react';
+import QRCode from 'react-qr-code';
 
 // A4 Landscape Print Styles
 const printStyles = `
     @media print {
-        @page {
+        @page summary {
             size: A4 landscape;
             margin: 10mm;
+        }
+        .summary-sheet-container {
+            page: summary;
         }
         body {
             print-color-adjust: exact;
@@ -33,9 +37,10 @@ const printStyles = `
 interface PrintSummarySheetProps {
     patients: Patient[];
     hospitalName?: string;
+    signature?: { qr_token: string; signature_text: string; } | null;
 }
 
-export const PrintSummarySheet = ({ patients, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล' }: PrintSummarySheetProps) => {
+export const PrintSummarySheet = ({ patients, signature, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล' }: PrintSummarySheetProps) => {
     // Chunk patients into pages of 10
     const chunkedPatients = useMemo(() => {
         const list = [...patients];
@@ -64,30 +69,39 @@ export const PrintSummarySheet = ({ patients, hospitalName = 'โรงพยา
             <style dangerouslySetInnerHTML={{ __html: printStyles }} />
 
             {chunkedPatients.map((pagePatients, pageIndex) => (
-                <div key={pageIndex} className={`w-full max-w-[297mm] mx-auto ${pageIndex < chunkedPatients.length - 1 ? 'page-break' : ''}`}>
+                <div key={pageIndex} className={`summary-sheet-container w-full max-w-[297mm] mx-auto ${pageIndex < chunkedPatients.length - 1 ? 'page-break' : ''}`}>
                     {/* Header */}
-                    <div className="mb-4">
-                        <div className="flex justify-between items-end border-b border-black pb-2 mb-2">
-                            <h1 className="text-xl font-bold">{hospitalName}</h1>
-                            <div className="text-sm">
-                                <span className="font-semibold">วันที่ส่งตรวจ:</span> {formattedDate}
-                                {chunkedPatients.length > 1 && <span className="ml-4 font-semibold">หน้า: {pageIndex + 1}/{chunkedPatients.length}</span>}
-                            </div>
+                    <div className="flex justify-between items-end mb-4">
+                        <div className="text-[16px] font-bold">
+                            แบบฟอร์มการส่งตรวจทางห้องปฏิบัติการ โรงพยาบาลส่งเสริมสุขภาพตำบล <span className="underline decoration-dotted underline-offset-4 font-normal ml-2">{hospitalName.replace('โรงพยาบาลส่งเสริมสุขภาพตำบล', '').trim() || '........................'}</span>
                         </div>
-                        <div className="text-center text-lg font-bold mb-4">แบบฟอร์มการส่งตรวจทางห้องปฏิบัติการ</div>
+                        <div className="text-[13px]">
+                            <span className="font-bold">วันที่ส่งตรวจ:</span> <span className="underline decoration-dotted underline-offset-4 ml-1 mr-4">{formattedDate}</span>
+                            <span className="font-bold">เวลา:</span> <span className="underline decoration-dotted underline-offset-4 ml-1 inline-block w-16 text-center">............</span>
+                            {chunkedPatients.length > 1 && <span className="ml-4 font-bold">หน้า: {pageIndex + 1}/{chunkedPatients.length}</span>}
+                        </div>
                     </div>
 
                     {/* Table */}
                     <table className="w-full border-collapse border border-black text-[12px]">
                         <thead>
-                            <tr className="bg-gray-100/50">
-                                <th rowSpan={2} className="border border-black px-2 py-1 w-[40px] text-center">ลำดับ</th>
-                                <th rowSpan={2} className="border border-black px-2 py-1 text-left">ชื่อ - สกุล / ญาติ</th>
-                                <th rowSpan={2} className="border border-black px-2 py-1 w-[100px] text-center">HN</th>
-                                <th rowSpan={2} className="border border-black px-2 py-1 w-[130px] text-left">Diagnosis</th>
+                            <tr className="bg-gray-100/50 text-[11px]">
+                                <th rowSpan={2} className="border border-black px-1 py-1 w-[30px] text-center">ลำดับ</th>
+                                <th rowSpan={2} className="border border-black px-2 py-1 text-center w-[160px]">
+                                    ชื่อ - สกุล<br />
+                                    <span className="font-normal text-[10px]">ชื่อ-สกุลญาติ..........................................</span>
+                                </th>
+                                <th rowSpan={2} className="border border-black px-2 py-1 w-[80px] text-center">
+                                    HN<br />
+                                    <span className="font-normal text-[10px]">"รพ..............."</span>
+                                </th>
+                                <th rowSpan={2} className="border border-black px-2 py-1 w-[120px] text-center">Diagnosis</th>
                                 <th colSpan={5} className="border border-black px-2 py-1 text-center">รายการตรวจวิเคราะห์</th>
-                                <th rowSpan={2} className="border border-black px-2 py-1 w-[180px] text-center">เลขบัตรประชาชน / เบอร์โทรศัพท์</th>
-                                <th rowSpan={2} className="border border-black px-2 py-1 w-[100px] text-center">สรุปค่าตรวจ</th>
+                                <th rowSpan={2} className="border border-black px-2 py-1 text-center">
+                                    เลขบัตรประชาชน<br />
+                                    <span className="font-normal text-[10px]">เบอร์โทร......................... ความสัมพันธ์........................</span>
+                                </th>
+                                <th rowSpan={2} className="border border-black px-2 py-1 w-[80px] text-center">สรุปค่าตรวจ</th>
                             </tr>
                             <tr className="bg-gray-100/50">
                                 <th className="border border-black px-1 py-1 w-[35px] text-center text-[10px]">CBC</th>
@@ -120,25 +134,31 @@ export const PrintSummarySheet = ({ patients, hospitalName = 'โรงพยา
                                         <td className="border border-black px-2 py-1 align-top relative">
                                             {!isPlaceholder && (
                                                 <div className="flex flex-col justify-center h-full">
-                                                    <div className="font-bold text-[13px] leading-tight mb-0.5">
+                                                    <div className="font-bold text-[13px] leading-tight mb-1">
                                                         {patient.name} {patient.surname}
                                                     </div>
-                                                    {patient.relativeName && (
-                                                        <div className="text-[10px] text-gray-700 leading-tight border-t border-dashed border-gray-300 pt-0.5 mt-0.5">
-                                                            <span className="font-normal text-gray-500">ชื่อ-สกุลญาติ:</span> {patient.relativeName}
-                                                        </div>
-                                                    )}
+                                                    <div className="text-[10px] text-gray-700 leading-tight">
+                                                        <span className="font-normal text-gray-500 mr-1">ชื่อ-สกุลญาติ:</span>
+                                                        <span className="border-b border-dotted border-gray-400 inline-block min-w-[100px]">{patient.relativeName || ''}</span>
+                                                    </div>
                                                 </div>
                                             )}
                                         </td>
 
                                         {/* Column 3: HN */}
-                                        <td className="border border-black text-center align-middle font-mono font-bold text-[13px]">
-                                            {patient.hn}
+                                        <td className="border border-black px-2 py-1 align-top text-center">
+                                            {!isPlaceholder && (
+                                                <div className="flex flex-col justify-center h-full gap-1">
+                                                    <span className="font-mono font-bold text-[13px]">{patient.hn}</span>
+                                                    <span className="text-[10px] text-gray-500 border-t border-dashed border-gray-300 pt-0.5">
+                                                        -
+                                                    </span>
+                                                </div>
+                                            )}
                                         </td>
 
                                         {/* Column 4: Diagnosis */}
-                                        <td className="border border-black px-2 align-middle">
+                                        <td className="border border-black px-2 align-middle text-center">
                                             {!isPlaceholder && (
                                                 <span className="text-[11px] leading-tight block">
                                                     {patient.disease || '-'}
@@ -166,25 +186,15 @@ export const PrintSummarySheet = ({ patients, hospitalName = 'โรงพยา
                                         {/* Column 10: ID Card & Phone */}
                                         <td className="border border-black px-2 py-1 align-top">
                                             {!isPlaceholder && (
-                                                <div className="flex flex-col justify-center h-full gap-0.5">
-                                                    {patient.idCard && (
-                                                        <div className="font-mono text-[12px] tracking-tight leading-tight">
-                                                            {patient.idCard.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, '$1-$2-$3-$4-$5')}
-                                                        </div>
-                                                    )}
-                                                    <div className="text-[10px] text-gray-700 leading-tight">
-                                                        {patient.phone ? (
-                                                            <>
-                                                                <span className="text-gray-500 mr-1">เบอร์โทร:</span>
-                                                                <span className="font-semibold">{patient.phone}</span>
-                                                            </>
-                                                        ) : patient.relativePhone ? (
-                                                            <div className="border-t border-dashed border-gray-300 pt-0.5 mt-0.5">
-                                                                <span className="text-gray-500 mr-1">ความสัมพันธ์:</span>
-                                                                <span>{patient.relativeRelationship || 'ญาติ'}</span>
-                                                                <span className="ml-2">({patient.relativePhone})</span>
-                                                            </div>
-                                                        ) : '-'}
+                                                <div className="flex flex-col h-full gap-1">
+                                                    <div className="text-[13px] tracking-widest text-center leading-tight">
+                                                        {patient.idCard ? patient.idCard.replace(/(\d{1})(\d{4})(\d{5})(\d{2})(\d{1})/, '$1 $2 $3 $4 $5') : ''}
+                                                    </div>
+                                                    <div className="text-[10px] flex gap-2 w-full mt-auto">
+                                                        <span className="text-gray-500">เบอร์โทร</span>
+                                                        <span className="border-b border-dotted border-gray-400 flex-1 min-w-[60px]">{patient.phone || patient.relativePhone || ''}</span>
+                                                        <span className="text-gray-500">ความสัมพันธ์</span>
+                                                        <span className="border-b border-dotted border-gray-400 w-12 text-center">{patient.relativeRelationship || (patient.relativePhone ? 'ญาติ' : '')}</span>
                                                     </div>
                                                 </div>
                                             )}
@@ -201,23 +211,52 @@ export const PrintSummarySheet = ({ patients, hospitalName = 'โรงพยา
                     </table>
 
                     {/* Signature and Responsibility Block */}
-                    <div className="flex justify-between mt-6 text-[12px] border-t border-dashed border-gray-400 pt-4">
-                        <div className="flex flex-col gap-1 items-start w-1/3">
-                            <span className="font-bold">หน่วยงานต้นทาง (รพ.สต.):</span>
-                            <div className="mt-1 flex items-center gap-2">
-                                <span>ผู้สั่งเจาะเลือด/ส่งตรวจ:</span>
-                                <span className="font-semibold text-blue-700">
-                                    {pagePatients.some(p => p && p.creatorEmail)
-                                        ? pagePatients.find(p => p && p.creatorEmail)?.creatorEmail
-                                        : '.......................................'}
-                                </span>
-                            </div>
-                            <div className="mt-1 text-gray-500 text-[10px]">
-                                (ลายเซ็นผู้ส่ง).......................................
-                            </div>
+                    <div className="flex justify-between mt-4 text-[12px] border-t border-dashed border-gray-400 pt-3 relative">
+                        <div className="flex flex-col gap-1 items-start w-[38%]">
+                            {signature ? (
+                                <div className="flex flex-col items-start w-full">
+                                    <div className="flex gap-2 items-start mb-2">
+                                        <div className="w-[58px] h-[58px] bg-white p-1 border border-gray-200 flex-shrink-0">
+                                            {typeof window !== 'undefined' && (
+                                                <QRCode
+                                                    value={`${window.location.origin}/verify/${signature.qr_token}`}
+                                                    size={48}
+                                                    style={{ height: "auto", maxWidth: "100%", width: "100%" }}
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="flex flex-col text-[8px] font-mono leading-tight break-all text-gray-700">
+                                            <span className="font-bold text-indigo-700 text-[9px] mb-0.5">E-Signature Validated ✓</span>
+                                            {signature.signature_text}
+                                        </div>
+                                    </div>
+                                    <div className="mt-1 flex flex-col gap-0.5">
+                                        <span className="font-bold">หน่วยงานต้นทาง (รพ.สต.):</span>
+                                        <div className="flex items-center gap-1 text-[11px]">
+                                            <span>ผู้ส่งตรวจ:</span>
+                                            <span className="font-semibold text-blue-700">{pagePatients.find(p => p && p.creatorEmail)?.creatorEmail}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <span className="font-bold">หน่วยงานต้นทาง (รพ.สต.):</span>
+                                    <div className="mt-1 flex items-center gap-2">
+                                        <span>ผู้สั่งเจาะเลือด/ส่งตรวจ:</span>
+                                        <span className="font-semibold text-blue-700">
+                                            {pagePatients.some(p => p && p.creatorEmail)
+                                                ? pagePatients.find(p => p && p.creatorEmail)?.creatorEmail
+                                                : '.......................................'}
+                                        </span>
+                                    </div>
+                                    <div className="mt-1 text-gray-500 text-[10px]">
+                                        (ลายเซ็นผู้ส่ง).......................................
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        <div className="flex flex-col gap-1 items-center w-1/3 border-x border-dashed border-gray-300 px-4">
+                        <div className="flex flex-col gap-1 items-center w-[24%] border-x border-dashed border-gray-300 px-2">
                             <span className="font-bold">ข้อมูลตัวอย่างเลือด:</span>
                             <div className="flex gap-4 mt-1">
                                 <span>วันที่......../......../........</span>

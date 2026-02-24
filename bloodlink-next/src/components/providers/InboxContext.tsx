@@ -58,11 +58,20 @@ export function InboxProvider({ children }: { children: ReactNode }) {
             type = 'resultReady';
         }
 
-        // Extract URL from content if present
+        // Extract URL from content if present, or determine route from keywords
         let finalTargetPath = '/inbox';
-        const urlMatch = content.match(/(\/results\/[a-zA-Z0-9-]+)/);
-        if (urlMatch) {
-            finalTargetPath = urlMatch[1];
+        const resultUrlMatch = content.match(/(\/results\/[a-zA-Z0-9-]+)/);
+        const historyUrlMatch = content.match(/(\/history\/[a-zA-Z0-9-]+)/);
+        const hnMatch = content.match(/HN[:\s]*([a-zA-Z0-9-]+)/i) || subject.match(/HN[:\s]*([a-zA-Z0-9-]+)/i);
+
+        if (resultUrlMatch) {
+            finalTargetPath = resultUrlMatch[1];
+        } else if (historyUrlMatch) {
+            finalTargetPath = historyUrlMatch[1];
+        } else if (subject.includes('คิวงาน') || subject.includes('Lab') || content.includes('ส่งตรวจ') || content.includes('รอแล็บ')) {
+            finalTargetPath = '/lab/queue';
+        } else if ((subject.includes('ผลเลือด') || subject.includes('ผลตรวจ')) && hnMatch) {
+            finalTargetPath = `/test-status/${hnMatch[1]}`;
         }
 
         notify(

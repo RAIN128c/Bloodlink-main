@@ -44,6 +44,7 @@ import { ConfirmModal } from '@/components/modals/ConfirmModal';
 import { CustomSelect } from '@/components/ui/CustomSelect';
 import { CustomDatePicker } from '@/components/ui/CustomDatePicker';
 import { CustomTimePicker } from '@/components/ui/CustomTimePicker';
+import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
 
 // Timeline icons mapping
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -203,6 +204,45 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
         action: async () => { },
         variant: 'danger',
     });
+
+    // Next-round modal: auto-shows when patient is เสร็จสิ้น
+    const [showNextRoundModal, setShowNextRoundModal] = useState(false);
+    const [nextRoundLoading, setNextRoundLoading] = useState(false);
+    const [nextRoundDismissed, setNextRoundDismissed] = useState(false);
+
+    // PIN Verification State
+    const [showPinModal, setShowPinModal] = useState(false);
+
+    // Trigger next-round modal when patient is เสร็จสิ้น and role can restart
+    useEffect(() => {
+        if (
+            patientData?.process === 'เสร็จสิ้น' &&
+            !nextRoundDismissed &&
+            (Permissions.isDoctorOrNurse(effectiveRole) || Permissions.isAdmin(effectiveRole))
+        ) {
+            // Small delay so the page renders first
+            const t = setTimeout(() => setShowNextRoundModal(true), 600);
+            return () => clearTimeout(t);
+        }
+    }, [patientData?.process, effectiveRole, nextRoundDismissed]);
+
+    const handleNextRound = async () => {
+        setNextRoundLoading(true);
+        try {
+            const result = await updatePatientStatusAction(hn, 'รอตรวจ', { history: 'เริ่มการตรวจรอบใหม่' });
+            if (result.success) {
+                setPatientData(prev => prev ? { ...prev, process: 'รอตรวจ' } : null);
+                setShowNextRoundModal(false);
+                toast.success('เริ่มการตรวจรอบใหม่เรียบร้อย');
+            } else {
+                toast.error(result.error || 'ไม่สามารถเริ่มรอบใหม่');
+            }
+        } catch {
+            toast.error('เกิดข้อผิดพลาด');
+        } finally {
+            setNextRoundLoading(false);
+        }
+    };
 
     useEffect(() => {
         async function fetchPatient(retries = 3, delay = 500) {
@@ -534,10 +574,25 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
         }
 
         setIsUpdating(true);
+
+        // Intercept E-Signature statuses
+        const eSignatureStatuses = ['รอแล็บรับเรื่อง', 'รับออร์เดอร์', 'กำลังตรวจ'];
+        if (eSignatureStatuses.includes(tempStatus)) {
+            setShowPinModal(true);
+            setIsUpdating(false);
+            return;
+        }
+
+        await executeStatusUpdate();
+    };
+
+    const executeStatusUpdate = async (pin?: string) => {
+        setIsUpdating(true);
         try {
             // Initialize data object with common properties
-            const data: { history: string; date?: string; time?: string; type?: string } = {
+            const data: { history: string; date?: string; time?: string; type?: string; pin?: string } = {
                 history: statusNote,
+                pin
             };
 
             if (tempStatus === 'นัดหมาย') {
@@ -551,9 +606,17 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                 data.type = appointmentType;
             }
 
-            if (tempStatus === 'รอแล็บรับเรื่อง' && selectedAppointmentId) {
-                // Mark selected appointment as completed
-                await AppointmentService.updateStatus(selectedAppointmentId, 'completed');
+            if (tempStatus === 'รอแล็บรับเรื่อง') {
+                if (selectedAppointmentId) {
+                    // Mark selected appointment as completed
+                    await AppointmentService.updateStatus(selectedAppointmentId, 'completed');
+                } else {
+                    // ไม่ใช่การมาตามนัด (Walk-in) - Cancel any pending appointments 
+                    const pendingAppts = appointmentHistory.filter(appt => appt.status === 'pending' || appt.status === undefined);
+                    for (const appt of pendingAppts) {
+                        if (appt.id) await AppointmentService.updateStatus(appt.id, 'cancelled');
+                    }
+                }
 
                 // Refresh history
                 const history = await AppointmentService.getAppointmentsByHn(hn);
@@ -805,7 +868,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                             </div>
 
                             {/* ID Card */}
-                            <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                            <div className="flex flex-col gap-0.5">
                                 <label className="text-[12px] text-[#6B7280] dark:text-gray-400">เลขบัตรประชาชน</label>
                                 {isEditing && editData ? (
                                     <input
@@ -821,7 +884,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                             </div>
 
                             {/* Phone */}
-                            <div className="flex flex-col gap-0.5 col-span-2 md:col-span-1">
+                            <div className="flex flex-col gap-0.5">
                                 <label className="text-[12px] text-[#6B7280] dark:text-gray-400">เบอร์โทรศัพท์</label>
                                 {isEditing && editData ? (
                                     <input
@@ -1114,7 +1177,6 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                             <thead className="bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-medium border-b border-gray-200 dark:border-gray-700 sticky top-0 z-10 shadow-sm">
                                                 <tr>
                                                     <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">วันที่</th>
-                                                    <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">สรุปผล</th>
                                                     <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap">ผู้รายงาน</th>
                                                     <th className="px-4 py-3 bg-gray-50 dark:bg-gray-800 whitespace-nowrap text-center">จัดการ</th>
                                                 </tr>
@@ -1126,18 +1188,13 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                                             <td className="px-4 py-3 text-gray-900 dark:text-white whitespace-nowrap">
                                                                 {formatDateThai(lab.created_at || lab.timestamp)}
                                                             </td>
-                                                            <td className="px-4 py-3">
-                                                                {lab.result_summary === 'Normal' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300">ปกติ</span>}
-                                                                {lab.result_summary === 'Abnormal' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-300">ผิดปกติ</span>}
-                                                                {lab.result_summary === 'Critical' && <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">วิกฤต</span>}
-                                                                {!lab.result_summary && <span className="text-xs text-gray-400">-</span>}
-                                                            </td>
+
                                                             <td className="px-4 py-3 text-gray-600 dark:text-gray-300 text-xs">
                                                                 {lab.reporter_name || '-'}
                                                             </td>
                                                             <td className="px-4 py-3 text-center">
                                                                 <Link
-                                                                    href={`/results/${hn}`}
+                                                                    href={`/test-status/${hn}`}
                                                                     className="inline-flex items-center gap-1 px-2.5 py-1 bg-[#6366F1] hover:bg-[#4F46E5] text-white rounded-lg text-xs font-medium transition-colors shadow-sm"
                                                                 >
                                                                     <Eye className="w-3 h-3" />
@@ -1148,7 +1205,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                                                     ))
                                                 ) : (
                                                     <tr>
-                                                        <td colSpan={4} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
+                                                        <td colSpan={3} className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
                                                             ไม่พบประวัติผลเลือด
                                                         </td>
                                                     </tr>
@@ -1215,7 +1272,7 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                     </div>
                     <div className="flex flex-col items-end gap-1 shrink-0 ml-4 border-l pl-4 border-gray-200 dark:border-gray-700 py-0.5">
                         <Link
-                            href={`/results/${patientData.hn}`}
+                            href={`/test-status/${patientData.hn}`}
                             className="bg-[#22C55E] hover:bg-[#16A34A] text-white px-5 py-1.5 rounded-[10px] font-bold transition-colors text-[13px] shadow-sm tracking-wide"
                         >
                             เช็คผลตรวจ
@@ -1251,7 +1308,9 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                         <div className="p-6">
                             <div className="flex flex-wrap gap-2 mb-4">
                                 {['รอตรวจ', 'นัดหมาย', 'รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ', 'เสร็จสิ้น'].map((option) => {
-                                    const isDisabled = !Permissions.canUpdateToStatus(effectiveRole, patientData?.process, option) && option !== tempStatus;
+                                    const isCurrentProcess = patientData?.process === option;
+                                    const isAllowedNext = Permissions.canUpdateToStatus(effectiveRole, patientData?.process, option);
+                                    const isDisabled = !isAllowedNext && !isCurrentProcess;
                                     return (
                                         <label
                                             key={option}
@@ -1638,6 +1697,40 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                     </div>
                 </div>
             )}
+            {/* Next-Round Modal */}
+            {showNextRoundModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-100 dark:border-gray-700">
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="w-10 h-10 bg-green-100 dark:bg-green-900/40 rounded-full flex items-center justify-center">
+                                <span className="text-2xl">✅</span>
+                            </div>
+                            <div>
+                                <h2 className="text-base font-bold text-gray-900 dark:text-white">การตรวจรอบที่แล้วเสร็จสิ้น</h2>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">HN: {hn}</p>
+                            </div>
+                        </div>
+                        <p className="text-sm text-gray-700 dark:text-gray-300 mb-6">
+                            ผู้ป่วยรายนี้ถูกตรวจเสร็จสิ้นแล้วในรอบก่อนหน้า ต้องการเริ่มการตรวจในรอบใหม่หรือไม่?
+                        </p>
+                        <div className="flex flex-col gap-2">
+                            <button
+                                onClick={handleNextRound}
+                                disabled={nextRoundLoading}
+                                className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl text-sm transition disabled:opacity-50"
+                            >
+                                {nextRoundLoading ? 'กำลังดำเนินการ...' : 'ใช่ — เริ่มตรวจรอบใหม่ (Reset เป็น รอตรวจ)'}
+                            </button>
+                            <button
+                                onClick={() => { setShowNextRoundModal(false); setNextRoundDismissed(true); }}
+                                className="w-full py-2.5 px-4 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium rounded-xl text-sm transition"
+                            >
+                                ไม่ — เก็บข้อมูลไว้ก่อน
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
             {/* Delete Patient Confirmation Modal */}
             <ConfirmModal
                 isOpen={confirmConfig.isOpen}
@@ -1649,6 +1742,15 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                 cancelText="ยกเลิก"
                 variant={confirmConfig.variant || "danger"}
                 isLoading={isDeleting}
+            />
+
+            <PinVerificationModal
+                isOpen={showPinModal}
+                onClose={() => setShowPinModal(false)}
+                onVerify={(pin) => {
+                    setShowPinModal(false);
+                    executeStatusUpdate(pin);
+                }}
             />
         </>
     );

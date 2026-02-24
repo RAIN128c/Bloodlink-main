@@ -70,19 +70,18 @@ export async function PUT(
         // Assign Lab Admin responsibility on 'รับออร์เดอร์' (Accept Request)
         if (process === 'รอจัดส่ง' && currentStatus === 'รอแล็บรับเรื่อง' && session.user.email) {
             // Using PatientService's built-in responsibility assignment methods mapped to the patient_responsibility join table.
-            await PatientService.addResponsiblePerson(hn, session.user.email, session.user.email);
+            await PatientService.addResponsiblePerson(hn, session.user.email, session.user.email, supabaseAdmin || undefined);
         }
 
         const success = await PatientService.updatePatientStatus(
             hn,
             process,
-            { history, date, time }
+            { history, date, time, changedByEmail: session.user.email, changedByName: session.user.name || session.user.email, changedByRole: (session.user as any).role }
         );
 
         if (success) {
             // Send Lab Notification if status changed to 'รอแล็บรับเรื่อง' (Wait for Lab Acceptance)
             if (process === 'รอแล็บรับเรื่อง' && currentStatus !== 'รอแล็บรับเรื่อง') {
-                // Directly insert into admin_inbox since MessageService.sendMessage targets the 'messages' table.
                 const patientName = `${oldPatient?.name || ''} ${oldPatient?.surname || ''}`.trim();
                 await supabaseAdmin?.from('admin_inbox').insert({
                     type: 'lab_request',
@@ -92,6 +91,24 @@ export async function PUT(
                     sender_email: session.user.email,
                     is_read: false
                 });
+            }
+
+            // Notify requesting staff when lab accepts their order
+            if (process === 'รอจัดส่ง' && currentStatus === 'รอแล็บรับเรื่อง') {
+                const patientName = `${oldPatient?.name || ''} ${oldPatient?.surname || ''}`.trim();
+                try {
+                    const { NotificationService } = await import('@/lib/services/notificationService');
+                    await NotificationService.sendStatusNotification(
+                        hn,
+                        'รอจัดส่ง',
+                        patientName,
+                        'แล็บรับออร์เดอร์แล้ว',
+                        `📦 แล็บรับออร์เดอร์ของ ${patientName} (HN: ${hn}) เรียบร้อยแล้ว กรุณาจัดเตรียมตัวอย่างเลือดและดำเนินการจัดส่ง`,
+                        session.user.email // exclude the lab staff who accepted
+                    );
+                } catch (err) {
+                    console.error('Lab acceptance notification error:', err);
+                }
             }
 
             return NextResponse.json({ success: true });

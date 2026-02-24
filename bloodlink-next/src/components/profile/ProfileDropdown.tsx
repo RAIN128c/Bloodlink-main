@@ -13,6 +13,7 @@ export interface CurrentUser {
     email: string;
     position: string;
     avatarUrl?: string;
+    professionalId?: string;
 }
 
 interface ProfileDropdownProps {

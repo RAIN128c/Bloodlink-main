@@ -73,7 +73,7 @@ export async function register(data: any) {
         };
     }
 
-    const { role, name, surname, email, password, hospitalType, hospitalName } = validatedFields.data;
+    const { role, name, surname, email, password, hospitalType, hospitalName, professionalId } = validatedFields.data;
 
     // Supabase Admin is required to create pre-verified users
     if (!supabaseAdmin) {
@@ -120,6 +120,7 @@ export async function register(data: any) {
                 surname,
                 hospitalType,
                 hospitalName,
+                professionalId,
                 status: 'รอตรวจสอบ'
             }
         });

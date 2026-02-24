@@ -15,16 +15,23 @@ export default function AddPatientPage() {
     const handleConfirm = async (data: any) => {
         setIsSubmitting(true);
         try {
-            await addPatient(data);
+            const result = await addPatient(data);
+            if (result && !result.success) {
+                toast.error('ไม่สามารถเพิ่มผู้ป่วยได้', {
+                    description: result.error || 'กรุณาตรวจสอบข้อมูลอีกครั้ง',
+                    duration: 5000,
+                });
+                return;
+            }
             toast.success('บันทึกข้อมูลสำเร็จ', {
                 description: `เพิ่มข้อมูลผู้ป่วย ${data.name} ${data.surname} เรียบร้อยแล้ว`,
             });
             router.push('/history');
             router.refresh();
-        } catch (error) {
+        } catch (error: any) {
             console.error('Error adding patient:', error);
             toast.error('เกิดข้อผิดพลาด', {
-                description: 'ไม่สามารถบันทึกข้อมูลผู้ป่วยได้ กรุณาลองใหม่อีกครั้ง'
+                description: error?.message || 'ไม่สามารถบันทึกข้อมูลผู้ป่วยได้ กรุณาลองใหม่อีกครั้ง'
             });
         } finally {
             setIsSubmitting(false);

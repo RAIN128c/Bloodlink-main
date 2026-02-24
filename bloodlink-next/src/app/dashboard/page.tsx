@@ -53,9 +53,9 @@ export default function DashboardPage() {
                     setStats({
                         totalPatients: patients.length,
                         appointments: patients.filter(p => p.process === 'นัดหมาย').length,
-                        completed: patients.filter(p => p.process === 'เสร็จสิ้น' || p.process === 'รายงานผล').length,
+                        completed: patients.filter(p => p.process === 'เสร็จสิ้น').length,
                         inProgress: patients.filter(p =>
-                            p.process && p.process !== 'นัดหมาย' && p.process !== 'เสร็จสิ้น' && p.process !== 'รายงานผล'
+                            p.process && p.process !== 'นัดหมาย' && p.process !== 'เสร็จสิ้น'
                         ).length
                     });
 

@@ -43,11 +43,9 @@ export async function POST(
             return NextResponse.json({ error: 'Failed to approve result' }, { status: 500 });
         }
 
-        // Update patient process to approved/completed
-        await supabaseAdmin
-            .from('patients')
-            .update({ process: 'อนุมัติแล้ว', updated_at: new Date().toISOString() })
-            .eq('hn', hn);
+        // NOTE: Do NOT update patient process here.
+        // Approve only records the approver. The process status remains unchanged
+        // (e.g. ส่งผลตรวจ from upload). Only printing changes status to เสร็จสิ้น.
 
         return NextResponse.json({ success: true, approverName });
 

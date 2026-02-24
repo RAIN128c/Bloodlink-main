@@ -88,10 +88,12 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'Failed to save lab result' }, { status: 500 });
         }
 
-        // Update patient process status to 'เสร็จสิ้น' (Completed)
+        // Update patient process status to 'ส่งผลตรวจ' (Results Submitted)
+        // This triggers the "ผลตรวจเลือด" badge in the sidebar notification system.
+        // Doctor/Nurse will then approve → 'เสร็จสิ้น' → print → 'รายงานผล'
         const { error: patientError } = await supabaseAdmin
             .from('patients')
-            .update({ process: 'เสร็จสิ้น', updated_at: new Date().toISOString() })
+            .update({ process: 'ส่งผลตรวจ', updated_at: new Date().toISOString() })
             .eq('hn', hn);
 
         if (patientError) {
@@ -130,7 +132,7 @@ export async function POST(req: NextRequest) {
                             subject: `ผลตรวจเลือด HN: ${hn} พร้อมตรวจสอบ`,
                             content: `มีผลตรวจเลือดของผู้ป่วย HN: ${hn} (${patientName || '-'}) อัปโหลดเรียบร้อยแล้ว
 
-กรุณาตรวจสอบและยืนยันผล: /results/${hn}`,
+กรุณาตรวจสอบและยืนยันผล: /test-status/${hn}`,
                             type: 'lab_result',
                         });
                     }

@@ -57,7 +57,8 @@ export class AuthService {
                 position: user.position,
                 phone: user.phone,
                 status: user.status,
-                avatarUrl: user.avatar_url
+                avatarUrl: user.avatar_url,
+                professionalId: user.professional_id
             };
         } catch (error) {
             console.error('Auth error:', error);
@@ -151,7 +152,8 @@ export class AuthService {
                 position: u.position,
                 phone: u.phone,
                 status: u.status || 'Pending',
-                avatarUrl: u.avatar_url
+                avatarUrl: u.avatar_url,
+                professionalId: u.professional_id
             }));
         } catch (error) {
             console.error('Fetch users error:', error);
@@ -179,7 +181,8 @@ export class AuthService {
                 position: u.position,
                 phone: u.phone,
                 status: u.status,
-                avatarUrl: u.avatar_url
+                avatarUrl: u.avatar_url,
+                professionalId: u.professional_id
             }));
         } catch (error) {
             console.error('Fetch users by roles error:', error);
@@ -189,22 +192,26 @@ export class AuthService {
 
 
 
-    static async updateUser(email: string, data: Partial<User> & { phone?: string }): Promise<boolean> {
+    static async updateUser(email: string, data: Partial<User> & { phone?: string, professionalId?: string }): Promise<boolean> {
         try {
             const updateFields: any = {};
-            if (data.name) updateFields.name = data.name;
-            if (data.surname) updateFields.surname = data.surname;
-            if (data.position) updateFields.position = data.position;
-            if (data.phone) updateFields.phone = data.phone;
-            if (data.avatarUrl) updateFields.avatar_url = data.avatarUrl;
+            if (data.name !== undefined) updateFields.name = data.name;
+            if (data.surname !== undefined) updateFields.surname = data.surname;
+            if (data.position !== undefined) updateFields.position = data.position;
+            if (data.phone !== undefined) updateFields.phone = data.phone;
+            if (data.avatarUrl !== undefined) updateFields.avatar_url = data.avatarUrl;
+            if (data.professionalId !== undefined) updateFields.professional_id = data.professionalId;
 
             // Only update if there are fields to update
             if (Object.keys(updateFields).length === 0) return true;
 
-            const { error } = await supabase
+            // Use admin client to bypass RLS for profile updates
+            const { supabaseAdmin } = await import('@/lib/supabase-admin');
+
+            const { error } = await supabaseAdmin
                 .from('users')
                 .update(updateFields)
-                .eq('email', email);
+                .eq('email', email.toLowerCase());
 
             if (error) {
                 console.error('Supabase update error:', error);
@@ -272,7 +279,8 @@ export class AuthService {
                 phone: user.phone,
                 status: user.status,
                 bio: user.bio,
-                avatarUrl: user.avatar_url
+                avatarUrl: user.avatar_url,
+                professionalId: user.professional_id
             };
         } catch (error) {
             console.error('Get user by ID error:', error);
@@ -300,7 +308,8 @@ export class AuthService {
                 phone: user.phone,
                 status: user.status,
                 bio: user.bio,
-                avatarUrl: user.avatar_url
+                avatarUrl: user.avatar_url,
+                professionalId: user.professional_id
             };
         } catch (error) {
             console.error('Get user by email error:', error);

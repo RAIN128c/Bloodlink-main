@@ -113,6 +113,34 @@ export function Sidebar() {
     // Avoid aggressive polling to reduce Supabase REST/Auth usage.
     useEffect(() => {
         fetchNotifications(); // Initial fetch
+
+        // Poll every 30 seconds for badge updates
+        const interval = setInterval(fetchNotifications, 30000);
+
+        // Real-time subscription for lab queue badge
+        let channel: ReturnType<typeof import('@/lib/supabase').supabase.channel> | undefined;
+        (async () => {
+            try {
+                const { supabase } = await import('@/lib/supabase');
+                channel = supabase
+                    .channel('sidebar-lab-queue')
+                    .on(
+                        'postgres_changes',
+                        { event: '*', schema: 'public', table: 'patients' },
+                        () => {
+                            fetchNotifications();
+                        }
+                    )
+                    .subscribe();
+            } catch { /* non-critical */ }
+        })();
+
+        return () => {
+            clearInterval(interval);
+            if (channel) {
+                import('@/lib/supabase').then(m => m.supabase.removeChannel(channel!)).catch(() => { });
+            }
+        };
     }, [fetchNotifications]);
 
     // Handle navigation actions
@@ -285,10 +313,10 @@ export function Sidebar() {
                         {/* Lab Queue Link - Visible to Admin/Lab Staff */}
                         {Permissions.canManageLabSettings(effectiveRole) && (
                             <Link
-                                href="/admin/lab/queue"
+                                href="/lab/queue"
                                 className={clsx(
                                     'flex items-center gap-2 px-4 py-3 rounded-[14px] text-[12px] font-medium transition-all duration-200',
-                                    isActive('/admin/lab/queue')
+                                    isActive('/lab/queue')
                                         ? 'bg-[#e1eafa] text-[#1E40AF] dark:bg-[#1E40AF] dark:text-white'
                                         : 'text-[#3E3066] dark:text-gray-300 hover:bg-[#e1eafa] dark:hover:bg-[#374151] hover:text-[#1E40AF] dark:hover:text-white'
                                 )}

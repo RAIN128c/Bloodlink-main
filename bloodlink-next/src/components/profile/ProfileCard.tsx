@@ -15,6 +15,7 @@ export interface UserProfile {
     role: string; // admin, user
     bio?: string;
     avatarUrl?: string;
+    professionalId?: string;
     staffNumber?: string;
     status?: string;
 }
@@ -116,6 +117,15 @@ export function ProfileCard({ user, showEditButton = false, editPath, compact = 
                     <div className="flex flex-col">
                         <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">อีเมลติดต่อ</span>
                         <span className="text-[15px] text-gray-800 dark:text-gray-200 font-medium">{user.email}</span>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 mt-6 border-t border-gray-100 dark:border-gray-800 pt-6">
+                    <div className="flex flex-col">
+                        <span className="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-1">เลขใบประกอบวิชาชีพ / รหัสพนักงาน</span>
+                        <span className={`text-[15px] font-medium ${user.professionalId ? 'text-gray-800 dark:text-gray-200' : 'text-red-500'}`}>
+                            {user.professionalId || 'ไม่ได้ระบุ'}
+                        </span>
                     </div>
                 </div>
             </div>

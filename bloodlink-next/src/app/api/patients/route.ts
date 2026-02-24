@@ -19,6 +19,53 @@ export async function GET(req: NextRequest) {
             // Include standard pending statuses + new Lab workflow states
             const pendingStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
             const filtered = patients.filter((p: any) => pendingStatuses.includes(p.process));
+
+            // Fetch the true 'sender' (who changed status to รอแล็บรับเรื่อง)
+            // and the true 'receiver' (who changed status to กำลังตรวจ)
+            // by querying status_history for these specific patients.
+            const hns = filtered.map((p: any) => p.hn);
+
+            // Create a mapping of HN -> { senderName, receiverName }
+            const historyMap: Record<string, { sender?: string, receiver?: string, latestSenderTime?: number, latestReceiverTime?: number }> = {};
+
+            // Only query status_history if we have patients to look up
+            if (hns.length > 0) {
+                try {
+                    const { data: historyData } = await import('@/lib/supabase').then(m => m.supabase
+                        .from('status_history')
+                        .select('patient_hn, to_status, changed_by_name, created_at')
+                        .in('patient_hn', hns)
+                        .in('to_status', ['รอแล็บรับเรื่อง', 'กำลังตรวจ'])
+                    );
+
+                    if (historyData) {
+                        for (const h of historyData) {
+                            const hn = h.patient_hn;
+                            if (!historyMap[hn]) historyMap[hn] = {};
+
+                            const time = new Date(h.created_at).getTime();
+                            const name = h.changed_by_name || 'ไม่ทราบชื่อ';
+
+                            if (h.to_status === 'รอแล็บรับเรื่อง') {
+                                if (!historyMap[hn].latestSenderTime || time > historyMap[hn].latestSenderTime!) {
+                                    historyMap[hn].sender = name;
+                                    historyMap[hn].latestSenderTime = time;
+                                }
+                            } else if (h.to_status === 'กำลังตรวจ') {
+                                if (!historyMap[hn].latestReceiverTime || time > historyMap[hn].latestReceiverTime!) {
+                                    historyMap[hn].receiver = name;
+                                    historyMap[hn].latestReceiverTime = time;
+                                }
+                            }
+                        }
+                    }
+                } catch (historyErr) {
+                    console.error('[pending_lab] Error fetching status history:', historyErr);
+                }
+            }
+
+            console.log(`[pending_lab] Found ${filtered.length} patients, HNs:`, hns);
+
             return NextResponse.json({
                 patients: filtered.map((p: any) => ({
                     hn: p.hn,
@@ -39,8 +86,13 @@ export async function GET(req: NextRequest) {
                     relativeName: p.relativeName,
                     relativePhone: p.relativePhone,
                     relativeRelationship: p.relativeRelationship,
-                    responsibleEmails: p.responsibleEmails,
-                    creatorEmail: p.creatorEmail
+                    // IMPORTANT: Keep actual responsibleEmails from the patient data (responsibility table)
+                    // This is what drives "My Tasks" filtering. Do NOT override with history names.
+                    responsibleEmails: p.responsibleEmails || [],
+                    creatorEmail: p.creatorEmail,
+                    // History-derived display names (for UI labels, not for task filtering)
+                    senderName: historyMap[p.hn]?.sender || null,
+                    receiverName: historyMap[p.hn]?.receiver || null,
                 }))
             });
         }

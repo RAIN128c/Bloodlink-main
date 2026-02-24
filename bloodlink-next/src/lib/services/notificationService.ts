@@ -2,13 +2,11 @@ import { supabaseAdmin } from '@/lib/supabase-admin';
 import { MessageService } from './messageService';
 
 // Status to notification message mapping with emojis
+// Only statuses that are meaningful to the requesting staff should trigger inbox notifications.
+// Intermediate lab workflow statuses (รอจัดส่ง, กำลังจัดส่ง, กำลังตรวจ) are omitted
+// because lab staff already sees these changes live in their queue.
 const STATUS_MESSAGES: Record<string, string> = {
-    'รอตรวจ': '📋 สถานะ: รอตรวจ',
-    'นัดหมาย': '📅 นัดหมายเจาะเลือดเรียบร้อย',
     'รอแล็บรับเรื่อง': '💉 สั่งเจาะเลือด รอแล็บรับเรื่อง',
-    'รอจัดส่ง': '📦 แล็บรับเรื่องแล้ว รอจัดส่ง',
-    'กำลังจัดส่ง': '🚚 กำลังจัดส่งตัวอย่างเลือดไปห้องปฏิบัติการ',
-    'กำลังตรวจ': '🔬 กำลังตรวจวิเคราะห์ผลเลือด',
     'เสร็จสิ้น': '✅ ผลเลือดออกแล้ว พร้อมรายงาน'
 };
 
@@ -25,7 +23,8 @@ export class NotificationService {
         status: string,
         patientName: string,
         customSubject?: string,
-        customMessage?: string
+        customMessage?: string,
+        excludeEmail?: string
     ): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
         try {
             // 1. Get the notification message for this status
@@ -35,15 +34,13 @@ export class NotificationService {
                 return { success: true, notifiedCount: 0 };
             }
 
-            // Add link to results page for statuses where editing/viewing results is relevant
-            const resultsLink = `/results/${patientHn}`;
+            // Add link to patient history page for viewing results
+            const patientLink = `/test-status/${patientHn}`;
             let fullMessage = `${baseMessage}: ${patientName} (HN: ${patientHn})`;
 
             // Add specific action messages based on status
-            if (status === 'กำลังตรวจ') {
-                fullMessage += `\n\n📝 กรุณาตรวจสอบและบันทึกผลเลือด: ${resultsLink}`;
-            } else if (status === 'เสร็จสิ้น') {
-                fullMessage += `\n\n📊 ดูผลตรวจ: ${resultsLink}`;
+            if (status === 'เสร็จสิ้น') {
+                fullMessage += `\n\n📊 ดูผลตรวจ: ${patientLink}`;
             }
 
 
@@ -87,9 +84,13 @@ export class NotificationService {
                 return { success: true, notifiedCount: 0 };
             }
 
-            // 4. Send notification to each responsible user
+            // 4. Send notification to each responsible user (excluding the actor)
             let notifiedCount = 0;
             for (const user of users) {
+                // Skip the person who performed the action — they already know
+                if (excludeEmail && user.email?.toLowerCase() === excludeEmail.toLowerCase()) {
+                    continue;
+                }
                 const result = await MessageService.sendMessage(
                     'system', // sender_id for system notifications
                     user.id,
@@ -170,7 +171,7 @@ export class NotificationService {
         labTechName?: string
     ): Promise<{ success: boolean; notifiedCount: number; error?: string }> {
         try {
-            const message = `🔬 ผลเลือดของ ${patientName} (HN: ${patientHn}) พร้อมให้ตรวจสอบแล้ว${labTechName ? ` - บันทึกโดย ${labTechName}` : ''}\n\n📊 ตรวจสอบผลเลือด: /results/${patientHn}`;
+            const message = `🔬 ผลเลือดของ ${patientName} (HN: ${patientHn}) พร้อมให้ตรวจสอบแล้ว${labTechName ? ` - บันทึกโดย ${labTechName}` : ''}\n\n📊 ตรวจสอบผลเลือด: /test-status/${patientHn}`;
             const subject = 'ผลเลือดพร้อมให้ตรวจสอบ';
 
             // Get responsible staff for this patient

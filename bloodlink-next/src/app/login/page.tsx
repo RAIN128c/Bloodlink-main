@@ -41,6 +41,7 @@ export default function LoginPage() {
     const [regConfirmPassword, setRegConfirmPassword] = useState('');
     const [regHospitalType, setRegHospitalType] = useState('แม่ข่าย');
     const [regHospitalName, setRegHospitalName] = useState('');
+    const [regProfessionalId, setRegProfessionalId] = useState('');
     const [regPrivacy, setRegPrivacy] = useState(false);
     const [showRegPassword, setShowRegPassword] = useState(false);
     const [showRegConfirmPassword, setShowRegConfirmPassword] = useState(false);
@@ -119,6 +120,7 @@ export default function LoginPage() {
                 password: regPassword,
                 hospitalType: regHospitalType,
                 hospitalName: regHospitalName,
+                professionalId: regProfessionalId,
                 captchaToken
             });
 
@@ -316,6 +318,19 @@ export default function LoginPage() {
                                     <label htmlFor="reg-email" className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">อีเมล</label>
                                     <input id="reg-email" type="email" required value={regEmail} onChange={(e) => setRegEmail(e.target.value)} className={`w-full py-2.5 px-3.5 text-sm border ${fieldErrors.email ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-[#374151] text-gray-900 dark:text-white focus:outline-none focus:border-purple-600 transition-colors`} autoComplete="email" />
                                     {fieldErrors.email && <p className="text-red-500 text-xs mt-1">{fieldErrors.email[0]}</p>}
+                                </div>
+
+                                {/* Professional ID */}
+                                <div className="form-group">
+                                    <label htmlFor="reg-professional-id" className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">เลขใบประกอบวิชาชีพ / รหัสพนักงาน</label>
+                                    <input id="reg-professional-id" type="text" required value={regProfessionalId} onChange={(e) => setRegProfessionalId(e.target.value)} placeholder="ระบุเพื่อให้แอดมินตรวจสอบ" className={`w-full py-2.5 px-3.5 text-sm border ${fieldErrors.professionalId ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-[#374151] text-gray-900 dark:text-white focus:outline-none focus:border-purple-600 transition-colors`} />
+                                    {fieldErrors.professionalId && <p className="text-red-500 text-xs mt-1">{fieldErrors.professionalId[0]}</p>}
+                                    <div className="mt-2 p-2.5 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-lg">
+                                        <p className="text-[10px] leading-relaxed text-blue-700 dark:text-blue-300">
+                                            🔒 <strong>Privacy Notice:</strong> เราจะเก็บชื่อ-นามสกุลและเลขใบประกอบวิชาชีพของคุณเพื่อใช้ระบุตัวตนในเอกสารอิเล็กทรอนิกส์เท่านั้น ข้อมูลจะถูกเก็บรักษาตามอายุความเอกสารทางการแพทย์ ดู{' '}
+                                            <Link href="/privacy-policy" className="underline font-semibold" target="_blank">นโยบายความเป็นส่วนตัวฉบับเต็ม</Link>
+                                        </p>
+                                    </div>
                                 </div>
 
                                 {/* Password */}

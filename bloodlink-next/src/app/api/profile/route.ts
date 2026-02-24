@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
     try {
         const session = await auth();
@@ -35,7 +37,8 @@ export async function GET() {
             role: user.role || 'user',     // System role
             roleDisplay: getRoleDisplay(user.role || 'user'),
             status: user.status,
-            avatarUrl: user.avatarUrl
+            avatarUrl: user.avatarUrl,
+            professionalId: user.professionalId
         };
 
         return NextResponse.json(profile);
@@ -57,12 +60,12 @@ export async function PUT(req: NextRequest) {
 
         const data = await req.json();
 
-        // Allowed fields to update
         const updateData = {
             name: data.name,
             surname: data.surname,
             phone: data.phone,
             position: data.position,
+            professionalId: data.professionalId,
             avatarUrl: data.avatarUrl
         };
 

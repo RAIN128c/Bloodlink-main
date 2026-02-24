@@ -6,6 +6,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { Permissions } from '@/lib/permissions';
 import { NotificationService } from '@/lib/services/notificationService';
+import { SignatureService } from '@/lib/services/signatureService';
 
 export async function getPatients(): Promise<Patient[]> {
     return await PatientService.getPatients();
@@ -48,7 +49,7 @@ import { AppointmentService } from '@/lib/services/appointmentService';
 export async function updatePatientStatus(
     hn: string,
     processStatus: string,
-    data: { history?: string, date?: string, time?: string, type?: string }
+    data: { history?: string, date?: string, time?: string, type?: string, pin?: string }
 ) {
     const session = await auth();
     const user = session?.user as any;
@@ -79,6 +80,22 @@ export async function updatePatientStatus(
             success: false,
             error: `ไม่สามารถอัปเดตสถานะได้: ต้องใช้สิทธิ์ ${requiredRole}`
         };
+    }
+
+    // Validations for E-Signature Workflow (Sender & Receiver)
+    const eSignatureStatuses = ['รอแล็บรับเรื่อง', 'รับออร์เดอร์', 'กำลังตรวจ'];
+    let signatureToken = null;
+
+    if (eSignatureStatuses.includes(processStatus)) {
+        if (!data.pin) {
+            return { success: false, error: 'กรุณาระบุรหัส PIN 6 หลักสำหรับการลงนามอิเล็กทรอนิกส์' };
+        }
+
+        // Verify PIN
+        const isValidPin = await SignatureService.verifyPin(email, data.pin);
+        if (!isValidPin) {
+            return { success: false, error: 'รหัส PIN ไม่ถูกต้อง' };
+        }
     }
 
     // Pass user info for status history logging
@@ -114,6 +131,26 @@ export async function updatePatientStatus(
             } else {
                 console.log(`[Action] Appointment created successfully.`);
             }
+        }
+
+        // Apply E-Signature if applicable
+        if (eSignatureStatuses.includes(processStatus)) {
+            const roleType = processStatus === 'รอแล็บรับเรื่อง' ? 'sender' : 'receiver';
+            console.log(`[Action] Applying E-Signature for ${hn} role: ${roleType}`);
+            const signatureResult = await SignatureService.createSignature({
+                patient_hn: hn,
+                document_type: 'request_sheet',
+                signer_email: email,
+                signer_role: roleType,
+            });
+
+            if (!signatureResult.success) {
+                // Return a warning but don't fail the entire status transaction if stamp generation fails halfway
+                console.error(`[Action] E-Signature generation failed: ${signatureResult.error}`);
+                return { success: true, warning: 'สถานะถูกอัปเดตแล้ว แต่ไม่สามารถสร้างลายเซ็นอิเล็กทรอนิกส์ได้: ' + signatureResult.error };
+            }
+
+            signatureToken = signatureResult.token;
         }
 
         // Notification is already handled inside PatientService.updatePatientStatus

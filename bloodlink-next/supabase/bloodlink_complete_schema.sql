@@ -47,6 +47,8 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_type TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS professional_id TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 CREATE INDEX IF NOT EXISTS idx_users_role ON users(role);
@@ -519,7 +521,32 @@ CREATE INDEX IF NOT EXISTS idx_user_tokens_email ON user_tokens(email);
 CREATE INDEX IF NOT EXISTS idx_user_tokens_token ON user_tokens(token);
 
 -- ============================================================
--- 13. STORAGE: Avatar Bucket
+-- 13. DOCUMENT_SIGNATURES (E-Document Signatures)
+-- Source: hooks/useSignature, API endpoints
+-- DB cols: id, document_type, patient_hn, signer_email, signer_role, signature_text, qr_token, ip_address, signed_at
+-- ============================================================
+CREATE TABLE IF NOT EXISTS document_signatures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_type TEXT NOT NULL,          -- e.g., 'request_sheet'
+    patient_hn VARCHAR(50) NOT NULL REFERENCES patients(hn) ON DELETE CASCADE,
+    signer_email TEXT NOT NULL,
+    signer_role TEXT NOT NULL,            -- 'sender' or 'receiver'
+    signature_text TEXT NOT NULL,         -- The text-based digital stamp
+    qr_token UUID UNIQUE DEFAULT gen_random_uuid(),
+    ip_address TEXT,                      -- For audit logging
+    signed_at TIMESTAMPTZ DEFAULT NOW(),
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE document_signatures ADD COLUMN IF NOT EXISTS ip_address TEXT;
+ALTER TABLE document_signatures ADD COLUMN IF NOT EXISTS qr_token UUID UNIQUE DEFAULT gen_random_uuid();
+
+CREATE INDEX IF NOT EXISTS idx_doc_signatures_hn ON document_signatures(patient_hn);
+CREATE INDEX IF NOT EXISTS idx_doc_signatures_token ON document_signatures(qr_token);
+
+-- ============================================================
+-- 14. STORAGE: Avatar Bucket
 -- Source: upload/route.ts, 20260219_fix_storage_policy.sql
 -- ============================================================
 INSERT INTO storage.buckets (id, name, public) 
@@ -540,7 +567,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.users (id, email, name, surname, role, status, hospital_type)
+  INSERT INTO public.users (id, email, name, surname, role, status, hospital_type, professional_id)
   VALUES (
     new.id, 
     new.email, 
@@ -548,7 +575,8 @@ BEGIN
     COALESCE(new.raw_user_meta_data->>'surname', ''),
     COALESCE(new.raw_user_meta_data->>'role', 'ผู้ใช้งานทั่วไป'),
     'รอตรวจสอบ',
-    COALESCE(new.raw_user_meta_data->>'hospitalType', '')
+    COALESCE(new.raw_user_meta_data->>'hospitalType', ''),
+    COALESCE(new.raw_user_meta_data->>'professionalId', '')
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
@@ -586,6 +614,30 @@ CREATE TRIGGER audit_patients AFTER UPDATE OR DELETE ON patients FOR EACH ROW EX
 DROP TRIGGER IF EXISTS audit_lab_results ON lab_results;
 CREATE TRIGGER audit_lab_results AFTER UPDATE OR DELETE ON lab_results FOR EACH ROW EXECUTE PROCEDURE public.audit_log_trigger();
 
+-- 3. Auto Update `updated_at` Timestamp
+CREATE OR REPLACE FUNCTION public.update_updated_at_column()
+RETURNS trigger AS $$
+BEGIN
+  NEW.updated_at = NOW();
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public;
+
+DROP TRIGGER IF EXISTS update_users_updated_at ON users;
+CREATE TRIGGER update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_patients_updated_at ON patients;
+CREATE TRIGGER update_patients_updated_at BEFORE UPDATE ON patients FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_lab_results_updated_at ON lab_results;
+CREATE TRIGGER update_lab_results_updated_at BEFORE UPDATE ON lab_results FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_appointments_updated_at ON appointments;
+CREATE TRIGGER update_appointments_updated_at BEFORE UPDATE ON appointments FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
+DROP TRIGGER IF EXISTS update_document_signatures_updated_at ON document_signatures;
+CREATE TRIGGER update_document_signatures_updated_at BEFORE UPDATE ON document_signatures FOR EACH ROW EXECUTE PROCEDURE public.update_updated_at_column();
+
 -- ############################################################
 -- ROW LEVEL SECURITY (RLS) POLICIES
 -- ############################################################
@@ -601,6 +653,7 @@ ALTER TABLE admin_inbox ENABLE ROW LEVEL SECURITY;
 ALTER TABLE status_history ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_tokens ENABLE ROW LEVEL SECURITY;
+ALTER TABLE document_signatures ENABLE ROW LEVEL SECURITY;
 
 -- Clean existing policies to avoid duplicates during migration
 DO $$ DECLARE
@@ -643,6 +696,10 @@ CREATE POLICY "Staff can view history and logs" ON status_history FOR SELECT TO 
 CREATE POLICY "Staff can view history and logs" ON audit_logs FOR SELECT TO authenticated USING (true);
 -- Inserts handled by Triggers or Service Role
 
+-- ---- 11. DOCUMENT_SIGNATURES ----
+CREATE POLICY "Authenticated users can read signatures" ON document_signatures FOR SELECT TO authenticated USING (true);
+CREATE POLICY "Users can sign documents" ON document_signatures FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
 -- ---- 12. USER_TOKENS ----
 -- Used by Supabase Admin internally, no real public RLS needed, but added to satisfy linter
 CREATE POLICY "No public access to tokens" ON user_tokens FOR SELECT TO authenticated USING (false);
@@ -681,6 +738,9 @@ DROP INDEX IF EXISTS idx_audit_logs_email;
 -- Restore FK covering index for lab_results.hn (required by lab_results_hn_fkey)
 CREATE INDEX IF NOT EXISTS idx_lab_results_hn ON lab_results(hn);
 
+-- Restore FK covering index for document_signatures.patient_hn
+CREATE INDEX IF NOT EXISTS idx_doc_signatures_hn ON document_signatures(patient_hn);
+
 -- 3. Resolving duplicate and unused indexes reported by Supabase Linter (from previous run)
 DROP INDEX IF EXISTS idx_notifications_created_at; 
 DROP INDEX IF EXISTS idx_users_email; 
@@ -702,11 +762,20 @@ DROP INDEX IF EXISTS idx_user_tokens_email;
 DROP INDEX IF EXISTS idx_users_role;
 DROP INDEX IF EXISTS idx_users_status;
 
+-- 4. Removing duplicate document_signatures indexes (Batch 4 fix)
+DROP INDEX IF EXISTS idx_doc_sig_patient;
+DROP INDEX IF EXISTS idx_doc_sig_qr_token;
+DROP INDEX IF EXISTS idx_doc_sig_signer;
+
+-- 5. Removing new unused & lingering duplicate indexes (Batch 4 fix part 2)
+DROP INDEX IF EXISTS idx_doc_signatures_token;
+
 -- Table Comments
 COMMENT ON TABLE users IS 'Staff & admin profiles linked to auth.users. Passwords removed.';
 COMMENT ON TABLE patients IS 'Patient records with workflow tracking';
 COMMENT ON TABLE lab_results IS 'Lab results with trigger-based audit logging';
 COMMENT ON TABLE audit_logs IS 'Auto-populated action audit trail via Postgres Triggers';
+
 
 -- ============================================================
 -- DATA BACKFILL (For Migrations)
@@ -721,7 +790,7 @@ WHERE pu.id = au.id
   AND (pu.surname IS NULL OR pu.surname = '' OR pu.hospital_type IS NULL OR pu.hospital_type = '');
 
 -- ============================================================
--- Done! 10 tables + 2 storage buckets + RLS policies + Triggers.
+-- Done! 11 tables + 2 storage buckets + RLS policies + Triggers.
 -- Tables removed: notifications (unused), lab_reference_ranges (unused)
 -- Ready for Production!
 -- ============================================================

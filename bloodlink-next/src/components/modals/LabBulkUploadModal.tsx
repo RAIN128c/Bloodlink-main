@@ -43,8 +43,9 @@ export function LabBulkUploadModal({ isOpen, onClose, onSuccess, queuePatients }
 
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
 
-    // Filter queue to only those in "กำลังตรวจ" or "กำลังจัดส่ง"
-    const activeQueue = queuePatients.filter(p => p.process === 'กำลังตรวจ' || p.process === 'กำลังจัดส่ง');
+    // Include all lab workflow statuses so the patient selector shows all patients in the lab pipeline
+    const labStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
+    const activeQueue = queuePatients.filter(p => labStatuses.includes(p.process));
 
     const handleClose = () => {
         if (isUploading || isProcessing) {

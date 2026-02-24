@@ -412,7 +412,8 @@ export class PatientService {
                         processStatus,
                         patientName,
                         undefined, // Default subject
-                        undefined  // Default message
+                        undefined, // Default message
+                        data.changedByEmail // Exclude the actor from receiving their own notification
                     );
                 } catch (err) {
                     console.error('Notification error:', err);
@@ -548,11 +549,12 @@ export class PatientService {
     static async addResponsiblePerson(
         hn: string,
         userEmail: string,
-        assignedBy: string
+        assignedBy: string,
+        client: any = supabase
     ): Promise<{ success: boolean; error?: string }> {
         try {
             // Check if user exists
-            const { data: user } = await supabase
+            const { data: user } = await client
                 .from('users')
                 .select('id')
                 .eq('email', userEmail)
@@ -563,7 +565,7 @@ export class PatientService {
             }
 
             // Check for ANY existing record (active or inactive)
-            const { data: existing } = await supabase
+            const { data: existing } = await client
                 .from('patient_responsibility')
                 .select('id, is_active')
                 .eq('patient_hn', hn)
@@ -575,7 +577,7 @@ export class PatientService {
                     return { success: false, error: 'ผู้ใช้นี้เป็นผู้รับผิดชอบอยู่แล้ว' };
                 } else {
                     // Reactivate
-                    const { error: updateError } = await supabase
+                    const { error: updateError } = await client
                         .from('patient_responsibility')
                         .update({
                             is_active: true,
@@ -592,7 +594,7 @@ export class PatientService {
                 }
             }
 
-            const { error } = await supabase
+            const { error } = await client
                 .from('patient_responsibility')
                 .insert([
                     {

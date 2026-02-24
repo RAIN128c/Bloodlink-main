@@ -3,6 +3,7 @@
 import { Header } from '@/components/layout/Header';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { ProfileCard, UserProfile } from '@/components/profile/ProfileCard';
+import { PinSetupSection } from '@/components/profile/PinSetupSection';
 import { ChevronLeft, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
@@ -27,6 +28,7 @@ export default function ProfilePage() {
                         role: data.role,
                         bio: data.bio,
                         avatarUrl: data.avatarUrl,
+                        professionalId: data.professionalId,
                     });
                 }
             } catch (error) {
@@ -121,6 +123,11 @@ export default function ProfilePage() {
                                 </div>
                             </div>
                         </div>
+                    </div>
+
+                    {/* PIN Setup Section */}
+                    <div className="animate-fade-in-up stagger-3">
+                        <PinSetupSection />
                     </div>
                 </div>
             </div>

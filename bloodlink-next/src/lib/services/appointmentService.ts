@@ -81,7 +81,8 @@ export class AppointmentService {
                 const dateTimeStr = data.appointment_time
                     ? `${data.appointment_date}T${data.appointment_time}:00`
                     : `${data.appointment_date}T09:00:00`;
-                start_time = new Date(dateTimeStr).toISOString();
+                // Store with explicit Thai timezone to avoid UTC conversion shifting the time
+                start_time = dateTimeStr + '+07:00';
             }
 
             // Map values to DB columns

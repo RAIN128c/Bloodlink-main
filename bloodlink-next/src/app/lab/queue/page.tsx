@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { RoleGuard } from '@/components/providers/RoleGuard';
 import { LabUploadModal } from '@/components/modals/LabUploadModal';
 import { LabBulkUploadModal } from '@/components/modals/LabBulkUploadModal';
-import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
+import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
@@ -33,6 +33,7 @@ interface CompletedResult {
 export default function LabQueuePage() {
     const { data: session } = useSession();
     const [pendingPatients, setPendingPatients] = useState<PendingPatient[]>([]);
+    const [allLabPatients, setAllLabPatients] = useState<PendingPatient[]>([]);
     const [myTasks, setMyTasks] = useState<PendingPatient[]>([]);
     const [recentResults, setRecentResults] = useState<CompletedResult[]>([]);
     const [loading, setLoading] = useState(true);
@@ -42,11 +43,15 @@ export default function LabQueuePage() {
     const [showBulkUploadModal, setShowBulkUploadModal] = useState(false);
 
     // Digital Request Sheet Preview State
-    const [previewPatient, setPreviewPatient] = useState<PendingPatient | null>(null);
+    const [previewPatients, setPreviewPatients] = useState<PendingPatient[]>([]);
     const [previewSignatures, setPreviewSignatures] = useState<Record<string, { qr_token: string; signature_text: string } | null>>({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
     const [activeTab, setActiveTab] = useState<'new_requests' | 'my_tasks' | 'completed'>('new_requests');
+
+    // Batch selection state
+    const [selectedHns, setSelectedHns] = useState<Set<string>>(new Set());
+    const [batchLoading, setBatchLoading] = useState(false);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -56,6 +61,9 @@ export default function LabQueuePage() {
             if (patientsRes.ok) {
                 const data = await patientsRes.json();
                 const allPending = data.patients || [];
+
+                // Store ALL lab patients for the bulk upload modal
+                setAllLabPatients(allPending);
 
                 // คำขอใหม่: รอแล็บรับเรื่อง
                 setPendingPatients(allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง'));
@@ -114,6 +122,48 @@ export default function LabQueuePage() {
         }
     };
 
+    // Batch accept all selected
+    const handleBatchAccept = async () => {
+        if (selectedHns.size === 0) return;
+        setBatchLoading(true);
+        try {
+            const results = await Promise.allSettled(
+                Array.from(selectedHns).map(hn =>
+                    fetch(`/api/patients/${encodeURIComponent(hn)}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ process: 'รอจัดส่ง' })
+                    })
+                )
+            );
+            const successCount = results.filter(r => r.status === 'fulfilled').length;
+            toast.success(`รับออร์เดอร์ ${successCount} รายการสำเร็จ`);
+            setSelectedHns(new Set());
+            fetchData();
+        } catch {
+            toast.error('เกิดข้อผิดพลาด');
+        } finally {
+            setBatchLoading(false);
+        }
+    };
+
+    const toggleSelect = (hn: string) => {
+        setSelectedHns(prev => {
+            const next = new Set(prev);
+            if (next.has(hn)) next.delete(hn);
+            else next.add(hn);
+            return next;
+        });
+    };
+
+    const toggleSelectAll = () => {
+        if (selectedHns.size === filteredPatients.length) {
+            setSelectedHns(new Set());
+        } else {
+            setSelectedHns(new Set(filteredPatients.map(p => p.hn)));
+        }
+    };
+
     const filteredPatients = useMemo(() => {
         const lowerSearch = searchTerm.toLowerCase();
         const sourceData = activeTab === 'new_requests' ? pendingPatients : myTasks;
@@ -133,19 +183,31 @@ export default function LabQueuePage() {
         } catch { return dateStr; }
     };
 
-    const handleOpenPreview = async (patient: PendingPatient) => {
-        setPreviewPatient(patient);
-        setPreviewSignatures({}); // Reset
+    const handleOpenPreview = async (patients: PendingPatient | PendingPatient[]) => {
+        const patientArray = Array.isArray(patients) ? patients : [patients];
+        setPreviewPatients(patientArray);
+        setPreviewSignatures({});
         setShowPreviewModal(true);
+        // Fetch signatures for all patients
         try {
-            const res = await fetch(`/api/patients/${encodeURIComponent(patient.hn)}/signature`);
-            if (res.ok) {
-                const data = await res.json();
-                setPreviewSignatures({ [patient.hn]: data.signature });
-            }
+            const sigMap: Record<string, any> = {};
+            await Promise.all(patientArray.map(async (p) => {
+                const res = await fetch(`/api/patients/${encodeURIComponent(p.hn)}/signature`);
+                if (res.ok) {
+                    const data = await res.json();
+                    sigMap[p.hn] = data.signature;
+                }
+            }));
+            setPreviewSignatures(sigMap);
         } catch (err) {
-            console.error('Failed to fetch signature', err);
+            console.error('Failed to fetch signatures', err);
         }
+    };
+
+    const handleBatchPreview = () => {
+        const selected = filteredPatients.filter(p => selectedHns.has(p.hn));
+        if (selected.length === 0) return;
+        handleOpenPreview(selected);
     };
 
     return (
@@ -241,48 +303,57 @@ export default function LabQueuePage() {
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-100 dark:border-gray-700">
+                                                        {activeTab === 'new_requests' && (
+                                                            <th className="w-10 px-3 py-3.5">
+                                                                <button onClick={toggleSelectAll} className="text-gray-400 hover:text-blue-500 transition">
+                                                                    {selectedHns.size === filteredPatients.length && filteredPatients.length > 0
+                                                                        ? <CheckSquare className="w-4 h-4 text-blue-500" />
+                                                                        : <Square className="w-4 h-4" />}
+                                                                </button>
+                                                            </th>
+                                                        )}
                                                         <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">HN</th>
                                                         <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ชื่อ-สกุล</th>
-                                                        <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ประเภทตรวจ</th>
+                                                        <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden sm:table-cell">ประเภทตรวจ</th>
                                                         <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">สถานะ</th>
-                                                        <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">อัปเดตล่าสุด</th>
+                                                        <th className="text-left px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider hidden md:table-cell">อัปเดตล่าสุด</th>
                                                         <th className="text-right px-5 py-3.5 text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">ดำเนินการ</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                                                     {filteredPatients.map((patient) => (
-                                                        <tr key={patient.hn} className="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition">
+                                                        <tr key={patient.hn} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition ${selectedHns.has(patient.hn) ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}>
+                                                            {activeTab === 'new_requests' && (
+                                                                <td className="w-10 px-3 py-4">
+                                                                    <button onClick={() => toggleSelect(patient.hn)} className="text-gray-400 hover:text-blue-500 transition">
+                                                                        {selectedHns.has(patient.hn)
+                                                                            ? <CheckSquare className="w-4 h-4 text-blue-500" />
+                                                                            : <Square className="w-4 h-4" />}
+                                                                    </button>
+                                                                </td>
+                                                            )}
                                                             <td className="px-5 py-4 text-sm font-mono font-medium text-gray-900 dark:text-white">{patient.hn}</td>
                                                             <td className="px-5 py-4 text-sm text-gray-700 dark:text-gray-300">{patient.name} {patient.surname}</td>
-                                                            <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400">{patient.testType || '-'}</td>
+                                                            <td className="px-5 py-4 text-sm text-gray-500 dark:text-gray-400 hidden sm:table-cell">{patient.testType || '-'}</td>
                                                             <td className="px-5 py-4">
                                                                 <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400">
                                                                     <Clock className="w-3 h-3" />
                                                                     {patient.process}
                                                                 </span>
                                                             </td>
-                                                            <td className="px-5 py-4 text-xs text-gray-400">{patient.updatedAt ? formatDate(patient.updatedAt) : '-'}</td>
+                                                            <td className="px-5 py-4 text-xs text-gray-400 hidden md:table-cell">{patient.updatedAt ? formatDate(patient.updatedAt) : '-'}</td>
                                                             <td className="px-5 py-4 text-right">
                                                                 <div className="flex justify-end items-center gap-2">
                                                                     {patient.process === 'รอแล็บรับเรื่อง' && (
-                                                                        <>
-                                                                            <button
-                                                                                onClick={() => handleOpenPreview(patient)}
-                                                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition shadow-sm"
-                                                                            >
-                                                                                <FileText className="w-3.5 h-3.5" />
-                                                                                ดูใบส่งตรวจ
-                                                                            </button>
-                                                                            <button
-                                                                                onClick={() => handleStatusUpdate(patient.hn, 'รอจัดส่ง')}
-                                                                                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-amber-700 bg-amber-100 dark:bg-amber-900/30 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-800/50 rounded-lg transition shadow-sm"
-                                                                            >
-                                                                                <CheckCircle className="w-3.5 h-3.5" />
-                                                                                รับออร์เดอร์
-                                                                            </button>
-                                                                        </>
+                                                                        <button
+                                                                            onClick={() => handleOpenPreview(patient)}
+                                                                            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg transition shadow-sm"
+                                                                        >
+                                                                            <FileText className="w-3.5 h-3.5" />
+                                                                            ดูใบส่งตรวจ
+                                                                        </button>
                                                                     )}
-                                                                    {(patient.process === 'รอจัดส่ง' || patient.process === 'กำลังจัดส่ง') && (
+                                                                    {patient.process === 'กำลังจัดส่ง' && (
                                                                         <button
                                                                             onClick={() => handleStatusUpdate(patient.hn, 'กำลังตรวจ')}
                                                                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-lg transition shadow-sm"
@@ -290,6 +361,9 @@ export default function LabQueuePage() {
                                                                             <Clock className="w-3.5 h-3.5" />
                                                                             รับตัวอย่างเลือด
                                                                         </button>
+                                                                    )}
+                                                                    {patient.process === 'รอจัดส่ง' && (
+                                                                        <span className="text-xs text-gray-400 italic">รอต้นทางจัดส่ง</span>
                                                                     )}
                                                                     {patient.process === 'กำลังตรวจ' && (
                                                                         <button
@@ -306,6 +380,32 @@ export default function LabQueuePage() {
                                                     ))}
                                                 </tbody>
                                             </table>
+                                        </div>
+                                    )}
+
+                                    {/* Batch action bar */}
+                                    {activeTab === 'new_requests' && selectedHns.size > 0 && (
+                                        <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-between">
+                                            <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
+                                                เลือกแล้ว {selectedHns.size} รายการ
+                                            </span>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={handleBatchPreview}
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-indigo-700 bg-white border border-indigo-300 dark:bg-indigo-900/30 dark:border-indigo-600 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-800/40 rounded-lg transition shadow-sm"
+                                                >
+                                                    <FileText className="w-4 h-4" />
+                                                    ดูใบส่งตรวจ
+                                                </button>
+                                                <button
+                                                    onClick={handleBatchAccept}
+                                                    disabled={batchLoading}
+                                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition shadow-sm disabled:opacity-50"
+                                                >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    {batchLoading ? 'กำลังดำเนินการ...' : `รับเรื่องทั้งหมด (${selectedHns.size})`}
+                                                </button>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -365,11 +465,11 @@ export default function LabQueuePage() {
                     isOpen={showBulkUploadModal}
                     onClose={() => setShowBulkUploadModal(false)}
                     onSuccess={handleUploadSuccess}
-                    queuePatients={pendingPatients as any}
+                    queuePatients={allLabPatients as any}
                 />
 
                 {/* Digital Request Sheet Preview Modal */}
-                {showPreviewModal && previewPatient && (
+                {showPreviewModal && previewPatients.length > 0 && (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowPreviewModal(false)}>
                         <div
                             className="bg-white dark:bg-gray-900 w-full max-w-[1200px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95"
@@ -379,6 +479,11 @@ export default function LabQueuePage() {
                                 <h3 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
                                     <FileText className="w-5 h-5 text-indigo-500" />
                                     ตรวจสอบใบส่งตรวจ (Request Sheet)
+                                    {previewPatients.length > 1 && (
+                                        <span className="px-2 py-0.5 text-xs font-medium bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 rounded-full">
+                                            {previewPatients.length} รายการ
+                                        </span>
+                                    )}
                                 </h3>
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
@@ -400,13 +505,16 @@ export default function LabQueuePage() {
                                         z-index: 10 !important;
                                         background: transparent !important;
                                     }
-                                    .request-sheet-container {
+                                    .summary-sheet-container, .request-sheet-container {
                                         box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
                                         margin-bottom: 2rem;
                                         background: white;
                                     }
                                 `}</style>
-                                <PrintRequestSheet patients={[previewPatient as any]} signatures={previewSignatures} />
+                                {previewPatients.length > 1 && (
+                                    <PrintSummarySheet patients={previewPatients as any} signature={previewSignatures[previewPatients[0]?.hn] || null} />
+                                )}
+                                <PrintRequestSheet patients={previewPatients as any} signatures={previewSignatures} />
                             </div>
 
                             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
@@ -417,14 +525,16 @@ export default function LabQueuePage() {
                                     ปิดหน้าต่าง
                                 </button>
                                 <button
-                                    onClick={() => {
-                                        handleStatusUpdate(previewPatient.hn, 'รอจัดส่ง');
+                                    onClick={async () => {
+                                        for (const p of previewPatients) {
+                                            await handleStatusUpdate(p.hn, 'รอจัดส่ง');
+                                        }
                                         setShowPreviewModal(false);
                                     }}
                                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm"
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    ยืนยันรับออร์เดอร์ (ข้อมูลถูกต้อง)
+                                    ยืนยันรับออร์เดอร์ {previewPatients.length > 1 ? `(${previewPatients.length} รายการ)` : '(ข้อมูลถูกต้อง)'}
                                 </button>
                             </div>
                         </div>

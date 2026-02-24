@@ -12,8 +12,8 @@ import { formatDateTimeThai } from '@/lib/utils';
 // Map process status to indicator type
 const getIndicator = (process: string): string => {
     switch (process) {
+        case 'ส่งผลตรวจ':
         case 'เสร็จสิ้น':
-        case 'รายงานผล':
             return 'completed';
         case 'กำลังตรวจ':
             return 'testing';
@@ -167,12 +167,22 @@ export default function TestStatusPage() {
                                                 {formatDateTimeThai(patient.timestamp || patient.appointmentDate)}
                                             </div>
 
-                                            <Link
-                                                href={`/patients/${patient.hn}`}
-                                                className="inline-block px-5 py-1.5 bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#4338CA] dark:text-indigo-300 text-[11px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-800 transition-colors"
-                                            >
-                                                ตรวจสอบ
-                                            </Link>
+                                            <div className="flex items-center gap-2">
+                                                {indicator === 'completed' && (
+                                                    <Link
+                                                        href={`/test-status/${patient.hn}`}
+                                                        className="inline-block px-5 py-1.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 text-[11px] font-medium rounded-[6px] hover:bg-amber-200 dark:hover:bg-amber-800 transition-colors"
+                                                    >
+                                                        ดูผล / พิมพ์
+                                                    </Link>
+                                                )}
+                                                <Link
+                                                    href={`/patients/${patient.hn}`}
+                                                    className="inline-block px-5 py-1.5 bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#4338CA] dark:text-indigo-300 text-[11px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-800 transition-colors"
+                                                >
+                                                    ตรวจสอบ
+                                                </Link>
+                                            </div>
                                         </div>
                                     );
                                 })

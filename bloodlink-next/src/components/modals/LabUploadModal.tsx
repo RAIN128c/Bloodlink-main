@@ -6,6 +6,10 @@ import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
 import imageCompression from 'browser-image-compression';
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Configure PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
 
 interface LabUploadModalProps {
     isOpen: boolean;
@@ -89,6 +93,38 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
         }
     }, []);
 
+    // Convert PDF to PNG using pdfjs-dist (matching bulk upload behavior)
+    const convertPdfToImage = useCallback(async (pdfFile: File): Promise<File | null> => {
+        try {
+            setIsConverting(true);
+            const buffer = await pdfFile.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(buffer).promise;
+            const page = await pdf.getPage(1); // First page only
+
+            const viewport = page.getViewport({ scale: 2.0 });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            if (!context) return null;
+
+            canvas.height = viewport.height;
+            canvas.width = viewport.width;
+
+            await page.render({ canvasContext: context, viewport } as any).promise;
+
+            const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
+            if (!blob) return null;
+
+            const pngName = pdfFile.name.replace(/\.pdf$/i, '.png');
+            return new File([blob], pngName, { type: 'image/png' });
+        } catch (err) {
+            console.error('PDF conversion error:', err);
+            toast.error('ไม่สามารถแปลงไฟล์ PDF ได้');
+            return null;
+        } finally {
+            setIsConverting(false);
+        }
+    }, []);
+
     const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFile = e.target.files?.[0];
         if (!selectedFile) return;
@@ -120,11 +156,26 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                 return;
             }
             setFile(pngFile);
-            // Generate preview
             const reader = new FileReader();
             reader.onload = (ev) => setPreview(ev.target?.result as string);
             reader.readAsDataURL(pngFile);
             toast.success('แปลงไฟล์ Excel เป็นรูปภาพเรียบร้อย');
+            return;
+        }
+
+        // If PDF, convert to PNG (same standard as bulk upload)
+        const isPdf = selectedFile.type === 'application/pdf' || selectedFile.name.toLowerCase().endsWith('.pdf');
+        if (isPdf) {
+            const pngFile = await convertPdfToImage(selectedFile);
+            if (!pngFile) {
+                toast.error('แปลงไฟล์ PDF ไม่สำเร็จ กรุณาลองอีกครั้ง');
+                return;
+            }
+            setFile(pngFile);
+            const reader = new FileReader();
+            reader.onload = (ev) => setPreview(ev.target?.result as string);
+            reader.readAsDataURL(pngFile);
+            toast.success('แปลงไฟล์ PDF เป็นรูปภาพเรียบร้อย');
             return;
         }
 
@@ -252,7 +303,7 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                                 {isConverting ? (
                                     <>
                                         <Loader2 className="w-10 h-10 text-blue-400 animate-spin" />
-                                        <span className="text-sm text-blue-500">กำลังแปลงไฟล์ Excel เป็นรูปภาพ...</span>
+                                        <span className="text-sm text-blue-500">กำลังแปลงไฟล์เป็นรูปภาพ...</span>
                                     </>
                                 ) : (
                                     <>

@@ -49,8 +49,10 @@ export default function ResultsPage() {
                 const response = await fetch('/api/patients');
                 if (response.ok) {
                     const allPatients: Patient[] = await response.json();
+                    // Only show active results: ส่งผลตรวจ (uploaded, awaiting approval).
+                    // After printing, items become "เสร็จสิ้น" and move to "สถานะผลตรวจเลือด" page.
                     const resultPatients = allPatients.filter(p =>
-                        p.process === 'เสร็จสิ้น' || p.process === 'รายงานผล'
+                        p.process === 'ส่งผลตรวจ'
                     );
                     setPatients(resultPatients);
 
@@ -143,7 +145,7 @@ export default function ResultsPage() {
             await fetch(`/api/patients/${hn}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ process: 'รายงานผล' }),
+                body: JSON.stringify({ process: 'เสร็จสิ้น' }),
             });
         } catch (err) {
             console.error(`Failed to update status for ${hn}:`, err);
@@ -214,61 +216,77 @@ export default function ResultsPage() {
     const handleConfirmPrint = useCallback(async () => {
         if (previewData.length === 0) return;
 
-        const imageItems = previewData.filter(u => u.fileType?.startsWith('image/'));
-
         const printWindow = window.open('', '_blank', 'width=800,height=600');
         if (!printWindow) { toast.error('กรุณาอนุญาต Pop-up เพื่อสั่งพิมพ์'); return; }
 
-        printWindow.document.write(`
-            <!DOCTYPE html>
-            <html>
-            <head>
-                <title>พิมพ์ผลตรวจ (${previewData.length} รายการ)</title>
-                <style>
-                    * { margin: 0; padding: 0; box-sizing: border-box; }
-                    body { background: #fff; font-family: sans-serif; }
-                    .page { page-break-after: always; padding: 10mm; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-                    .page:last-child { page-break-after: auto; }
-                    .header { text-align: center; margin-bottom: 12px; font-size: 14px; color: #333; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; width: 100%; }
-                    .header strong { font-size: 16px; }
-                    img { max-width: 100%; height: auto; display: block; margin: 0 auto; }
-                    @media print { .page { padding: 5mm; } }
-                </style>
-            </head>
-            <body>
-                ${imageItems.map(item => `
-                    <div class="page">
-                        <div class="header">
-                            <strong>ผลตรวจเลือด</strong><br/>
-                            HN: ${item.hn} — ${item.name}
-                        </div>
-                        <img src="${item.url}" />
-                    </div>
-                `).join('')}
-                <script>
-                    let loaded = 0;
-                    const images = document.querySelectorAll('img');
-                    const total = images.length;
-                    images.forEach(img => {
-                        if (img.complete) { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }
-                        else { img.onload = () => { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }; }
-                    });
-                    if (total === 0) setTimeout(() => window.print(), 500);
-                </script>
-            </body>
-            </html>
-        `);
-        printWindow.document.close();
+        const imageItems = previewData.filter(u => u.fileType?.startsWith('image/'));
+        const pdfItems = previewData.filter(u => !u.fileType?.startsWith('image/'));
 
-        // Mark all printed patients as "รายงานผล"
+        // If only PDFs (no images), open each PDF in a new tab for printing
+        if (imageItems.length === 0 && pdfItems.length > 0) {
+            printWindow.close();
+            pdfItems.forEach(item => {
+                window.open(item.url, '_blank');
+            });
+        } else {
+            // Render images with A4 portrait format
+            printWindow.document.write(`
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>พิมพ์ผลตรวจ (${imageItems.length} รายการ)</title>
+                    <style>
+                        @page { size: A4 portrait; margin: 5mm; }
+                        * { margin: 0; padding: 0; box-sizing: border-box; }
+                        body { background: #fff; font-family: sans-serif; margin: 0; }
+                        .page { page-break-after: always; padding: 10mm; width: 100%; height: auto; min-height: 280mm; display: flex; flex-direction: column; align-items: center; }
+                        .page:last-child { page-break-after: auto; }
+                        .header { text-align: center; margin-bottom: 12px; font-size: 14px; color: #333; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; width: 100%; flex-shrink: 0; }
+                        .header strong { font-size: 16px; }
+                        img { max-width: 100%; max-height: 250mm; object-fit: contain; display: block; margin: 0 auto; }
+                        @media print { html, body { height: 100%; } }
+                    </style>
+                </head>
+                <body>
+                    ${imageItems.map(item => `
+                        <div class="page">
+                            <div class="header">
+                                <strong>ผลตรวจเลือด</strong><br/>
+                                HN: ${item.hn} — ${item.name}
+                            </div>
+                            <img src="${item.url}" />
+                        </div>
+                    `).join('')}
+                    <script>
+                        let loaded = 0;
+                        const images = document.querySelectorAll('img');
+                        const total = images.length;
+                        images.forEach(img => {
+                            if (img.complete) { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }
+                            else { img.onload = () => { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }; }
+                        });
+                        if (total === 0) setTimeout(() => window.print(), 500);
+                    </script>
+                </body>
+                </html>
+            `);
+            printWindow.document.close();
+
+            // Open PDFs in separate tabs if there are any alongside images
+            pdfItems.forEach(item => {
+                window.open(item.url, '_blank');
+            });
+        }
+
+        // Mark all printed patients as "เสร็จสิ้น"
         await Promise.allSettled(previewData.map(item => markAsReported(item.hn)));
 
         // Update local state
         setPatients(prev => prev.map(p =>
-            previewData.some(d => d.hn === p.hn) ? { ...p, process: 'รายงานผล' } : p
+            previewData.some(d => d.hn === p.hn) ? { ...p, process: 'เสร็จสิ้น' } : p
         ));
 
-        toast.success(`สั่งพิมพ์ ${previewData.length} รายการ & อัปเดตสถานะ "รายงานผล" แล้ว`);
+        toast.success(`สั่งพิมพ์ ${previewData.length} รายการ & อัปเดตสถานะ "เสร็จสิ้น" แล้ว`);
         setShowPreview(false);
         setPreviewData([]);
         setSelectedHns(new Set());
@@ -360,7 +378,7 @@ export default function ResultsPage() {
                                                         HN : {patient.hn}
                                                     </div>
                                                     {getSummaryDot(latestFiles[patient.hn]?.result_summary)}
-                                                    {patient.process === 'รายงานผล' && (
+                                                    {patient.process === 'เสร็จสิ้น' && latestFiles[patient.hn]?.approver_name && (
                                                         <span className="text-[9px] px-1.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 rounded-full font-medium">พิมพ์แล้ว</span>
                                                     )}
                                                 </div>
@@ -391,7 +409,7 @@ export default function ResultsPage() {
                                                     </span>
                                                 ) : null}
                                                 <Link
-                                                    href={`/results/${patient.hn}`}
+                                                    href={`/test-status/${patient.hn}`}
                                                     className="w-14 h-7 flex items-center justify-center bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#374151] dark:text-indigo-200 text-[11px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-800 transition-colors"
                                                 >
                                                     ดูผล
@@ -472,7 +490,7 @@ export default function ResultsPage() {
 
                                 <p className="text-[9px] text-gray-400 dark:text-gray-500 text-center leading-relaxed">
                                     เลือกผู้ป่วย → ดูตัวอย่าง → กดพิมพ์<br />
-                                    พิมพ์แล้วอัปเดตสถานะ &quot;รายงานผล&quot; อัตโนมัติ
+                                    พิมพ์แล้วอัปเดตสถานะ &quot;เสร็จสิ้น&quot; อัตโนมัติ
                                 </p>
                             </div>
                         </div>
@@ -554,7 +572,7 @@ export default function ResultsPage() {
                         {/* Modal Footer */}
                         <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between bg-gray-50 dark:bg-gray-800">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
-                                ⚠️ กดพิมพ์จะอัปเดตสถานะ &quot;รายงานผล&quot; ทุกคนที่เลือก
+                                ⚠️ กดพิมพ์จะอัปเดตสถานะ &quot;เสร็จสิ้น&quot; ทุกคนที่เลือก
                             </p>
                             <div className="flex items-center gap-3">
                                 <button

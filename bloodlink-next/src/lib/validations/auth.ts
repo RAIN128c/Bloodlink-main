@@ -18,6 +18,7 @@ export const registerSchema = z.object({
         .regex(/[0-9]/, { message: 'รหัสผ่านต้องมีตัวเลขอย่างน้อย 1 ตัว' }),
     hospitalType: z.enum(['แม่ข่าย', 'ชุมชน', 'รพ.สต']),
     hospitalName: z.string().min(1, { message: 'กรุณาระบุชื่อโรงพยาบาล' }),
+    professionalId: z.string().min(1, { message: 'กรุณาระบุเลขใบประกอบวิชาชีพ หรือ รหัสพนักงาน' }),
 });
 
 export const passwordSchema = z
