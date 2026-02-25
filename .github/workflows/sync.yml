@@ -50,3 +50,15 @@ jobs:
           git push origin main --force
 
           echo "✅ Sync สำเร็จ (ข้ามไฟล์ Workflows)"
+
+      - name: Trigger Vercel Deploy Hook (Bypass Bot Check)
+        if: success()
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "🚀 กำลังสั่ง Vercel ให้ Deploy ผ่านประตูลับ (Deploy Hook)..."
+            curl -X POST "$VERCEL_DEPLOY_HOOK"
+          else
+            echo "⏭️ ข้ามการ Deploy Vercel เนื่องจากไม่ได้ตั้ง VERCEL_DEPLOY_HOOK secret"
+          fi
