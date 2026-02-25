@@ -10,19 +10,6 @@ const printStyles = `
             size: A4 landscape;
             margin: 10mm;
         }
-        body {
-            visibility: hidden;
-        }
-        .summary-sheet-container {
-            visibility: visible;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-        .summary-sheet-container * {
-            visibility: visible;
-        }
         .page-break {
             page-break-after: always;
         }

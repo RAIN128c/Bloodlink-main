@@ -278,9 +278,9 @@ export default function LabQueuePage() {
         <RoleGuard allowedRoles={['เจ้าหน้าที่ห้องปฏิบัติการ', 'ผู้ดูแลระบบ', 'admin']}>
             <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-kanit)]">
                 <Sidebar />
-                <main className="flex-1 md:ml-[195px]">
+                <main className="flex-1 md:ml-[195px] print:m-0 print:w-full">
                     <Header />
-                    <div className="max-w-6xl mx-auto px-4 sm:px-6 py-6">
+                    <div className={`max-w-6xl mx-auto px-4 sm:px-6 py-6 ${showPreviewModal ? 'print:hidden' : ''}`}>
                         {/* Page Title */}
                         <div className="flex items-center justify-between mb-6">
                             <div>
