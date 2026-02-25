@@ -223,11 +223,6 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
     // PIN Verification State
     const [showPinModal, setShowPinModal] = useState(false);
 
-    // Single Print Request Sheet State
-    const [isPrintingSheet, setIsPrintingSheet] = useState(false);
-    const [printSheetSignature, setPrintSheetSignature] = useState<{ qr_token: string, signature_text: string } | null>(null);
-    const [printSheetVitals, setPrintSheetVitals] = useState<Record<string, Partial<Appointment>>>({});
-
     // Trigger next-round modal when patient is เสร็จสิ้น and role can restart
     useEffect(() => {
         if (
@@ -1252,37 +1247,6 @@ export const PatientDetail = ({ hn, backPath }: PatientDetailProps) => {
                             className="text-[#6366F1] dark:text-indigo-400 text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:text-[#4F46E5] dark:hover:text-indigo-300 bg-[#F3F4F6] dark:bg-gray-800 px-2 py-0.5 rounded-full border-none outline-none"
                         >
                             <Edit2 className="w-3 h-3" /> อัปเดตสถานะ
-                        </button>
-                    )}
-                    {patientData && ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง'].includes(patientData.process) && (
-                        <button
-                            onClick={async () => {
-                                setIsPrintingSheet(true);
-                                try {
-                                    const sigRes = await fetch(`/api/patients/${encodeURIComponent(hn)}/signature`);
-                                    if (sigRes.ok) {
-                                        const sigData = await sigRes.json();
-                                        setPrintSheetSignature(sigData.signature);
-                                    }
-                                    const appts = await AppointmentService.getAppointmentsByHn(hn);
-                                    const latestAppt = appts.length > 0 ? appts[0] : null;
-                                    if (latestAppt) {
-                                        setPrintSheetVitals({ [hn]: latestAppt });
-                                    }
-                                    setTimeout(() => {
-                                        window.print();
-                                        setTimeout(() => setIsPrintingSheet(false), 1000);
-                                    }, 500);
-                                } catch (err) {
-                                    console.error('Failed to load request sheet data', err);
-                                    toast.error('เกิดข้อผิดพลาดในการดึงข้อมูลใบนำส่ง');
-                                    setIsPrintingSheet(false);
-                                }
-                            }}
-                            className="text-emerald-600 dark:text-emerald-400 text-[11px] font-medium flex items-center gap-1 cursor-pointer hover:text-emerald-700 dark:hover:text-emerald-300 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full border-none outline-none"
-                            disabled={isPrintingSheet}
-                        >
-                            {isPrintingSheet ? <Loader2 className="w-3 h-3 animate-spin" /> : <Printer className="w-3 h-3" />} พิมพ์ใบส่งตรวจ (เดี่ยว)
                         </button>
                     )}
                 </div>

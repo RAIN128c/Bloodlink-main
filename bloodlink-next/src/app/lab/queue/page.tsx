@@ -6,7 +6,7 @@ import { Header } from '@/components/layout/Header';
 import { RoleGuard } from '@/components/providers/RoleGuard';
 import { LabUploadModal } from '@/components/modals/LabUploadModal';
 import { LabBulkUploadModal } from '@/components/modals/LabBulkUploadModal';
-import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle, CheckSquare, Square } from 'lucide-react';
+import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle, CheckSquare, Square, FileText, Eye, Printer, Download, Loader2, Thermometer, Droplet, ArrowDownSquare } from 'lucide-react';
 import { LabService } from '@/lib/services/labService';
 import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
 import { toast } from 'sonner';
@@ -14,7 +14,6 @@ import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
 import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
-import { FileText, Eye } from 'lucide-react';
 
 interface PendingPatient {
     hn: string;
@@ -223,12 +222,30 @@ export default function LabQueuePage() {
 
     const handleOpenPreview = async (patients: PendingPatient | PendingPatient[]) => {
         const patientArray = Array.isArray(patients) ? patients : [patients];
-        setPreviewPatients(patientArray);
-        setPreviewSignatures({});
-        setPreviewVitals({});
-        setShowPreviewModal(true);
-        // Fetch signatures and vitals for all patients
+
         try {
+            // Check if there is a frozen PDF for the first patient.
+            // If it's a batch, we might ideally merge PDFs, but for now, 
+            // if it's a single patient, we open the PDF directly.
+            if (patientArray.length === 1) {
+                const hn = patientArray[0].hn;
+                const sigRes = await fetch(`/api/patients/${encodeURIComponent(hn)}/signature`);
+                if (sigRes.ok) {
+                    const sigData = await sigRes.json();
+                    if (sigData.signature?.document_url) {
+                        window.open(sigData.signature.document_url, '_blank');
+                        return; // Stop here, don't open dynamic modal
+                    }
+                }
+            }
+
+            // Fallback: Dynamic Modal Preview
+            setPreviewPatients(patientArray);
+            setPreviewSignatures({});
+            setPreviewVitals({});
+            setShowPreviewModal(true);
+
+            // Fetch signatures and vitals for all patients
             const sigMap: Record<string, any> = {};
             const vitalsMap: Record<string, Partial<Appointment>> = {};
             await Promise.all(patientArray.map(async (p) => {
@@ -247,6 +264,7 @@ export default function LabQueuePage() {
             setPreviewVitals(vitalsMap);
         } catch (err) {
             console.error('Failed to fetch preview data', err);
+            toast.error('เกิดข้อผิดพลาดในการโหลดใบส่งตรวจ');
         }
     };
 
@@ -519,9 +537,9 @@ export default function LabQueuePage() {
 
                 {/* Digital Request Sheet Preview Modal */}
                 {showPreviewModal && previewPatients.length > 0 && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in" onClick={() => setShowPreviewModal(false)}>
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 animate-in fade-in print:static print:bg-transparent print:p-0" onClick={() => setShowPreviewModal(false)}>
                         <div
-                            className="bg-white dark:bg-gray-900 w-full max-w-[1200px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95"
+                            className="bg-white dark:bg-gray-900 w-full max-w-[1200px] max-h-[90vh] rounded-2xl shadow-2xl flex flex-col overflow-hidden animate-in zoom-in-95 print:overflow-visible print:max-h-none print:shadow-none print:w-full"
                             onClick={e => e.stopPropagation()}
                         >
                             <div className="flex justify-between items-center px-6 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50">
@@ -534,44 +552,46 @@ export default function LabQueuePage() {
                                         </span>
                                     )}
                                 </h3>
-                                <button
-                                    onClick={() => setShowPreviewModal(false)}
-                                    className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
-                                >
-                                    <span className="sr-only">Close</span>
-                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => window.print()}
+                                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg transition"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        พิมพ์ใบส่งตรวจ
+                                    </button>
+                                    <button
+                                        onClick={() => setShowPreviewModal(false)}
+                                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
+                                    >
+                                        <span className="sr-only">Close</span>
+                                        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
 
-                            <div className="flex-1 overflow-auto p-4 bg-gray-200/50 dark:bg-gray-950/50 relative flex flex-col items-center gap-4">
-                                <style>{`
-                                    .print-only {
-                                        display: block !important;
-                                        position: relative !important;
-                                        inset: auto !important;
-                                        z-index: 10 !important;
-                                        background: transparent !important;
-                                    }
-                                    .summary-sheet-container, .request-sheet-container {
-                                        box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                                        margin-bottom: 2rem;
-                                        background: white;
-                                    }
-                                `}</style>
+                            <div className="flex-1 overflow-auto print:overflow-visible p-4 print:p-0 bg-gray-200/50 dark:bg-gray-950/50 print:bg-transparent relative flex flex-col items-center gap-4">
                                 {previewPatients.length > 1 && (
                                     <PrintSummarySheet patients={previewPatients as any} signature={previewSignatures[previewPatients[0]?.hn] || null} />
                                 )}
                                 <PrintRequestSheet patients={previewPatients as any} signatures={previewSignatures} vitals={previewVitals} />
                             </div>
 
-                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 flex-wrap">
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
                                     className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
                                 >
                                     ปิดหน้าต่าง
+                                </button>
+                                <button
+                                    onClick={() => window.print()}
+                                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 rounded-xl transition shadow-sm"
+                                >
+                                    <Printer className="w-4 h-4" />
+                                    พิมพ์ใบส่งตรวจ
                                 </button>
                                 <button
                                     onClick={async () => {

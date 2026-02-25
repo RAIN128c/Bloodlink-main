@@ -46,7 +46,26 @@ export class PatientService {
                 });
             }
 
-            // 4. Map data
+            // 4. Fetch actual appointment times for patients with an appointment date
+            const appointmentHns = patients.filter(p => p.appointment_date).map(p => p.hn);
+            const appointmentTimeMap = new Map<string, string>();
+
+            if (appointmentHns.length > 0) {
+                const { data: appts } = await supabase
+                    .from('appointments')
+                    .select('patient_hn, start_time')
+                    .in('patient_hn', appointmentHns)
+                    .order('start_time', { ascending: false });
+
+                appts?.forEach(a => {
+                    if (a.start_time && !appointmentTimeMap.has(a.patient_hn)) {
+                        const d = new Date(a.start_time);
+                        appointmentTimeMap.set(a.patient_hn, d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }));
+                    }
+                });
+            }
+
+            // 5. Map data
             return patients.map((p: any) => {
                 const patientResps = responsibilities?.filter(r => r.patient_hn === p.hn) || [];
                 const responsible = patientResps.find(r => r.role === 'creator') || patientResps[0];
@@ -84,7 +103,7 @@ export class PatientService {
                     caregiver: caregiverName,
                     creatorEmail: creator?.user_email,
                     responsibleEmails: allResponsible,
-                    appointmentTime: p.appointment_date ? new Date(p.appointment_date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '',
+                    appointmentTime: appointmentTimeMap.get(p.hn) || '',
                     // New fields mapping
                     idCard: p.id_card,
                     phone: p.phone,
@@ -119,6 +138,22 @@ export class PatientService {
 
             if (!patient) return null;
 
+            // Fetch actual appointment time if this patient has an appointment
+            let actualTime = '';
+            if (patient.appointment_date) {
+                const { data: latestAppt } = await client
+                    .from('appointments')
+                    .select('start_time')
+                    .eq('patient_hn', hn)
+                    .order('start_time', { ascending: false })
+                    .limit(1)
+                    .single();
+
+                if (latestAppt && latestAppt.start_time) {
+                    actualTime = new Date(latestAppt.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+                }
+            }
+
             return {
                 hn: patient.hn,
                 name: patient.name,
@@ -136,7 +171,7 @@ export class PatientService {
                 appointmentDate: patient.appointment_date,
                 timestamp: patient.updated_at,
                 caregiver: patient.caregiver || '',
-                appointmentTime: patient.appointment_date ? new Date(patient.appointment_date).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }) : '',
+                appointmentTime: actualTime,
                 // New fields mapping
                 idCard: patient.id_card,
                 phone: patient.phone,

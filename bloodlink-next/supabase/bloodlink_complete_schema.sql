@@ -556,6 +556,7 @@ CREATE TABLE IF NOT EXISTS document_signatures (
 
 ALTER TABLE document_signatures ADD COLUMN IF NOT EXISTS ip_address TEXT;
 ALTER TABLE document_signatures ADD COLUMN IF NOT EXISTS qr_token UUID UNIQUE DEFAULT gen_random_uuid();
+ALTER TABLE document_signatures ADD COLUMN IF NOT EXISTS document_url TEXT;
 
 CREATE INDEX IF NOT EXISTS idx_doc_signatures_hn ON document_signatures(patient_hn);
 CREATE INDEX IF NOT EXISTS idx_doc_signatures_token ON document_signatures(qr_token);
@@ -571,6 +572,11 @@ ON CONFLICT (id) DO NOTHING;
 -- Lab Reports Bucket (PRIVATE - requires signed URLs)
 INSERT INTO storage.buckets (id, name, public) 
 VALUES ('lab_reports', 'lab_reports', false)
+ON CONFLICT (id) DO NOTHING;
+
+-- Request Sheets Bucket (PUBLIC - PDF Freezing)
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('request_sheets', 'request_sheets', true)
 ON CONFLICT (id) DO NOTHING;
 
 
@@ -735,6 +741,15 @@ DROP POLICY IF EXISTS "Staff can upload lab reports" ON storage.objects;
 
 CREATE POLICY "Authenticated can view lab reports" ON storage.objects FOR SELECT TO authenticated USING (bucket_id = 'lab_reports');
 CREATE POLICY "Staff can upload lab reports" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'lab_reports');
+
+DROP POLICY IF EXISTS "Authenticated users can upload request sheets" ON storage.objects;
+DROP POLICY IF EXISTS "Authenticated users can update request sheets" ON storage.objects;
+
+-- Note: Public Access policy overlaps with avatars so we just add the using clause condition conceptually, 
+-- but Supabase creates a new policy name if needed. Using different policy names is safer:
+CREATE POLICY "Public Access Request Sheets" ON storage.objects FOR SELECT USING (bucket_id = 'request_sheets');
+CREATE POLICY "Authenticated users can upload request sheets" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'request_sheets');
+CREATE POLICY "Authenticated users can update request sheets" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'request_sheets');
 
 -- ============================================================
 -- PERFORMANCE TWEAKS & CLEANUP

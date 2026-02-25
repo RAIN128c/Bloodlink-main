@@ -20,6 +20,9 @@ import { AnimatePresence } from 'framer-motion';
 import { supabase } from '@/lib/supabase';
 import { useMemo } from 'react';
 import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet'; // Import Print Sheet
+import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet'; // Import for PDF generation
+import { generatePDFFromElement } from '@/lib/utils/pdfGenerator';
+import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
 import { Printer } from 'lucide-react'; // Import Printer Icon
 import { updatePatientStatus } from '@/lib/actions/patient'; // Import update action
 import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
@@ -78,9 +81,12 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
     const [patientToDelete, setPatientToDelete] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
 
-    // Print State
-    const [isPrinting, setIsPrinting] = useState(false);
-    const [printSignature, setPrintSignature] = useState<{ qr_token: string, signature_text: string } | null>(null);
+    // --- PDF Freezing States ---
+    const [pdfFreezingPatients, setPdfFreezingPatients] = useState<Patient[]>([]);
+    const [pdfFreezingSignatures, setPdfFreezingSignatures] = useState<Record<string, { qr_token: string, signature_text: string } | null>>({});
+    const [pdfFreezingVitals, setPdfFreezingVitals] = useState<Record<string, any>>({});
+    const [isFreezingInProgress, setIsFreezingInProgress] = useState(false);
+    const [freezingProgress, setFreezingProgress] = useState('');
 
     // Filter State
     const [showOnlyMyPatients, setShowOnlyMyPatients] = useState(true);
@@ -226,40 +232,6 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
         });
     }, [selectedPatients, patients]);
 
-    const canPrint = useMemo(() => {
-        return Array.from(selectedPatients).some(hn => {
-            const p = patients.find(p => p.hn === hn);
-            // Printing is ONLY allowed if the order has been submitted to the lab or further
-            return p && (p.process !== 'รอตรวจ' && p.process !== 'นัดหมาย');
-        });
-    }, [selectedPatients, patients]);
-
-    const handlePrintSummary = async () => {
-        const firstSelectedHn = Array.from(selectedPatients)[0];
-
-        // Try to find the sender signature for the batch
-        if (firstSelectedHn) {
-            try {
-                const res = await fetch(`/api/patients/${encodeURIComponent(firstSelectedHn)}/signature`);
-                if (res.ok) {
-                    const data = await res.json();
-                    setPrintSignature(data.signature);
-                }
-            } catch (err) {
-                console.error('Failed to fetch print signature', err);
-                setPrintSignature(null);
-            }
-        }
-
-        setIsPrinting(true);
-        // Delay to allow component to render before printing
-        setTimeout(() => {
-            window.print();
-            setIsPrinting(false);
-            setPrintSignature(null);
-        }, 500); // slightly longer delay for rendering complex tables + QR Code
-    };
-
     const handleInitOrderLab = () => {
         setIsOrderLabConfirmOpen(false);
         setShowPinModal(true);
@@ -268,8 +240,14 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
     const handleConfirmOrderLab = async (pin: string) => {
         setIsOrderingLab(true);
         setShowPinModal(false);
+        setIsFreezingInProgress(true);
+        setFreezingProgress('กำลังอัปเดตสถานะและสร้างลายเซ็นดิจิทัล...');
+
         const selectedHns = Array.from(selectedPatients);
+        const patientsToFreeze = patients.filter(p => selectedHns.includes(p.hn));
         let hasError = false;
+
+        // 1. Update Status & Generate Backend Signatures
         for (const hn of selectedHns) {
             try {
                 const res = await updatePatientStatus(hn, 'รอแล็บรับเรื่อง', { pin });
@@ -282,12 +260,74 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
 
         if (hasError) {
             alert('พบข้อผิดพลาดบางรายการ กรุณาตรวจสอบสถานะและลองใหม่หากจำเป็น');
-        } else {
+            setIsOrderingLab(false);
+            setIsOrderLabConfirmOpen(false);
+            setIsFreezingInProgress(false);
+            return;
+        }
+
+        // 2. Fetch Signatures & Vitals for the PDFs
+        setFreezingProgress('รวบรวมข้อมูลใบส่งตรวจ (Request Sheets)...');
+        const signatures: Record<string, any> = {};
+        const vitals: Record<string, any> = {};
+
+        for (const hn of selectedHns) {
+            try {
+                const [sigRes, appts] = await Promise.all([
+                    fetch(`/api/patients/${encodeURIComponent(hn)}/signature`),
+                    AppointmentService.getAppointmentsByHn(hn)
+                ]);
+
+                if (sigRes.ok) {
+                    const sigData = await sigRes.json();
+                    signatures[hn] = sigData.signature;
+                }
+                if (appts && appts.length > 0) {
+                    vitals[hn] = appts[0];
+                }
+            } catch (err) {
+                console.error('Failed to prepare PDF data for', hn, err);
+            }
+        }
+
+        setPdfFreezingPatients(patientsToFreeze);
+        setPdfFreezingSignatures(signatures);
+        setPdfFreezingVitals(vitals);
+
+        // 3. Wait for React to render the hidden elements, then generate PDFs
+        setFreezingProgress('กำลังแช่แข็งเอกสารเป็นไฟล์ PDF...');
+
+        setTimeout(async () => {
+            for (const p of patientsToFreeze) {
+                const el = document.getElementById(`pdf-req-${p.hn}`);
+                if (el) {
+                    try {
+                        const blob = await generatePDFFromElement(el, `request_${p.hn}.pdf`, 'portrait');
+
+                        // Upload PDF
+                        const formData = new FormData();
+                        formData.append('file', blob, `request_${p.hn}.pdf`);
+                        formData.append('hn', p.hn);
+                        formData.append('type', 'request');
+
+                        await fetch('/api/upload/pdf', {
+                            method: 'POST',
+                            body: formData
+                        });
+                    } catch (uploadErr) {
+                        console.error('Failed to upload PDF freeze for', p.hn, uploadErr);
+                    }
+                }
+            }
+
+            // Finish
+            setPdfFreezingPatients([]);
             setSelectedPatients(new Set());
             window.location.reload();
-        }
-        setIsOrderingLab(false);
-        setIsOrderLabConfirmOpen(false);
+            setIsOrderingLab(false);
+            setIsOrderLabConfirmOpen(false);
+            setIsFreezingInProgress(false);
+        }, 1500); // 1.5s delay to ensure fonts & QR code map render fully
     };
 
     if (isLoading) {
@@ -367,15 +407,6 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                     สั่งเจาะเลือด ({selectedPatients.size})
                                 </button>
                             )}
-                            {selectedPatients.size > 0 && canPrint && (
-                                <button
-                                    onClick={() => handlePrintSummary()}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 text-[12px] font-medium rounded-lg hover:bg-purple-200 dark:hover:bg-purple-800/50 transition-colors hover-scale"
-                                >
-                                    <Printer className="w-3.5 h-3.5" />
-                                    พิมพ์ใบส่งตรวจ ({selectedPatients.size})
-                                </button>
-                            )}
                         </div>
                     </div>
 
@@ -422,15 +453,6 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                                         <div className="text-[16px] font-bold text-[#1F2937] dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                                                             HN : {patient.hn}
                                                         </div>
-                                                        {patient.process === 'กำลังจัดส่ง' ? (
-                                                            <div title="เตรียมใบส่งตรวจแล้ว" className="flex items-center justify-center bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 p-1 rounded-md">
-                                                                <Printer className="w-3.5 h-3.5" />
-                                                            </div>
-                                                        ) : patient.process === 'รอแล็บรับเรื่อง' ? (
-                                                            <div title="ส่งคำขอแล้ว (รอแล็บอนุมัติ)" className="flex items-center justify-center bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 p-1 rounded-md border border-amber-200 dark:border-amber-800">
-                                                                <Printer className="w-3.5 h-3.5 opacity-50" />
-                                                            </div>
-                                                        ) : null}
                                                     </div>
                                                     <StatusBadge status={patient.process} />
                                                 </div>
@@ -563,15 +585,32 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                 onVerify={handleConfirmOrderLab}
             />
 
-            {/* Print Summary Sheet - Rendered only when printing */}
-            {
-                isPrinting && (
-                    <PrintSummarySheet
-                        patients={patients.filter(p => selectedPatients.has(p.hn))}
-                        signature={printSignature}
-                    />
-                )
-            }
+            {/* Hidden PDF Freeze Container */}
+            {isFreezingInProgress && (
+                <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', pointerEvents: 'none', opacity: 0 }}>
+                    {pdfFreezingPatients.map(p => (
+                        <div key={p.hn} id={`pdf-req-${p.hn}`}>
+                            <PrintRequestSheet
+                                patients={[p]}
+                                signatures={{ [p.hn]: pdfFreezingSignatures[p.hn] }}
+                                vitals={pdfFreezingVitals}
+                                isPdfMode={true}
+                            />
+                        </div>
+                    ))}
+                </div>
+            )}
+
+            {/* Freezing Progress Modal */}
+            {isFreezingInProgress && (
+                <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl w-full max-w-sm flex flex-col items-center justify-center py-8 px-6 text-center">
+                        <Loader2 className="w-12 h-12 text-indigo-500 animate-spin mb-4" />
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-2">ประมวลผลไฟล์เอกสาร</h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{freezingProgress}</p>
+                    </div>
+                </div>
+            )}
         </>
     );
 };

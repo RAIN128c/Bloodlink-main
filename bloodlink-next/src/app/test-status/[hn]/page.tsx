@@ -223,15 +223,26 @@ export default function ResultPage() {
 
     const handleViewRequestSheet = async () => {
         if (!hn) return;
-        setShowRequestSheet(true);
-        setRequestSheetSignature(null);
+
         try {
-            // Fetch signature
+            // First, try to fetch the frozen PDF url
             const sigRes = await fetch(`/api/patients/${encodeURIComponent(hn)}/signature`);
             if (sigRes.ok) {
                 const sigData = await sigRes.json();
+
+                if (sigData.signature?.document_url) {
+                    // Open frozen PDF directly
+                    window.open(sigData.signature.document_url, '_blank');
+                    return;
+                }
+
+                // Fallback: Enable dynamic sheet rendering
                 setRequestSheetSignature(sigData.signature);
             }
+
+            // Wait for dynamic render
+            setShowRequestSheet(true);
+
             // Fetch latest appointment for vitals
             const appts = await AppointmentService.getAppointmentsByHn(hn);
             const latestAppt = appts.length > 0 ? appts[0] : null;
@@ -482,42 +493,32 @@ export default function ResultPage() {
 
                     {/* Request Sheet Modal */}
                     {showRequestSheet && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-                            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[95vw] max-w-3xl max-h-[90vh] overflow-auto">
+                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:static print:bg-transparent">
+                            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[95vw] max-w-3xl max-h-[90vh] overflow-auto print:overflow-visible print:max-h-none print:shadow-none print:w-full">
                                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
                                     <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
                                         <FileText className="w-4 h-4 text-indigo-500" />
                                         ใบส่งตรวจ (Request Sheet)
                                     </h2>
-                                    <button
-                                        onClick={() => setShowRequestSheet(false)}
-                                        className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition"
-                                    >
-                                        <X className="w-5 h-5 text-gray-500" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => window.print()}
+                                            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg transition"
+                                        >
+                                            <Printer className="w-4 h-4" />
+                                            พิมพ์ใบ
+                                        </button>
+                                        <button
+                                            onClick={() => setShowRequestSheet(false)}
+                                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition lg:hidden"
+                                        >
+                                            <X className="w-5 h-5 text-gray-500" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="p-4">
+                                <div className="p-4 print:p-0">
                                     {patient ? (
-                                        <div className="flex-1 overflow-auto p-4 bg-gray-200/50 dark:bg-gray-950/50 relative flex flex-col items-center gap-4">
-                                            <style>{`
-                                                @media print {
-                                                    body * { visibility: hidden; }
-                                                    .print-area, .print-area * { visibility: visible; }
-                                                    .print-area { position: absolute; left: 0; top: 0; width: 100%; }
-                                                }
-                                                .print-only {
-                                                    display: block !important;
-                                                    position: relative !important;
-                                                    inset: auto !important;
-                                                    z-index: 10 !important;
-                                                    background: transparent !important;
-                                                }
-                                                .request-sheet-container {
-                                                    box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
-                                                    margin-bottom: 2rem;
-                                                    background: white;
-                                                }
-                                            `}</style>
+                                        <div className="flex-1 overflow-auto print:overflow-visible p-4 print:p-0 bg-gray-200/50 dark:bg-gray-950/50 print:bg-transparent relative flex flex-col items-center gap-4">
                                             <div className="print-area">
                                                 <PrintRequestSheet patients={[patient as any]} signatures={requestSheetSignature ? { [patient.hn]: requestSheetSignature } : undefined} vitals={requestSheetVitals} />
                                             </div>
@@ -527,6 +528,21 @@ export default function ResultPage() {
                                             <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
                                         </div>
                                     )}
+                                </div>
+                                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex flex-col-reverse sm:flex-row justify-end gap-3 rounded-b-2xl">
+                                    <button
+                                        onClick={() => setShowRequestSheet(false)}
+                                        className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition w-full sm:w-auto"
+                                    >
+                                        ปิดหน้าต่าง
+                                    </button>
+                                    <button
+                                        onClick={() => window.print()}
+                                        className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm w-full sm:w-auto"
+                                    >
+                                        <Printer className="w-4 h-4" />
+                                        พิมพ์ใบสั่งตรวจ
+                                    </button>
                                 </div>
                             </div>
                         </div>

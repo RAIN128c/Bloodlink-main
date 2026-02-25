@@ -10,22 +10,23 @@ const printStyles = `
             margin: 10mm;
         }
         body {
-            print-color-adjust: exact;
-            -webkit-print-color-adjust: exact;
+            visibility: hidden;
         }
-        .print-only {
-            display: block !important;
+        .request-sheet-container {
+            visibility: visible;
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
         }
-        .screen-only {
-            display: none !important;
+        .request-sheet-container * {
+            visibility: visible;
         }
         .page-break {
             page-break-after: always;
         }
-    }
-    @media screen {
-        .print-only {
-            display: none;
+        .screen-only {
+            display: none !important;
         }
     }
 `;
@@ -35,12 +36,13 @@ interface PrintRequestSheetProps {
     hospitalName?: string;
     signatures?: Record<string, { qr_token: string; signature_text: string; } | null>;
     vitals?: Record<string, any>; // Record<hn, VitalsObject>
+    isPdfMode?: boolean; // Flag to render strictly for html2canvas
 }
 
-export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล' }: PrintRequestSheetProps) => {
+export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล', isPdfMode = false }: PrintRequestSheetProps) => {
     return (
-        <div className="print-only fixed inset-0 bg-white z-[9999] p-2 text-black font-[family-name:var(--font-kanit)]">
-            <style dangerouslySetInnerHTML={{ __html: printStyles }} />
+        <div className={isPdfMode ? "bg-white text-black font-[family-name:var(--font-kanit)]" : "w-full text-black font-[family-name:var(--font-kanit)]"}>
+            {!isPdfMode && <style dangerouslySetInnerHTML={{ __html: printStyles }} />}
 
             {patients.map((patient, pageIndex) => {
                 const currentDate = new Date();
@@ -72,7 +74,7 @@ export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName =
                 const creatorDisplay = signerName || patient.creatorEmail || '.......................................';
 
                 return (
-                    <div key={pageIndex} className={`request-sheet-container relative w-full mx-auto ${pageIndex < patients.length - 1 ? 'page-break' : ''}`}>
+                    <div key={pageIndex} className={`request-sheet-container relative bg-white mx-auto ${isPdfMode ? 'w-[794px] min-h-[1123px] p-8' : 'w-full max-w-[794px]'} ${pageIndex < patients.length - 1 && !isPdfMode ? 'page-break' : ''}`}>
                         {/* Header Info */}
                         <div className="flex flex-col gap-2 text-[14px] leading-tight mb-4">
                             <div className="flex gap-2 items-end border-b border-black pb-1">
