@@ -9,19 +9,6 @@ const printStyles = `
             size: A4 portrait;
             margin: 10mm;
         }
-        body {
-            visibility: hidden;
-        }
-        .request-sheet-container {
-            visibility: visible;
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-        }
-        .request-sheet-container * {
-            visibility: visible;
-        }
         .page-break {
             page-break-after: always;
         }

@@ -257,9 +257,9 @@ export default function ResultPage() {
     return (
         <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-kanit)]">
             <Sidebar />
-            <main className="flex-1 md:ml-[195px]">
+            <main className="flex-1 md:ml-[195px] print:m-0 print:w-full">
                 <Header />
-                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
+                <div className={`max-w-5xl mx-auto px-4 sm:px-6 py-6 ${showRequestSheet ? 'print:hidden' : ''}`}>
                     {/* Back Link */}
                     <Link href="/test-status" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition">
                         <ArrowLeft className="w-4 h-4" />
