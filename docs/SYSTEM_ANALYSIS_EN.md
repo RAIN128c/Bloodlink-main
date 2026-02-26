@@ -7,7 +7,7 @@
 *   **Web Framework:** Next.js 14+ (App Router)
 *   **Language:** Strict TypeScript
 *   **Styling:** Tailwind CSS + Framer Motion (for fluid micro-interactions)
-*   **Backend & ORM:** Supabase (PostgreSQL) integrated with **Prisma ORM**
+*   **Backend & ORM:** Supabase (PostgreSQL)
 *   **Authentication:** NextAuth.js (Session JWT) + Custom 6-Digit PIN E-Signature System
 
 ## 3. Core Modules & Flow

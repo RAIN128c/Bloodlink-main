@@ -38,10 +38,14 @@ jobs:
           git checkout main
           git reset --hard $UPSTREAM_BRANCH
 
-          # 4. 🔥 กู้คืนไฟล์ Workflows ของเครื่องเราเองกลับมา เพื่อไม่ให้พยายามเขียนทับ Workflow ฝั่ง banyangyuan121 
-          # วิธีนี้หลีกเลี่ยงข้อความ [remote rejected] แบบเด็ดขาด
+          # 4. 🔥 กู้คืนไฟล์ Workflows ของเครื่องเรา 
           git checkout HEAD@{1} -- .github/workflows/ || echo "No workflows to restore"
-          git commit --amend --no-edit || echo "Nothing to amend"
+          
+          # 🚨 บังคับเปลี่ยน Author ของ Commit เพื่อแก้ปัญหา Vercel Block (Git author must have access...)
+          git commit --amend --reset-author -m "sync: auto update from upstream" || echo "Nothing to amend"
+          
+          # 🚨 สร้าง Commit เปล่าทับบนสุดอีก 1 ชั้น เพื่อยืนยันว่าเป็น Author ปลายทางรันเอง 100%
+          git commit --allow-empty -m "trigger: force vercel deployment" || true
 
           # 5. ใส่ SYNC_PAT และสั่ง Push
           if [ -n "${{ secrets.SYNC_PAT }}" ]; then
