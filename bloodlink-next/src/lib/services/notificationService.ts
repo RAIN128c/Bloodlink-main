@@ -30,7 +30,6 @@ export class NotificationService {
             // 1. Get the notification message for this status
             const baseMessage = customMessage || STATUS_MESSAGES[status];
             if (!baseMessage) {
-                console.log(`No notification message defined for status: ${status}`);
                 return { success: true, notifiedCount: 0 };
             }
 
@@ -59,13 +58,11 @@ export class NotificationService {
             }
 
             if (!responsibilities || responsibilities.length === 0) {
-                console.log(`[NotificationService] No responsible staff found for patient HN: ${patientHn}`);
                 return { success: true, notifiedCount: 0 };
             }
 
             // 3. Get user IDs from emails
             const emails = responsibilities.map(r => r.user_email);
-            console.log(`[NotificationService] Found responsible emails for HN ${patientHn}:`, emails);
 
             const { data: users, error: usersError } = await supabaseAdmin
                 .from('users')
@@ -77,10 +74,8 @@ export class NotificationService {
                 return { success: false, notifiedCount: 0, error: usersError.message };
             }
 
-            console.log(`[NotificationService] Found matched users in DB:`, users?.map(u => u.email));
 
             if (!users || users.length === 0) {
-                console.log(`[NotificationService] No matching users found in users table for emails:`, emails);
                 return { success: true, notifiedCount: 0 };
             }
 
@@ -103,12 +98,11 @@ export class NotificationService {
                 }
             }
 
-            console.log(`Sent ${notifiedCount} notifications for patient ${patientHn} status: ${status}`);
             return { success: true, notifiedCount };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error sending status notification:', error);
-            return { success: false, notifiedCount: 0, error: error.message };
+            return { success: false, notifiedCount: 0, error: (error as Error).message };
         }
     }
 
@@ -152,9 +146,9 @@ export class NotificationService {
             }
 
             return { success: true, notifiedCount };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error sending global notification:', error);
-            return { success: false, notifiedCount: 0, error: error.message };
+            return { success: false, notifiedCount: 0, error: (error as Error).message };
         }
     }
 
@@ -186,7 +180,6 @@ export class NotificationService {
             }
 
             if (!responsibilities || responsibilities.length === 0) {
-                console.log(`[NotificationService] No responsible staff found for patient HN: ${patientHn}`);
                 return { success: true, notifiedCount: 0 };
             }
 
@@ -204,11 +197,9 @@ export class NotificationService {
             }
 
             if (!doctors || doctors.length === 0) {
-                console.log(`[NotificationService] No users found for responsible emails for HN: ${patientHn}`);
                 return { success: true, notifiedCount: 0 };
             }
 
-            console.log(`[NotificationService] Notifying ${doctors.length} staff members about lab results for HN: ${patientHn}`);
 
             // Send notification to each doctor
             let notifiedCount = 0;
@@ -225,12 +216,11 @@ export class NotificationService {
                 }
             }
 
-            console.log(`Sent ${notifiedCount} lab result notifications for patient ${patientHn}`);
             return { success: true, notifiedCount };
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error sending lab result notification:', error);
-            return { success: false, notifiedCount: 0, error: error.message };
+            return { success: false, notifiedCount: 0, error: (error as Error).message };
         }
     }
 }

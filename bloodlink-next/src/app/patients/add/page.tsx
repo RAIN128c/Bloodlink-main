@@ -5,15 +5,12 @@ import { MainLayout } from '@/components/layout/MainLayout';
 import { PatientForm } from '@/components/patient/PatientForm';
 import { addPatient } from '@/lib/actions/patient';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { toast } from 'sonner';
+import { Patient } from '@/types';
 
 export default function AddPatientPage() {
     const router = useRouter();
-    const [isSubmitting, setIsSubmitting] = useState(false);
-
-    const handleConfirm = async (data: any) => {
-        setIsSubmitting(true);
+    const handleConfirm = async (data: Partial<Patient>) => {
         try {
             const result = await addPatient(data);
             if (result && !result.success) {
@@ -28,13 +25,11 @@ export default function AddPatientPage() {
             });
             router.push('/history');
             router.refresh();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error adding patient:', error);
             toast.error('เกิดข้อผิดพลาด', {
-                description: error?.message || 'ไม่สามารถบันทึกข้อมูลผู้ป่วยได้ กรุณาลองใหม่อีกครั้ง'
+                description: (error as Error)?.message || 'ไม่สามารถบันทึกข้อมูลผู้ป่วยได้ กรุณาลองใหม่อีกครั้ง'
             });
-        } finally {
-            setIsSubmitting(false);
         }
     };
 

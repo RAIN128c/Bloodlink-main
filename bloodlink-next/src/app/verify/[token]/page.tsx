@@ -1,29 +1,78 @@
 import { supabaseAdmin } from '@/lib/supabase-admin';
-import { notFound } from 'next/navigation';
 import { ShieldCheck, Calendar, User, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { formatDateThai } from '@/lib/utils';
 import Link from 'next/link';
 
 interface VerifyPageProps {
-    params: {
+    params: Promise<{
         token: string;
-    };
+    }>;
 }
 
 export default async function VerifyPage({ params }: VerifyPageProps) {
-    const { token } = params;
+    const { token } = await params;
+
+    // --- PDPA Masking Utilities ---
+    const maskEmail = (email: string) => {
+        if (!email) return '-';
+        const [local, domain] = email.split('@');
+        if (!domain || local.length <= 3) return email;
+        return `${local[0]}********${local.slice(-2)}@${domain}`;
+    };
+
+    const maskName = (name: string) => {
+        if (!name) return '-';
+        const parts = name.split(' ');
+        if (parts.length < 2) return name;
+        const surname = parts[1];
+        const maskedSurname = surname ? `${surname[0]}***` : '';
+        return `${parts[0]} ${maskedSurname} ${parts.slice(2).join(' ')}`.trim();
+    };
+
+    const maskHN = (hn: string) => {
+        if (!hn) return '-';
+        if (hn.length < 4) return hn;
+        return `${hn.slice(0, 2)}*****${hn.slice(-2)}`;
+    };
+
+    const maskID = (id: string) => {
+        if (!id || id === '-') return id;
+        if (id.length <= 3) return id;
+        return `**${id.slice(-3)}`;
+    };
+
+    const maskToken = (t: string) => {
+        if (!t) return '-';
+        const parts = t.split('-');
+        if (parts.length === 1) return t; // not a UUID?
+        return parts.map((p, i) => (i === 0 || i === parts.length - 1) ? p : '*'.repeat(p.length)).join('-');
+    };
+
+    const maskPayload = (payload: string) => {
+        if (!payload) return '-';
+        // Payload has format: [Digitally Signed by: Name Surname (Role) | Pro. ID: XXXXX | Ref: UUID]
+        // Let's just do a simple regex or string replace to hide Pro. ID and UUID parts
+        let masked = payload;
+        // Mask ID
+        masked = masked.replace(/Pro\. ID:\s*([^\s|\]]+)/g, (match, p1) => `Pro. ID: ${maskID(p1)}`);
+        // Mask Ref
+        masked = masked.replace(/Ref:\s*([^\s|\]]+)/g, (match, p1) => `Ref: ${maskToken(p1)}`);
+        // Mask Name/Surname in Payload (a bit tricky due to format, but let's just leave Name or apply a simple replace if possible, but the signature text itself is already proof)
+        // For PDPA, obscuring ID and Ref is usually enough for the payload block, or we can just mask the whole string
+        return masked;
+    };
+    // ------------------------------
 
     // Fetch signature using supabaseAdmin to bypass RLS since this is a public verification page
     const { data: signature, error } = await supabaseAdmin
         .from('document_signatures')
-        .select(`
-            *,
-            users!document_signatures_signer_email_fkey(name, surname, role, professional_id)
-        `)
+        .select('*')
         .eq('qr_token', token)
-        .single();
+        .maybeSingle();
 
-    if (error || !signature) {
+    if (error) console.error("Verify Page Error:", error);
+
+    if (!signature) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
                 <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center border-t-4 border-red-500">
@@ -69,7 +118,7 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4 font-sans">
+        <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
             <div className="bg-white rounded-3xl shadow-xl w-full max-w-2xl overflow-hidden border border-gray-100">
                 {/* Header */}
                 <div className="bg-gradient-to-r from-emerald-500 to-teal-600 px-8 py-10 text-white text-center relative overflow-hidden">
@@ -99,8 +148,8 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
                                 </div>
                                 <div>
                                     <p className="text-sm text-gray-500 mb-0.5">ชื่อ-สกุล / อีเมล</p>
-                                    <p className="font-bold text-gray-900 text-lg">{signerName}</p>
-                                    <p className="text-sm text-gray-600">{signature.signer_email}</p>
+                                    <p className="font-bold text-gray-900 text-lg">{maskName(signerName)}</p>
+                                    <p className="text-sm text-gray-600">{maskEmail(signature.signer_email)}</p>
                                 </div>
                             </div>
 
@@ -111,7 +160,7 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
                                 <div>
                                     <p className="text-sm text-gray-500 mb-0.5">ตำแหน่ง / เลขประกอบวิชาชีพ</p>
                                     <p className="font-bold text-gray-900">{signerRole}</p>
-                                    <p className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-0.5 rounded mt-1 inline-block">ID: {professionalId}</p>
+                                    <p className="text-sm text-gray-600 font-mono bg-gray-100 px-2 py-0.5 rounded mt-1 inline-block">ID: {maskID(professionalId)}</p>
                                 </div>
                             </div>
                         </div>
@@ -129,7 +178,7 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
                                     <p className="font-bold text-gray-900">
                                         {signature.document_type === 'request_sheet' ? 'ใบส่งตรวจทางห้องปฏิบัติการ (Request Sheet)' : signature.document_type}
                                     </p>
-                                    <p className="text-sm text-gray-600 mt-1">HN ผู้ป่วย: <span className="font-mono font-bold">{signature.patient_hn}</span></p>
+                                    <p className="text-sm text-gray-600 mt-1">HN ผู้ป่วย: <span className="font-mono font-bold">{maskHN(signature.patient_hn)}</span></p>
                                 </div>
                             </div>
 
@@ -158,9 +207,9 @@ export default async function VerifyPage({ params }: VerifyPageProps) {
                             ตาม พ.ร.บ. ว่าด้วยธุรกรรมทางอิเล็กทรอนิกส์
                         </p>
                         <div className="bg-gray-900 text-green-400 font-mono text-xs p-3 rounded-lg overflow-x-auto">
-                            Payload: {signature.signature_text}
+                            Payload: {maskPayload(signature.signature_text)}
                             <br />
-                            Token: {signature.qr_token}
+                            Token: {maskToken(signature.qr_token)}
                         </div>
                     </div>
 

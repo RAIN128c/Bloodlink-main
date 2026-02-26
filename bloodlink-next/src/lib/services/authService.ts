@@ -15,7 +15,6 @@ export class AuthService {
                 .single();
 
             if (error || !user) {
-                console.log('Login failed: User not found', error);
                 return null;
             }
 
@@ -29,19 +28,16 @@ export class AuthService {
             // Based on previous code: if (verifyStatus !== 'Approved' ...)
             // Let's stick to valid statuses logic.
             if (!validStatuses.includes(status)) {
-                console.log('Login failed: Account not active status:', status);
                 return null;
             }
 
             // 3. Verify password
             if (!user.password) {
-                console.log('Login failed: No password stored');
                 return null;
             }
 
             const isValid = await bcrypt.compare(password, user.password);
             if (!isValid) {
-                console.log('Login failed: Invalid password');
                 return null;
             }
 
@@ -58,6 +54,10 @@ export class AuthService {
                 phone: user.phone,
                 status: user.status,
                 avatarUrl: user.avatar_url,
+                hospitalType: user.hospital_type,
+                hospitalName: user.hospital_name,
+                district: user.district,
+                province: user.province,
                 professionalId: user.professional_id
             };
         } catch (error) {
@@ -153,6 +153,10 @@ export class AuthService {
                 phone: u.phone,
                 status: u.status || 'Pending',
                 avatarUrl: u.avatar_url,
+                hospitalType: u.hospital_type,
+                hospitalName: u.hospital_name,
+                district: u.district,
+                province: u.province,
                 professionalId: u.professional_id
             }));
         } catch (error) {
@@ -182,6 +186,10 @@ export class AuthService {
                 phone: u.phone,
                 status: u.status,
                 avatarUrl: u.avatar_url,
+                hospitalType: u.hospital_type,
+                hospitalName: u.hospital_name,
+                district: u.district,
+                province: u.province,
                 professionalId: u.professional_id
             }));
         } catch (error) {
@@ -200,6 +208,9 @@ export class AuthService {
             if (data.position !== undefined) updateFields.position = data.position;
             if (data.phone !== undefined) updateFields.phone = data.phone;
             if (data.avatarUrl !== undefined) updateFields.avatar_url = data.avatarUrl;
+            if (data.hospitalName !== undefined) updateFields.hospital_name = data.hospitalName;
+            if (data.district !== undefined) updateFields.district = data.district;
+            if (data.province !== undefined) updateFields.province = data.province;
             if (data.professionalId !== undefined) updateFields.professional_id = data.professionalId;
 
             // Only update if there are fields to update
@@ -280,6 +291,10 @@ export class AuthService {
                 status: user.status,
                 bio: user.bio,
                 avatarUrl: user.avatar_url,
+                hospitalType: user.hospital_type,
+                hospitalName: user.hospital_name,
+                district: user.district,
+                province: user.province,
                 professionalId: user.professional_id
             };
         } catch (error) {
@@ -309,6 +324,10 @@ export class AuthService {
                 status: user.status,
                 bio: user.bio,
                 avatarUrl: user.avatar_url,
+                hospitalType: user.hospital_type,
+                hospitalName: user.hospital_name,
+                district: user.district,
+                province: user.province,
                 professionalId: user.professional_id
             };
         } catch (error) {
@@ -398,7 +417,6 @@ export class AuthService {
             // Check if status is Approved -> Send Email
             const approvedKeywords = ['approved', 'อนุมัติ', 'active', 'ใช้งาน'];
             if (approvedKeywords.includes(status.toLowerCase()) && data?.email) {
-                console.log(`User ${data.email} approved. Sending notification email...`);
                 // Fire and forget email to not block response
                 EmailService.sendAccountApprovedEmail(data.email, data.name || 'Staff');
             }

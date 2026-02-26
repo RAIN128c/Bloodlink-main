@@ -44,7 +44,7 @@ export function NotificationPopup({ isOpen, onClose, onAction, type, title, mess
     });
 
     return (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center font-[family-name:var(--font-kanit)]">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center font-[family-name:var(--font-prompt)]">
             <div className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-[1px]" onClick={onClose} />
             <div className="relative bg-white dark:bg-[#1F2937] rounded-[20px] shadow-xl dark:shadow-[0_10px_25px_rgba(0,0,0,0.3)] w-[320px] p-6 animate-in zoom-in-95 duration-200 border border-gray-100 dark:border-gray-700">
                 {/* Close X */}

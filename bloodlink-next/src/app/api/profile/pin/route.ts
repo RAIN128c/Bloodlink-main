@@ -45,14 +45,14 @@ export async function POST(req: NextRequest) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (e) {
-        console.error('API Error in PIN Setup:', e);
+    } catch {
+        console.error('API Error in PIN Setup');
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }
 
 // Check if user already has a PIN
-export async function GET(req: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
         if (!session?.user?.email) {
@@ -70,7 +70,7 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json({ hasPin: !!user?.pin_hash });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
     }
 }

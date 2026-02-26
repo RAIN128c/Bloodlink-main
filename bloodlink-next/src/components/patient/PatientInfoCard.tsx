@@ -4,7 +4,7 @@ import { formatDateThai } from "@/lib/utils";
 
 export function PatientInfoCard({ patient }: { patient: Patient }) {
     return (
-        <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden font-[family-name:var(--font-prompt)] transition-colors">
             <div className="p-6">
                 <div className="flex items-center space-x-4 mb-6">
                     <div className="h-16 w-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center border-4 border-white dark:border-gray-700 shadow-sm">

@@ -59,7 +59,7 @@ export const PrintSummarySheet = ({ patients, signature, hospitalName = 'โร�
     const signerName = extractNameFromSignature(signature?.signature_text);
 
     return (
-        <div className={isPdfMode ? "bg-white text-black font-[family-name:var(--font-kanit)]" : "w-full text-black font-[family-name:var(--font-kanit)]"}>
+        <div className={isPdfMode ? "bg-white text-black font-[family-name:var(--font-prompt)]" : "w-full text-black font-[family-name:var(--font-prompt)]"}>
             {!isPdfMode && <style dangerouslySetInnerHTML={{ __html: printStyles }} />}
 
             {chunkedPatients.map((pagePatients, pageIndex) => (
@@ -88,7 +88,7 @@ export const PrintSummarySheet = ({ patients, signature, hospitalName = 'โร�
                                 </th>
                                 <th rowSpan={2} className="border border-black px-2 py-1 w-[80px] text-center">
                                     HN<br />
-                                    <span className="font-normal text-[10px]">"รพ..............."</span>
+                                    <span className="font-normal text-[10px]">&quot;รพ..............&quot;</span>
                                 </th>
                                 <th rowSpan={2} className="border border-black px-2 py-1 w-[120px] text-center">Diagnosis</th>
                                 <th colSpan={5} className="border border-black px-2 py-1 text-center">รายการตรวจวิเคราะห์</th>

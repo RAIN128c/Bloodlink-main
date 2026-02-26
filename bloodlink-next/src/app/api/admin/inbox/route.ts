@@ -83,7 +83,8 @@ export async function PATCH(request: Request) {
         }
 
         return NextResponse.json({ success: true });
-    } catch (error) {
+    } catch (error: unknown) {
+        console.error('Error in PATCH inbox:', error);
         return NextResponse.json({ success: false }, { status: 500 });
     }
 }

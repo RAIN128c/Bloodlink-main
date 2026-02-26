@@ -62,7 +62,7 @@ export async function authenticate(email: string, password: unknown, captchaToke
     }
 }
 
-export async function register(data: any) {
+export async function register(data: Record<string, unknown>) {
     // Validate input using Zod
     const validatedFields = registerSchema.safeParse(data);
 
@@ -73,7 +73,7 @@ export async function register(data: any) {
         };
     }
 
-    const { role, name, surname, email, password, hospitalType, hospitalName, professionalId } = validatedFields.data;
+    const { role, name, surname, email, password, hospitalType, hospitalName, district, province, professionalId } = validatedFields.data;
 
     // Supabase Admin is required to create pre-verified users
     if (!supabaseAdmin) {
@@ -90,7 +90,7 @@ export async function register(data: any) {
     if (process.env.TURNSTILE_SECRET_KEY) {
         const formData = new URLSearchParams();
         formData.append('secret', process.env.TURNSTILE_SECRET_KEY);
-        formData.append('response', captchaToken);
+        formData.append('response', captchaToken as string);
 
         try {
             const cfRes = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
@@ -120,6 +120,8 @@ export async function register(data: any) {
                 surname,
                 hospitalType,
                 hospitalName,
+                district,
+                province,
                 professionalId,
                 status: 'รอตรวจสอบ'
             }
@@ -138,8 +140,8 @@ export async function register(data: any) {
         await EmailService.sendWelcomeEmail(email, name);
 
         return { success: true };
-    } catch (e: any) {
+    } catch (e: unknown) {
         console.error('Registration Error:', e);
-        return { error: `เกิดข้อผิดพลาด: ${e.message || 'ไม่ทราบสาเหตุ'}` };
+        return { error: `เกิดข้อผิดพลาด: ${(e as Error).message || 'ไม่ทราบสาเหตุ'}` };
     }
 }

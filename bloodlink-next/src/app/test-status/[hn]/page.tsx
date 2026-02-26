@@ -7,11 +7,10 @@ import { Sidebar } from '@/components/layout/Sidebar';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import Link from 'next/link';
-import { CheckCircle, AlertTriangle, AlertCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye, Printer, Loader2, X } from 'lucide-react';
+import { CheckCircle, FileText, ArrowLeft, Clock, RefreshCw, Eye, Printer, X } from 'lucide-react';
 import { toast } from 'sonner';
-import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
-import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
 import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
+import { Patient } from '@/types';
 
 interface LabResult {
     id: number;
@@ -43,15 +42,13 @@ export default function ResultPage() {
     const [patient, setPatient] = useState<PatientInfo | null>(null);
     const [loading, setLoading] = useState(true);
     const [approving, setApproving] = useState(false);
-    const [printing, setPrinting] = useState(false);
     const [fileUrl, setFileUrl] = useState<string | null>(null);
     const [selectedHistoryId, setSelectedHistoryId] = useState<number | null>(null);
     const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
 
-    // For Digital Request Sheet
-    const [showRequestSheet, setShowRequestSheet] = useState(false);
-    const [requestSheetSignature, setRequestSheetSignature] = useState<{ qr_token: string, signature_text: string } | null>(null);
-    const [requestSheetVitals, setRequestSheetVitals] = useState<Record<string, Partial<Appointment>>>({});
+    // Additional state for generating snapshots
+    const [generatingSnapshot, setGeneratingSnapshot] = useState(false);
+    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null);
 
     const fetchData = useCallback(async () => {
         if (!hn) return;
@@ -88,6 +85,21 @@ export default function ResultPage() {
         } finally {
             setLoading(false);
         }
+
+        try {
+            const profileRes = await fetch('/api/profile');
+            if (profileRes.ok) {
+                const data = await profileRes.json();
+                setHospitalInfo({
+                    hospitalType: data.hospitalType,
+                    hospitalName: data.hospitalName,
+                    district: data.district,
+                    province: data.province
+                });
+            }
+        } catch (error) {
+            console.error('Fetch profile error:', error);
+        }
     }, [hn]);
 
     useEffect(() => {
@@ -111,8 +123,8 @@ export default function ResultPage() {
 
             toast.success('อนุญาตให้พิมพ์ผลตรวจเรียบร้อย');
             fetchData(); // Refresh
-        } catch (error: any) {
-            toast.error(error.message || 'เกิดข้อผิดพลาดในการอนุญาต');
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการอนุญาต');
         } finally {
             setApproving(false);
         }
@@ -138,58 +150,9 @@ export default function ResultPage() {
 
             toast.success('ตีกลับผลตรวจกลับไปยัง รพช. เรียบร้อยแล้ว');
             window.location.href = '/test-status'; // Redirect back to tracker
-        } catch (error: any) {
-            toast.error(error.message || 'เกิดข้อผิดพลาดในการตีกลับ');
+        } catch (error: unknown) {
+            toast.error(error instanceof Error ? error.message : 'เกิดข้อผิดพลาดในการตีกลับ');
             setApproving(false);
-        }
-    };
-
-    const handlePrint = async () => {
-        if (!fileUrl || !hn) return;
-        setPrinting(true);
-        try {
-            const isImage = latestResult?.file_type?.startsWith('image/');
-            const printWindow = window.open('', '_blank', 'width=800,height=600');
-            if (!printWindow) {
-                toast.error('กรุณาอนุญาต Pop-up เพื่อสั่งพิมพ์');
-                return;
-            }
-
-            if (isImage) {
-                printWindow.document.write(`
-                    <!DOCTYPE html>
-                    <html><head><title>พิมพ์ผลตรวจ - HN: ${hn}</title>
-                    <style>
-                        @page { size: A4 portrait; margin: 10mm; }
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { display: flex; flex-direction: column; align-items: center; min-height: 100vh; background: #fff; padding: 10mm; font-family: sans-serif; }
-                        .header { text-align: center; margin-bottom: 12px; font-size: 14px; color: #333; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; width: 100%; }
-                        img { max-width: 100%; height: auto; }
-                        @media print { body { padding: 5mm; } }
-                    </style></head><body>
-                        <div class="header"><strong>ผลตรวจเลือด</strong><br/>HN: ${hn} — ${patient?.name} ${patient?.surname}</div>
-                        <img src="${fileUrl}" onload="setTimeout(() => { window.print(); }, 500);" />
-                    </body></html>
-                `);
-            } else {
-                printWindow.location.href = fileUrl;
-            }
-            printWindow.document.close();
-
-            // Update status to "เสร็จสิ้น" (printed)
-            await fetch(`/api/patients/${hn}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ process: 'เสร็จสิ้น' }),
-            });
-
-            setPatient(prev => prev ? { ...prev, process: 'เสร็จสิ้น' } : prev);
-            toast.success('สั่งพิมพ์เรียบร้อย & อัปเดตสถานะ "เสร็จสิ้น"');
-        } catch (err) {
-            console.error('Print error:', err);
-            toast.error('เกิดข้อผิดพลาดในการพิมพ์');
-        } finally {
-            setPrinting(false);
         }
     };
 
@@ -222,44 +185,67 @@ export default function ResultPage() {
     const canApprove = Permissions.isDoctorOrNurse(effectiveRole) || Permissions.isAdmin(effectiveRole);
 
     const handleViewRequestSheet = async () => {
-        if (!hn) return;
+        if (!hn || !patient) return;
+        setGeneratingSnapshot(true);
 
         try {
-            // First, try to fetch the frozen PDF url
+            // First, try to fetch the frozen PDF url and signature
+            let sigData = null;
             const sigRes = await fetch(`/api/patients/${encodeURIComponent(hn)}/signature`);
             if (sigRes.ok) {
-                const sigData = await sigRes.json();
+                sigData = await sigRes.json();
 
                 if (sigData.signature?.document_url) {
                     // Open frozen PDF directly
                     window.open(sigData.signature.document_url, '_blank');
+                    setGeneratingSnapshot(false);
                     return;
                 }
-
-                // Fallback: Enable dynamic sheet rendering
-                setRequestSheetSignature(sigData.signature);
             }
 
-            // Wait for dynamic render
-            setShowRequestSheet(true);
-
-            // Fetch latest appointment for vitals
+            // Fallback: Generate a snapshot
             const appts = await AppointmentService.getAppointmentsByHn(hn);
             const latestAppt = appts.length > 0 ? appts[0] : null;
-            if (latestAppt) {
-                setRequestSheetVitals({ [hn]: latestAppt });
+
+            const snapshotPayload = {
+                hn: hn,
+                patientData: patient,
+                signatures: sigData?.signature ? { [hn]: sigData.signature } : {},
+                vitals: latestAppt ? { [hn]: latestAppt } : {},
+                hospitalInfo: hospitalInfo
+            };
+
+            const res = await fetch('/api/print-snapshot', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(snapshotPayload)
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                if (data.hash) {
+                    window.open(`/print/snapshot/${encodeURIComponent(data.hash)}`, '_blank');
+                    setGeneratingSnapshot(false);
+                    return;
+                }
             }
+
+            // Ultimate Fallback: Open dynamic print page in new tab
+            window.open(`/print/request-sheet/${encodeURIComponent(hn)}`, '_blank');
         } catch (err) {
             console.error('Failed to load request sheet data', err);
+            toast.error('เกิดข้อผิดพลาดในการโหลดใบส่งตรวจ');
+        } finally {
+            setGeneratingSnapshot(false);
         }
     };
 
     return (
-        <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-kanit)]">
+        <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-prompt)]">
             <Sidebar />
-            <main className="flex-1 md:ml-[195px] print:m-0 print:w-full">
+            <main className="flex-1 md:ml-[195px]">
                 <Header />
-                <div className={`max-w-5xl mx-auto px-4 sm:px-6 py-6 ${showRequestSheet ? 'print:hidden' : ''}`}>
+                <div className="max-w-5xl mx-auto px-4 sm:px-6 py-6">
                     {/* Back Link */}
                     <Link href="/test-status" className="inline-flex items-center gap-1.5 text-sm text-gray-500 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 mb-4 transition">
                         <ArrowLeft className="w-4 h-4" />
@@ -291,10 +277,15 @@ export default function ResultPage() {
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={handleViewRequestSheet}
-                                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 rounded-xl transition border border-indigo-200 dark:border-indigo-700"
+                                            disabled={generatingSnapshot}
+                                            className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-700 bg-indigo-50 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-800/40 rounded-xl transition border border-indigo-200 dark:border-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            <FileText className="w-3.5 h-3.5" />
-                                            ดูใบส่งตรวจ
+                                            {generatingSnapshot ? (
+                                                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                                            ) : (
+                                                <FileText className="w-3.5 h-3.5" />
+                                            )}
+                                            {generatingSnapshot ? 'กำลังโหลด...' : 'ดูใบส่งตรวจ'}
                                         </button>
                                         {isApproved && (
                                             <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800">
@@ -319,6 +310,7 @@ export default function ResultPage() {
                                     <div className="p-4">
                                         {fileUrl ? (
                                             latestResult?.file_type?.startsWith('image/') ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
                                                 <img
                                                     src={fileUrl}
                                                     alt={`Lab result for ${hn}`}
@@ -456,96 +448,50 @@ export default function ResultPage() {
                                 </div>
                             </div>
 
-                            {/* Selected History File Preview */}
+                            {/* Selected History File Preview Modal */}
                             {selectedHistoryId && selectedFileUrl && selectedHistoryId !== latestResult?.id && (
-                                <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-100 dark:border-gray-800 overflow-hidden mb-6">
-                                    <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
-                                        <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-gray-400" />
-                                            ไฟล์ผลตรวจ (ประวัติ)
-                                        </h2>
-                                        <button
-                                            onClick={() => { setSelectedHistoryId(null); setSelectedFileUrl(null); }}
-                                            className="text-xs text-gray-400 hover:text-gray-600 transition"
-                                        >
-                                            ปิด
-                                        </button>
-                                    </div>
-                                    <div className="p-4">
-                                        {history.find(h => h.id === selectedHistoryId)?.file_type?.startsWith('image/') ? (
-                                            <img
-                                                src={selectedFileUrl}
-                                                alt="Historical lab result"
-                                                className="w-full max-h-[500px] object-contain rounded-lg border border-gray-200 dark:border-gray-700"
-                                            />
-                                        ) : (
-                                            <iframe
-                                                src={selectedFileUrl}
-                                                className="w-full h-[500px] rounded-lg border border-gray-200 dark:border-gray-700"
-                                                title="Historical lab result"
-                                            />
-                                        )}
+                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+                                    <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                                        <div className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
+                                            <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+                                                <Clock className="w-4 h-4 text-gray-400" />
+                                                ไฟล์ผลตรวจ (ประวัติ)
+                                            </h2>
+                                            <button
+                                                onClick={() => { setSelectedHistoryId(null); setSelectedFileUrl(null); }}
+                                                className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition"
+                                            >
+                                                <X className="w-5 h-5" />
+                                            </button>
+                                        </div>
+                                        <div className="p-4 flex-1 overflow-auto bg-gray-50 dark:bg-gray-900">
+                                            {history.find(h => h.id === selectedHistoryId)?.file_type?.startsWith('image/') ? (
+                                                // eslint-disable-next-line @next/next/no-img-element
+                                                <img
+                                                    src={selectedFileUrl}
+                                                    alt="Historical lab result"
+                                                    className="w-full h-auto object-contain rounded-lg border border-gray-200 dark:border-gray-700 mx-auto max-h-[70vh]"
+                                                />
+                                            ) : (
+                                                <iframe
+                                                    src={selectedFileUrl}
+                                                    className="w-full h-[70vh] rounded-lg border border-gray-200 dark:border-gray-700 bg-white"
+                                                    title="Historical lab result"
+                                                />
+                                            )}
+                                        </div>
+                                        <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 flex justify-end">
+                                            <button
+                                                onClick={() => { setSelectedHistoryId(null); setSelectedFileUrl(null); }}
+                                                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+                                            >
+                                                ปิดหน้าต่าง
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             )}
                         </>
-                    )}
-
-                    {/* Request Sheet Modal */}
-                    {showRequestSheet && (
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm print:static print:bg-transparent">
-                            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-2xl w-[95vw] max-w-3xl max-h-[90vh] overflow-auto print:overflow-visible print:max-h-none print:shadow-none print:w-full">
-                                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-                                    <h2 className="text-base font-semibold text-gray-900 dark:text-white flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-indigo-500" />
-                                        ใบส่งตรวจ (Request Sheet)
-                                    </h2>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={() => window.print()}
-                                            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg transition"
-                                        >
-                                            <Printer className="w-4 h-4" />
-                                            พิมพ์ใบ
-                                        </button>
-                                        <button
-                                            onClick={() => setShowRequestSheet(false)}
-                                            className="p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition lg:hidden"
-                                        >
-                                            <X className="w-5 h-5 text-gray-500" />
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="p-4 print:p-0">
-                                    {patient ? (
-                                        <div className="flex-1 overflow-auto print:overflow-visible p-4 print:p-0 bg-gray-200/50 dark:bg-gray-950/50 print:bg-transparent relative flex flex-col items-center gap-4">
-                                            <div className="print-area">
-                                                <PrintRequestSheet patients={[patient as any]} signatures={requestSheetSignature ? { [patient.hn]: requestSheetSignature } : undefined} vitals={requestSheetVitals} />
-                                            </div>
-                                        </div>
-                                    ) : (
-                                        <div className="flex items-center justify-center p-12">
-                                            <RefreshCw className="w-6 h-6 text-blue-500 animate-spin" />
-                                        </div>
-                                    )}
-                                </div>
-                                <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex flex-col-reverse sm:flex-row justify-end gap-3 rounded-b-2xl">
-                                    <button
-                                        onClick={() => setShowRequestSheet(false)}
-                                        className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition w-full sm:w-auto"
-                                    >
-                                        ปิดหน้าต่าง
-                                    </button>
-                                    <button
-                                        onClick={() => window.print()}
-                                        className="flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm w-full sm:w-auto"
-                                    >
-                                        <Printer className="w-4 h-4" />
-                                        พิมพ์ใบสั่งตรวจ
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
                     )}
                 </div>
             </main>

@@ -25,6 +25,7 @@ const transporter = nodemailer.createTransport({
     ...smtpOptions,
     debug: !isProduction, // Show debug output only in development
     logger: !isProduction  // Log details to console only in development
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
 } as any);
 
 const getBaseUrl = () => {
@@ -80,7 +81,6 @@ export const EmailService = {
                 subject: 'BloodLink: คำขอรีเซ็ตรหัสผ่าน (Reset Password)',
                 html: htmlContent,
             });
-            console.log(`Email sent successfully to ${toEmail}`);
             return { success: true };
         } catch (error) {
             console.error('Error sending email:', error);
@@ -119,7 +119,6 @@ export const EmailService = {
                 subject: 'BloodLink: การลงทะเบียนของคุณได้รับแล้ว (รอการอนุมัติ)',
                 html: htmlContent,
             });
-            console.log(`Welcome email sent to ${toEmail}`);
             return { success: true };
         } catch (error) {
             console.error('Error sending welcome email:', error);
@@ -165,7 +164,6 @@ export const EmailService = {
                 subject: 'BloodLink: บัญชีของคุณได้รับการอนุมัติแล้ว (Account Approved)',
                 html: htmlContent,
             });
-            console.log(`Approved email sent to ${toEmail}`);
             return { success: true };
         } catch (error) {
             console.error('Error sending approved email:', error);

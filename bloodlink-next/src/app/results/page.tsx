@@ -64,7 +64,7 @@ export default function ResultsPage() {
                                 if (res.ok) {
                                     const data = await res.json();
                                     if (data.results && data.results.length > 0) {
-                                        const withFile = data.results.find((r: any) => r.file_url);
+                                        const withFile = data.results.find((r: { file_url?: string; file_type?: string; result_summary?: string; timestamp?: string; approver_name?: string }) => r.file_url);
                                         if (withFile) {
                                             fileMap[p.hn] = {
                                                 file_url: withFile.file_url,
@@ -216,80 +216,58 @@ export default function ResultsPage() {
     const handleConfirmPrint = useCallback(async () => {
         if (previewData.length === 0) return;
 
-        const printWindow = window.open('', '_blank', 'width=800,height=600');
-        if (!printWindow) { toast.error('กรุณาอนุญาต Pop-up เพื่อสั่งพิมพ์'); return; }
+        try {
+            const hasImages = previewData.some(u => u.fileType?.startsWith('image/'));
 
-        const imageItems = previewData.filter(u => u.fileType?.startsWith('image/'));
-        const pdfItems = previewData.filter(u => !u.fileType?.startsWith('image/'));
+            // If we have images, use the new batch system wrapper.
+            // If it's ONLY PDFs, we can just open them in new tabs directly.
+            if (hasImages) {
+                const res = await fetch('/api/print-batch', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        type: 'lab-results',
+                        items: previewData
+                    })
+                });
 
-        // If only PDFs (no images), open each PDF in a new tab for printing
-        if (imageItems.length === 0 && pdfItems.length > 0) {
-            printWindow.close();
-            pdfItems.forEach(item => {
-                window.open(item.url, '_blank');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.hash) {
+                        window.open(`/print/batch-results/${encodeURIComponent(data.hash)}`, '_blank');
+                    }
+                } else {
+                    toast.error('ไม่สามารถสร้างเอกสารสั่งพิมพ์ได้');
+                    return;
+                }
+            } else {
+                previewData.forEach(item => {
+                    window.open(item.url, '_blank');
+                });
+            }
+
+            // Mark all printed patients as "เสร็จสิ้น" in background
+            await Promise.allSettled(previewData.map(item => markAsReported(item.hn)));
+
+            // Extract the HNs that were just printed
+            const printedHns = previewData.map(d => d.hn);
+
+            // Update local state: Make the printed cards instantly disappear 
+            // instead of just changing their badge status to "พิมพ์แล้ว"
+            setPatients(prev => prev.filter(p => !printedHns.includes(p.hn)));
+
+            toast.success(`สั่งพิมพ์ ${previewData.length} รายการ และย้ายไปสถานะเสร็จสิ้นแล้ว`);
+            setShowPreview(false);
+            setPreviewData([]);
+            setSelectedHns(prev => {
+                const updated = new Set(prev);
+                printedHns.forEach(hn => updated.delete(hn));
+                return updated;
             });
-        } else {
-            // Render images with A4 portrait format
-            printWindow.document.write(`
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>พิมพ์ผลตรวจ (${imageItems.length} รายการ)</title>
-                    <style>
-                        @page { size: A4 portrait; margin: 5mm; }
-                        * { margin: 0; padding: 0; box-sizing: border-box; }
-                        body { background: #fff; font-family: sans-serif; margin: 0; }
-                        .page { page-break-after: always; padding: 10mm; width: 100%; height: auto; min-height: 280mm; display: flex; flex-direction: column; align-items: center; }
-                        .page:last-child { page-break-after: auto; }
-                        .header { text-align: center; margin-bottom: 12px; font-size: 14px; color: #333; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; width: 100%; flex-shrink: 0; }
-                        .header strong { font-size: 16px; }
-                        img { max-width: 100%; max-height: 250mm; object-fit: contain; display: block; margin: 0 auto; }
-                        @media print { html, body { height: 100%; } }
-                    </style>
-                </head>
-                <body>
-                    ${imageItems.map(item => `
-                        <div class="page">
-                            <div class="header">
-                                <strong>ผลตรวจเลือด</strong><br/>
-                                HN: ${item.hn} — ${item.name}
-                            </div>
-                            <img src="${item.url}" />
-                        </div>
-                    `).join('')}
-                    <script>
-                        let loaded = 0;
-                        const images = document.querySelectorAll('img');
-                        const total = images.length;
-                        images.forEach(img => {
-                            if (img.complete) { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }
-                            else { img.onload = () => { loaded++; if (loaded >= total) setTimeout(() => window.print(), 500); }; }
-                        });
-                        if (total === 0) setTimeout(() => window.print(), 500);
-                    </script>
-                </body>
-                </html>
-            `);
-            printWindow.document.close();
-
-            // Open PDFs in separate tabs if there are any alongside images
-            pdfItems.forEach(item => {
-                window.open(item.url, '_blank');
-            });
+        } catch (err) {
+            console.error('Print confirmation error', err);
+            toast.error('เกิดข้อผิดพลาดในการสั่งพิมพ์');
         }
-
-        // Mark all printed patients as "เสร็จสิ้น"
-        await Promise.allSettled(previewData.map(item => markAsReported(item.hn)));
-
-        // Update local state
-        setPatients(prev => prev.map(p =>
-            previewData.some(d => d.hn === p.hn) ? { ...p, process: 'เสร็จสิ้น' } : p
-        ));
-
-        toast.success(`สั่งพิมพ์ ${previewData.length} รายการ & อัปเดตสถานะ "เสร็จสิ้น" แล้ว`);
-        setShowPreview(false);
-        setPreviewData([]);
-        setSelectedHns(new Set());
     }, [previewData]);
 
     // Summary badge helper
@@ -560,6 +538,7 @@ export default function ResultsPage() {
                                     </div>
                                     <div className="p-4 bg-white dark:bg-gray-900 flex justify-center">
                                         {item.fileType?.startsWith('image/') ? (
+                                            // eslint-disable-next-line @next/next/no-img-element
                                             <img src={item.url} alt={`Lab result ${item.hn}`} className="max-h-[400px] object-contain rounded-lg" />
                                         ) : (
                                             <iframe src={item.url} className="w-full h-[400px] rounded-lg" title={`Lab result ${item.hn}`} />

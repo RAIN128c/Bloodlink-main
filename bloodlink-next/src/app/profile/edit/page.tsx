@@ -6,7 +6,6 @@ import { ChevronLeft } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
-import { supabase } from '@/lib/supabase';
 import Image from 'next/image';
 import { Camera, User } from 'lucide-react';
 import { toast } from 'sonner';
@@ -23,6 +22,9 @@ export default function ProfileEditPage() {
         phone: '',
         position: '',
         professionalId: '',
+        hospitalName: '',
+        district: '',
+        province: '',
 
         roleDisplay: '', // System Role (e.g. Doctor) - Read Only
         username: '',
@@ -45,6 +47,9 @@ export default function ProfileEditPage() {
                         phone: data.phone || '', // Need to add phone to DB if not present
                         position: data.position || '', // Actual job title
                         professionalId: data.professionalId || '',
+                        hospitalName: data.hospitalName || '',
+                        district: data.district || '',
+                        province: data.province || '',
                         roleDisplay: data.roleDisplay || data.role || '',
                         username: data.email ? data.email.split('@')[0] : '',
                         avatarUrl: data.avatarUrl || '',
@@ -134,9 +139,9 @@ export default function ProfileEditPage() {
 
             const data = await uploadRes.json();
             setFormData(prev => ({ ...prev, avatarUrl: data.url }));
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error uploading avatar:', error);
-            toast.error(`เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ: ${error.message || 'Unknown error'}`);
+            toast.error(`เกิดข้อผิดพลาดในการอัปโหลดรูปภาพ: ${(error as Error).message || 'Unknown error'}`);
         } finally {
             setUploading(false);
         }
@@ -156,6 +161,9 @@ export default function ProfileEditPage() {
                     phone: formData.phone,
                     position: formData.position,
                     professionalId: formData.professionalId,
+                    hospitalName: formData.hospitalName,
+                    district: formData.district,
+                    province: formData.province,
                     avatarUrl: formData.avatarUrl
                 }),
             });
@@ -176,7 +184,7 @@ export default function ProfileEditPage() {
 
     if (isLoading) {
         return (
-            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-kanit)] transition-colors">
+            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-prompt)] transition-colors">
                 <Sidebar />
                 <div className="ml-0 md:ml-[195px] flex-1 flex items-center justify-center">
                     <div className="text-gray-500">กำลังโหลดข้อมูล...</div>
@@ -186,7 +194,7 @@ export default function ProfileEditPage() {
     }
 
     return (
-        <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-prompt)] transition-colors">
             <Sidebar />
             <div className="ml-0 md:ml-[195px] flex-1 flex flex-col h-screen overflow-hidden">
                 <main className="flex-1 overflow-x-hidden overflow-y-auto bg-[#F3F4F6] dark:bg-[#0f1115] px-2 sm:p-4 pt-0 transition-colors">
@@ -336,6 +344,45 @@ export default function ProfileEditPage() {
                                             value={formData.professionalId}
                                             onChange={handleChange}
                                             placeholder="ระบุเพื่อใช้ในระบบ E-Document"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* Hospital Name */}
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">ชื่อโรงพยาบาล / รพ.สต.</label>
+                                        <input
+                                            type="text"
+                                            name="hospitalName"
+                                            value={formData.hospitalName}
+                                            onChange={handleChange}
+                                            placeholder="กรุณาใส่ชื่อโรงพยาบาล"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* District */}
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">อำเภอ</label>
+                                        <input
+                                            type="text"
+                                            name="district"
+                                            value={formData.district}
+                                            onChange={handleChange}
+                                            placeholder="กรุณาใส่อำเภอ"
+                                            className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
+                                        />
+                                    </div>
+
+                                    {/* Province */}
+                                    <div className="flex flex-col md:col-span-2 lg:col-span-1">
+                                        <label className="text-[14px] font-semibold text-gray-700 dark:text-gray-300 mb-2">จังหวัด</label>
+                                        <input
+                                            type="text"
+                                            name="province"
+                                            value={formData.province}
+                                            onChange={handleChange}
+                                            placeholder="กรุณาใส่จังหวัด"
                                             className="h-[48px] px-4 border border-gray-200 dark:border-gray-700 rounded-xl bg-gray-50 dark:bg-[#1F2937] text-gray-900 dark:text-white text-[15px] outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all placeholder-gray-400"
                                         />
                                     </div>

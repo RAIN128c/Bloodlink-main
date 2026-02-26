@@ -33,7 +33,7 @@ export class PatientService {
                 if (r.user_email) emails.add(r.user_email);
             });
 
-            let userMap = new Map<string, { name: string; surname: string }>();
+            const userMap = new Map<string, { name: string; surname: string }>();
 
             if (emails.size > 0) {
                 const { data: users } = await supabase
@@ -528,7 +528,7 @@ export class PatientService {
 
             // 2. Fetch User Details for names
             const emails = data.map(r => r.user_email);
-            let userMap = new Map<string, { name: string; surname: string }>();
+            const userMap = new Map<string, { name: string; surname: string }>();
 
             if (emails.length > 0) {
                 const { data: users } = await supabase
@@ -675,7 +675,6 @@ export class PatientService {
 
     static async deletePatient(hn: string): Promise<boolean> {
         try {
-            console.log(`[PatientService] Deleting patient HN: ${hn}`);
 
             // 1. Delete Status History (Child)
             const { error: historyError } = await supabase
@@ -730,7 +729,6 @@ export class PatientService {
                 return false;
             }
 
-            console.log(`[PatientService] Deleted OK for HN ${hn}`);
             return true;
         } catch (error) {
             console.error('[PatientService] Delete patient error:', error);

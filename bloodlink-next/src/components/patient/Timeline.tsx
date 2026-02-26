@@ -76,7 +76,7 @@ export function Timeline({ currentStatus, history = [] }: TimelineProps) {
     };
 
     return (
-        <div className="w-full bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="w-full bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8 font-[family-name:var(--font-prompt)] transition-colors">
             <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-8">Status Timeline</h3>
             <div className="relative flex justify-between">
                 {/* Background Line */}

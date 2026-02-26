@@ -3,7 +3,7 @@ import { ArrowLeft } from 'lucide-react';
 
 export default function PrivacyPolicyPage() {
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-[#0f1115] py-12 px-4 sm:px-6 lg:px-8 font-[family-name:var(--font-kanit)]">
+        <div className="min-h-screen bg-gray-50 dark:bg-[#0f1115] py-12 px-4 sm:px-6 lg:px-8 font-[family-name:var(--font-prompt)]">
             <div className="max-w-3xl mx-auto bg-white dark:bg-[#1F2937] shadow-lg rounded-2xl overflow-hidden">
                 <div className="p-8">
                     <div className="mb-6">
@@ -20,7 +20,7 @@ export default function PrivacyPolicyPage() {
 
                     <div className="prose dark:prose-invert max-w-none space-y-6 text-gray-700 dark:text-gray-300">
                         <p>
-                            BloodLink ("เรา") ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายถึงวิธีที่เราเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้งานแอปพลิเคชันของเรา
+                            BloodLink (&quot;เรา&quot;) ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายถึงวิธีที่เราเก็บรวบรวม ใช้ และเปิดเผยข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้งานแอปพลิเคชันของเรา
                         </p>
 
                         <section>

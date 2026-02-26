@@ -111,19 +111,26 @@ export default function InboxDetailPage() {
             description: 'ต้องการลบข้อความนี้ใช่หรือไม่?',
             action: async () => {
                 setIsDeleting(true);
-                // TODO: Implement delete API
-                // await fetch(`/api/admin/inbox/${params.id}`, { method: 'DELETE' });
-                // await new Promise(resolve => setTimeout(resolve, 500)); // Fake delay
-                router.push('/admin/inbox');
-                setIsDeleting(false);
-                setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                try {
+                    const response = await fetch(`/api/admin/inbox?id=${params.id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        router.push('/admin/inbox');
+                    } else {
+                        console.error('Failed to delete message');
+                    }
+                } catch (error) {
+                    console.error('Error deleting message:', error);
+                } finally {
+                    setIsDeleting(false);
+                    setConfirmConfig(prev => ({ ...prev, isOpen: false }));
+                }
             }
         });
     };
 
     if (isLoading) {
         return (
-            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-kanit)] items-center justify-center">
+            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-prompt)] items-center justify-center">
                 <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
             </div>
         );
@@ -131,7 +138,7 @@ export default function InboxDetailPage() {
 
     if (!message) {
         return (
-            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-kanit)] items-center justify-center">
+            <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-prompt)] items-center justify-center">
                 <div className="text-center">
                     <p className="text-gray-500 dark:text-gray-400 mb-4">ไม่พบข้อความ</p>
                     <Link href="/admin/inbox" className="text-indigo-600 hover:underline">กลับไปยัง Inbox</Link>

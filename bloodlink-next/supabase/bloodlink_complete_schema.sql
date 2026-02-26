@@ -19,20 +19,19 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- DB cols: id, email, password, name, surname, role, position,
 --          phone, status, bio, avatar_url, created_at, updated_at
 -- ============================================================
-CREATE TABLE IF NOT EXISTS users (
-    -- Links to Supabase Auth auth.users
+CREATE TABLE IF NOT EXISTS public.users (
     id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     email TEXT UNIQUE NOT NULL,
-    name TEXT NOT NULL,
-    surname TEXT,
-    role TEXT NOT NULL,
-    position TEXT DEFAULT '',
-    phone TEXT DEFAULT '',
-    status TEXT DEFAULT 'รอตรวจสอบ',
-    bio TEXT,
-    avatar_url TEXT,
-    created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    professional_id TEXT,
+    hospital_type VARCHAR(50) CHECK (hospital_type IN ('ส่งล่วงหน้า', 'รพ.สต.', 'แล็บ', 'โรงพยาบาล')),
+    hospital_name TEXT,
+    district TEXT,
+    province TEXT,
+    role VARCHAR(50) NOT NULL CHECK (role IN ('sender', 'lab', 'admin')),
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE,
+    name TEXT,
+    surname TEXT
 );
 
 -- For migrating existing databases:
@@ -47,6 +46,9 @@ ALTER TABLE users ADD COLUMN IF NOT EXISTS avatar_url TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS created_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS updated_at TIMESTAMPTZ DEFAULT NOW();
 ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_type TEXT DEFAULT '';
+ALTER TABLE users ADD COLUMN IF NOT EXISTS hospital_name TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS district TEXT;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS province TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS professional_id TEXT;
 ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_hash TEXT;
 
@@ -372,6 +374,9 @@ CREATE TABLE IF NOT EXISTS appointments (
     height TEXT,
     waist TEXT,
     bp TEXT,
+    bp2 VARCHAR(20),
+    rr VARCHAR(20),
+    historical_labs JSONB DEFAULT '{}'::jsonb,
     pulse TEXT,
     temperature TEXT,
     dtx TEXT,
@@ -388,6 +393,9 @@ ALTER TABLE appointments ADD COLUMN IF NOT EXISTS weight TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS height TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS waist TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS bp TEXT;
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS bp2 VARCHAR(20);
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS rr VARCHAR(20);
+ALTER TABLE appointments ADD COLUMN IF NOT EXISTS historical_labs JSONB DEFAULT '{}'::jsonb;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS pulse TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS temperature TEXT;
 ALTER TABLE appointments ADD COLUMN IF NOT EXISTS dtx TEXT;
@@ -588,7 +596,7 @@ ON CONFLICT (id) DO NOTHING;
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS trigger AS $$
 BEGIN
-  INSERT INTO public.users (id, email, name, surname, role, status, hospital_type, professional_id)
+  INSERT INTO public.users (id, email, name, surname, role, status, hospital_type, professional_id, hospital_name, district, province)
   VALUES (
     new.id, 
     new.email, 
@@ -597,7 +605,10 @@ BEGIN
     COALESCE(new.raw_user_meta_data->>'role', 'ผู้ใช้งานทั่วไป'),
     'รอตรวจสอบ',
     COALESCE(new.raw_user_meta_data->>'hospitalType', ''),
-    COALESCE(new.raw_user_meta_data->>'professionalId', '')
+    COALESCE(new.raw_user_meta_data->>'professionalId', ''),
+    COALESCE(new.raw_user_meta_data->>'hospitalName', ''),
+    COALESCE(new.raw_user_meta_data->>'district', ''),
+    COALESCE(new.raw_user_meta_data->>'province', '')
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN new;
@@ -744,6 +755,7 @@ CREATE POLICY "Staff can upload lab reports" ON storage.objects FOR INSERT TO au
 
 DROP POLICY IF EXISTS "Authenticated users can upload request sheets" ON storage.objects;
 DROP POLICY IF EXISTS "Authenticated users can update request sheets" ON storage.objects;
+DROP POLICY IF EXISTS "Public Access Request Sheets" ON storage.objects;
 
 -- Note: Public Access policy overlaps with avatars so we just add the using clause condition conceptually, 
 -- but Supabase creates a new policy name if needed. Using different policy names is safer:
@@ -820,7 +832,32 @@ WHERE pu.id = au.id
   AND (pu.surname IS NULL OR pu.surname = '' OR pu.hospital_type IS NULL OR pu.hospital_type = '');
 
 -- ============================================================
--- Done! 11 tables + 2 storage buckets + RLS policies + Triggers.
+-- 15. PRINT_SNAPSHOTS (Archived Request Sheets)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS print_snapshots (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    patient_hn VARCHAR(50) NOT NULL REFERENCES patients(hn) ON DELETE CASCADE,
+    document_hash TEXT NOT NULL UNIQUE,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_print_snapshots_hn ON print_snapshots(patient_hn);
+CREATE INDEX IF NOT EXISTS idx_print_snapshots_hash ON print_snapshots(document_hash);
+
+ALTER TABLE print_snapshots ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Authenticated users can read print snapshots" ON print_snapshots;
+DROP POLICY IF EXISTS "Public can read print snapshots via hash" ON print_snapshots;
+DROP POLICY IF EXISTS "Staff can insert print snapshots" ON print_snapshots;
+DROP POLICY IF EXISTS "Public Access Print Snapshots" ON print_snapshots;
+
+CREATE POLICY "Public Access Print Snapshots" ON print_snapshots FOR SELECT USING (true);
+CREATE POLICY "Staff can insert print snapshots" ON print_snapshots FOR INSERT TO authenticated WITH CHECK (EXISTS (SELECT 1 FROM users WHERE id = (select auth.uid())));
+
+-- ============================================================
+-- Done! 12 tables + 2 storage buckets + RLS policies + Triggers.
 -- Tables removed: notifications (unused), lab_reference_ranges (unused)
 -- Ready for Production!
 -- ============================================================

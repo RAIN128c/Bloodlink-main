@@ -43,7 +43,6 @@ export class StatusHistoryService {
                 return false;
             }
 
-            console.log(`[StatusHistory] Logged: ${patientHn} ${fromStatus} → ${toStatus} by ${changedByEmail}`);
             return true;
         } catch (error) {
             console.error('Error logging status change:', error);

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { DayPicker } from 'react-day-picker';
-import { format, isSameDay, parse } from 'date-fns';
+import { format } from 'date-fns';
 import { Patient } from '@/types';
 import { Clock, User } from 'lucide-react';
 import Link from 'next/link';
@@ -68,7 +68,7 @@ export function AppointmentCalendar({ patients }: { patients: Patient[] }) {
         : [];
 
     return (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 font-[family-name:var(--font-kanit)]">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 font-[family-name:var(--font-prompt)]">
             <style>{css}</style>
 
             {/* Calendar Section */}

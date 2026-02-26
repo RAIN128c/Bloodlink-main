@@ -7,11 +7,11 @@ import { RoleGuard } from '@/components/providers/RoleGuard';
 import { LabUploadModal } from '@/components/modals/LabUploadModal';
 import { LabBulkUploadModal } from '@/components/modals/LabBulkUploadModal';
 import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle, CheckSquare, Square, FileText, Eye, Printer, Download, Loader2, Thermometer, Droplet, ArrowDownSquare } from 'lucide-react';
-import { LabService } from '@/lib/services/labService';
 import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
+import { Patient } from '@/types';
+import { updatePatientStatus } from '@/lib/actions/patient';
 import { toast } from 'sonner';
 import { useSession } from '@/components/providers/SupabaseAuthProvider';
-import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
 import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
 
@@ -46,7 +46,7 @@ export default function LabQueuePage() {
 
     // Preview Modal Data For PrintRequestSheet
     const [previewPatients, setPreviewPatients] = useState<PendingPatient[]>([]);
-    const [previewSignatures, setPreviewSignatures] = useState<Record<string, any>>({});
+    const [previewSignatures, setPreviewSignatures] = useState<Record<string, { qr_token?: string; signature_text?: string; document_url?: string } | null>>({});
     const [previewVitals, setPreviewVitals] = useState<Record<string, Partial<Appointment>>>({});
     const [showPreviewModal, setShowPreviewModal] = useState(false);
 
@@ -61,6 +61,9 @@ export default function LabQueuePage() {
     const [selectedReceiveHn, setSelectedReceiveHn] = useState<string | null>(null);
     const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
+    // Dynamic Hospital Info for PDF Freezing
+    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -74,14 +77,14 @@ export default function LabQueuePage() {
                 setAllLabPatients(allPending);
 
                 // คำขอใหม่: รอแล็บรับเรื่อง
-                setPendingPatients(allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง'));
+                setPendingPatients(allPending.filter((p: Patient) => p.process === 'รอแล็บรับเรื่อง') as PendingPatient[]);
 
                 // งานของฉัน: รอจัดส่ง, กำลังจัดส่ง, กำลังตรวจ AND belongs to current user
-                setMyTasks(allPending.filter((p: any) => {
-                    const isMyStatus = ['รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
+                setMyTasks(allPending.filter((p: Patient) => {
+                    const isMyStatus = p.process && ['รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
                     const isMine = session?.user?.email && p.responsibleEmails?.includes(session.user.email);
                     return isMyStatus && isMine;
-                }));
+                }) as PendingPatient[]);
             }
 
             // Fetch recent completed results
@@ -96,6 +99,22 @@ export default function LabQueuePage() {
         } finally {
             setLoading(false);
         }
+
+        try {
+            const profileRes = await fetch('/api/profile');
+            if (profileRes.ok) {
+                const data = await profileRes.json();
+                setHospitalInfo({
+                    hospitalType: data.hospitalType,
+                    hospitalName: data.hospitalName,
+                    district: data.district,
+                    province: data.province
+                });
+            }
+        } catch (error) {
+            console.error('Fetch profile error:', error);
+        }
+
     }, [session?.user?.email]);
 
     useEffect(() => {
@@ -111,21 +130,16 @@ export default function LabQueuePage() {
         fetchData();
     };
 
-    const handleStatusUpdate = async (hn: string, newStatus: string) => {
+    const handleStatusUpdate = async (hn: string, newStatus: string, pin?: string) => {
         try {
-            const res = await fetch(`/api/patients/${encodeURIComponent(hn)}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ process: newStatus })
-            });
-            if (res.ok) {
+            const result = await updatePatientStatus(hn, newStatus, { pin });
+            if (result.success) {
                 toast.success('อัปเดตสถานะสำเร็จ');
                 fetchData();
             } else {
-                const data = await res.json();
-                toast.error(data.error || 'ไม่สามารถอัปเดตสถานะได้');
+                toast.error(result.error || 'ไม่สามารถอัปเดตสถานะได้');
             }
-        } catch (err) {
+        } catch {
             toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         }
     };
@@ -134,24 +148,15 @@ export default function LabQueuePage() {
         if (!selectedReceiveHn) return;
         setIsVerifyingPin(true);
         try {
-            // Verify PIN
-            const res = await fetch('/api/profile/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin })
-            });
-
-            if (!res.ok) {
-                toast.error('รหัส PIN ไม่ถูกต้อง');
-                setIsVerifyingPin(false);
-                return;
+            const result = await updatePatientStatus(selectedReceiveHn, 'กำลังตรวจ', { pin });
+            if (result.success) {
+                setShowPinModal(false);
+                toast.success('ตรวจสอบ PIN และรับตัวอย่างเลือดสำเร็จ');
+                fetchData();
+            } else {
+                toast.error(result.error || 'รหัส PIN ไม่ถูกต้อง หรือไม่สามารถอัปเดตสถานะได้');
             }
-
-            // Success PIN, now proceed to accept specimen
-            setShowPinModal(false);
-            await handleStatusUpdate(selectedReceiveHn, 'กำลังตรวจ');
-            toast.success('ตรวจสอบ PIN สำเร็จ');
-        } catch (err) {
+        } catch {
             toast.error('เกิดข้อผิดพลาดในการตรวจสอบรหัส PIN');
         } finally {
             setIsVerifyingPin(false);
@@ -159,22 +164,26 @@ export default function LabQueuePage() {
         }
     };
 
-    // Batch accept all selected
     const handleBatchAccept = async () => {
         if (selectedHns.size === 0) return;
         setBatchLoading(true);
         try {
             const results = await Promise.allSettled(
                 Array.from(selectedHns).map(hn =>
-                    fetch(`/api/patients/${encodeURIComponent(hn)}`, {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ process: 'รอจัดส่ง' })
-                    })
+                    updatePatientStatus(hn, 'รอจัดส่ง', {})
                 )
             );
-            const successCount = results.filter(r => r.status === 'fulfilled').length;
-            toast.success(`รับออร์เดอร์ ${successCount} รายการสำเร็จ`);
+
+            const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+            const failCount = selectedHns.size - successCount;
+
+            if (successCount > 0) {
+                toast.success(`รับออร์เดอร์ ${successCount} รายการสำเร็จ`);
+            }
+            if (failCount > 0) {
+                toast.error(`รับออร์เดอร์ไม่สำเร็จ ${failCount} รายการ`);
+            }
+
             setSelectedHns(new Set());
             fetchData();
         } catch {
@@ -246,7 +255,7 @@ export default function LabQueuePage() {
             setShowPreviewModal(true);
 
             // Fetch signatures and vitals for all patients
-            const sigMap: Record<string, any> = {};
+            const sigMap: Record<string, { qr_token?: string; signature_text?: string; document_url?: string } | null> = {};
             const vitalsMap: Record<string, Partial<Appointment>> = {};
             await Promise.all(patientArray.map(async (p) => {
                 const res = await fetch(`/api/patients/${encodeURIComponent(p.hn)}/signature`);
@@ -276,7 +285,7 @@ export default function LabQueuePage() {
 
     return (
         <RoleGuard allowedRoles={['เจ้าหน้าที่ห้องปฏิบัติการ', 'ผู้ดูแลระบบ', 'admin']}>
-            <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-kanit)]">
+            <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-prompt)]">
                 <Sidebar />
                 <main className="flex-1 md:ml-[195px] print:m-0 print:w-full">
                     <Header />
@@ -532,7 +541,7 @@ export default function LabQueuePage() {
                     isOpen={showBulkUploadModal}
                     onClose={() => setShowBulkUploadModal(false)}
                     onSuccess={handleUploadSuccess}
-                    queuePatients={allLabPatients as any}
+                    queuePatients={allLabPatients as unknown as Patient[]}
                 />
 
                 {/* Digital Request Sheet Preview Modal */}
@@ -554,13 +563,6 @@ export default function LabQueuePage() {
                                 </h3>
                                 <div className="flex items-center gap-2">
                                     <button
-                                        onClick={() => window.print()}
-                                        className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-lg transition"
-                                    >
-                                        <Printer className="w-4 h-4" />
-                                        พิมพ์ใบส่งตรวจ
-                                    </button>
-                                    <button
                                         onClick={() => setShowPreviewModal(false)}
                                         className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition"
                                     >
@@ -571,28 +573,24 @@ export default function LabQueuePage() {
                                     </button>
                                 </div>
                             </div>
-
+                            {/* Print Container (Hidden) */}
+                            <div style={{ position: 'absolute', top: '-9999px', left: '-9999px', opacity: 0, pointerEvents: 'none' }}>
+                                <div id="print-preview-container">
+                                    <PrintRequestSheet patients={previewPatients as unknown as Patient[]} signatures={previewSignatures} vitals={previewVitals} hospitalInfo={hospitalInfo} isPdfMode={true} />
+                                </div>
+                            </div>
                             <div className="flex-1 overflow-auto print:overflow-visible p-4 print:p-0 bg-gray-200/50 dark:bg-gray-950/50 print:bg-transparent relative flex flex-col items-center gap-4">
-                                {previewPatients.length > 1 && (
-                                    <PrintSummarySheet patients={previewPatients as any} signature={previewSignatures[previewPatients[0]?.hn] || null} />
-                                )}
-                                <PrintRequestSheet patients={previewPatients as any} signatures={previewSignatures} vitals={previewVitals} />
+                                <PrintRequestSheet patients={previewPatients as unknown as Patient[]} signatures={previewSignatures} vitals={previewVitals} hospitalInfo={hospitalInfo} />
                             </div>
 
                             <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 flex-wrap">
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
-                                    className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
                                 >
-                                    ปิดหน้าต่าง
+                                    ปิด
                                 </button>
-                                <button
-                                    onClick={() => window.print()}
-                                    className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-emerald-700 bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 hover:bg-emerald-200 dark:hover:bg-emerald-800/50 rounded-xl transition shadow-sm"
-                                >
-                                    <Printer className="w-4 h-4" />
-                                    พิมพ์ใบส่งตรวจ
-                                </button>
+
                                 <button
                                     onClick={async () => {
                                         for (const p of previewPatients) {
@@ -600,10 +598,71 @@ export default function LabQueuePage() {
                                         }
                                         setShowPreviewModal(false);
                                     }}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-xl transition"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    รับออร์เดอร์ (อย่างเดียว)
+                                </button>
+
+                                <button
+                                    onClick={() => {
+                                        const hns = previewPatients.map(p => p.hn).join(',');
+                                        window.open(`/print/request-sheet/${encodeURIComponent(hns)}`, '_blank');
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-xl transition"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    ดูใบส่งตรวจ (แท็บใหม่)
+                                </button>
+
+                                <button
+                                    onClick={async () => {
+                                        setBatchLoading(true);
+                                        // Update status first
+                                        for (const p of previewPatients) {
+                                            await handleStatusUpdate(p.hn, 'รอจัดส่ง');
+                                        }
+
+                                        // Then generate snapshots
+                                        const hashes: string[] = [];
+                                        try {
+                                            for (const p of previewPatients) {
+                                                const res = await fetch('/api/print-snapshot', {
+                                                    method: 'POST',
+                                                    headers: { 'Content-Type': 'application/json' },
+                                                    body: JSON.stringify({
+                                                        hn: p.hn,
+                                                        patientData: p,
+                                                        signatures: previewSignatures,
+                                                        vitals: previewVitals,
+                                                        hospitalInfo: hospitalInfo
+                                                    })
+                                                });
+                                                if (res.ok) {
+                                                    const data = await res.json();
+                                                    if (data.hash) hashes.push(data.hash);
+                                                }
+                                            }
+                                        } catch (e) {
+                                            console.error('Snapshot failed', e);
+                                        }
+
+                                        setBatchLoading(false);
+
+                                        // Then open print route
+                                        if (hashes.length > 0) {
+                                            window.open(`/print/snapshot/${encodeURIComponent(hashes.join(','))}`, '_blank');
+                                        } else {
+                                            // Fallback
+                                            const hns = previewPatients.map(p => p.hn).join(',');
+                                            window.open(`/print/request-sheet/${encodeURIComponent(hns)}`, '_blank');
+                                        }
+                                        setShowPreviewModal(false);
+                                    }}
                                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm"
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    ยืนยันรับออร์เดอร์ {previewPatients.length > 1 ? `(${previewPatients.length} รายการ)` : '(ข้อมูลถูกต้อง)'}
+                                    รับออร์เดอร์ & เปิดเอกสารใบส่งตรวจ {previewPatients.length > 1 ? `(${previewPatients.length})` : ''}
                                 </button>
                             </div>
                         </div>

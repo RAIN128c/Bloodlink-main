@@ -5,7 +5,6 @@ import { AnimatePresence, motion } from 'framer-motion';
 
 interface SuccessPrintModalProps {
     isOpen: boolean;
-    onClose: () => void;
     onPrint: () => void;
     onBack: () => void;
     onAddAnother: () => void;
@@ -14,7 +13,6 @@ interface SuccessPrintModalProps {
 
 export const SuccessPrintModal = ({
     isOpen,
-    onClose,
     onPrint,
     onBack,
     onAddAnother,

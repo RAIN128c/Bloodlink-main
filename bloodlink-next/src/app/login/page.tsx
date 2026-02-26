@@ -2,7 +2,6 @@
 
 import { authenticate, register } from '@/lib/actions';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
@@ -14,11 +13,11 @@ import { Turnstile } from '@marsidev/react-turnstile';
 type FormMode = 'login' | 'register';
 
 export default function LoginPage() {
-    const router = useRouter();
     const { resolvedTheme } = useTheme();
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -41,6 +40,8 @@ export default function LoginPage() {
     const [regConfirmPassword, setRegConfirmPassword] = useState('');
     const [regHospitalType, setRegHospitalType] = useState('แม่ข่าย');
     const [regHospitalName, setRegHospitalName] = useState('');
+    const [regDistrict, setRegDistrict] = useState('');
+    const [regProvince, setRegProvince] = useState('');
     const [regProfessionalId, setRegProfessionalId] = useState('');
     const [regPrivacy, setRegPrivacy] = useState(false);
     const [showRegPassword, setShowRegPassword] = useState(false);
@@ -120,6 +121,8 @@ export default function LoginPage() {
                 password: regPassword,
                 hospitalType: regHospitalType,
                 hospitalName: regHospitalName,
+                district: regDistrict,
+                province: regProvince,
                 professionalId: regProfessionalId,
                 captchaToken
             });
@@ -140,14 +143,14 @@ export default function LoginPage() {
                 setEmail(regEmail);
                 setIsLoading(false);
             }, 3000);
-        } catch (error) {
+        } catch {
             setRegError('เกิดข้อผิดพลาดขณะลงทะเบียน');
             setIsLoading(false);
         }
     };
 
     return (
-        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-5 md:p-10 font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-5 md:p-10 font-[family-name:var(--font-prompt)] transition-colors">
             <div className={`bg-white dark:bg-[#1F2937] rounded-3xl shadow-2xl dark:shadow-none w-full max-w-[900px] overflow-hidden flex flex-col md:flex-row ${mode === 'register' ? 'md:min-h-[700px]' : 'h-[640px]'} transition-all`}>
 
                 {/* Left Panel: Illustration */}
@@ -247,7 +250,6 @@ export default function LoginPage() {
                                         <Turnstile
                                             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
                                             onSuccess={(token) => {
-                                                console.log("Turnstile Login Token:", token.substring(0, 10) + "...");
                                                 setCaptchaToken(token);
                                             }}
                                             onError={() => setErrorMessage('Error loading CAPTCHA')}
@@ -378,6 +380,20 @@ export default function LoginPage() {
                                     {fieldErrors.hospitalName && <p className="text-red-500 text-xs mt-1">{fieldErrors.hospitalName[0]}</p>}
                                 </div>
 
+                                {/* District */}
+                                <div className="form-group">
+                                    <label htmlFor="reg-district" className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">อำเภอ</label>
+                                    <input id="reg-district" type="text" required value={regDistrict} onChange={(e) => setRegDistrict(e.target.value)} className={`w-full py-2.5 px-3.5 text-sm border ${fieldErrors.district ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-[#374151] text-gray-900 dark:text-white focus:outline-none focus:border-purple-600 transition-colors`} />
+                                    {fieldErrors.district && <p className="text-red-500 text-xs mt-1">{fieldErrors.district[0]}</p>}
+                                </div>
+
+                                {/* Province */}
+                                <div className="form-group">
+                                    <label htmlFor="reg-province" className="block text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-1.5">จังหวัด</label>
+                                    <input id="reg-province" type="text" required value={regProvince} onChange={(e) => setRegProvince(e.target.value)} className={`w-full py-2.5 px-3.5 text-sm border ${fieldErrors.province ? 'border-red-500' : 'border-gray-300 dark:border-gray-600'} rounded-md bg-white dark:bg-[#374151] text-gray-900 dark:text-white focus:outline-none focus:border-purple-600 transition-colors`} />
+                                    {fieldErrors.province && <p className="text-red-500 text-xs mt-1">{fieldErrors.province[0]}</p>}
+                                </div>
+
                                 {/* Privacy Checkbox */}
                                 <div className="form-group flex items-center">
                                     <CustomCheckbox
@@ -410,7 +426,6 @@ export default function LoginPage() {
                                         <Turnstile
                                             siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY || '1x00000000000000000000AA'}
                                             onSuccess={(token) => {
-                                                console.log("Turnstile Register Token:", token.substring(0, 10) + "...");
                                                 setCaptchaToken(token);
                                             }}
                                             onError={() => setRegError('Error loading CAPTCHA')}

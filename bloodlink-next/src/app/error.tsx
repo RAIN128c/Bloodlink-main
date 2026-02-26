@@ -21,7 +21,7 @@ export default function Error({
     }, [error]);
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#111827] px-4 font-[family-name:var(--font-kanit)]">
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-[#111827] px-4 font-[family-name:var(--font-prompt)]">
             <div className="max-w-md w-full text-center space-y-6 p-8 bg-white dark:bg-[#1F2937] rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 animate-in fade-in zoom-in-95 duration-300">
 
                 {/* Error Icon */}

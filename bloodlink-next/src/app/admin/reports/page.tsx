@@ -100,7 +100,6 @@ const generateChartData = (total: number, completed: number, pending: number) =>
 };
 
 export default function AdminReportsPage() {
-    const [activeTab, setActiveTab] = useState<'user-activity' | 'system-log' | 'daily-summary'>('user-activity');
     const [isLoading, setIsLoading] = useState(true);
     const [isPrintModalOpen, setIsPrintModalOpen] = useState(false);
     const [printSections, setPrintSections] = useState<PrintSections>({

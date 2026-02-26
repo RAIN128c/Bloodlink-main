@@ -26,7 +26,7 @@ export async function POST(request: NextRequest) {
             failed: 0
         };
 
-        const role = (session.user as any)?.role;
+        const role = (session.user as { role?: string })?.role;
         const isAdmin = Permissions.isAdmin(role);
 
         // Process each patient
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
                     // Might fail if already assigned, count as failed but not error
                     results.failed++;
                 }
-            } catch (err) {
+            } catch {
                 results.failed++;
             }
         }

@@ -9,11 +9,12 @@ import { LabBulkUploadModal } from '@/components/modals/LabBulkUploadModal';
 import { Upload, RefreshCw, Clock, Search, AlertCircle, CheckCircle, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSession } from '@/components/providers/SupabaseAuthProvider';
-import { PrintSummarySheet } from '@/components/features/history/PrintSummarySheet';
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet';
 import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
 import { FileText, Eye } from 'lucide-react';
 import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
+import { Patient } from '@/types';
+import { updatePatientStatus } from '@/lib/actions/patient';
 
 interface PendingPatient {
     hn: string;
@@ -56,6 +57,9 @@ export default function LabQueuePage() {
     const [selectedReceiveHn, setSelectedReceiveHn] = useState<string | null>(null);
     const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
+    // Dynamic Hospital Info for PDF Preview
+    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         try {
@@ -66,14 +70,14 @@ export default function LabQueuePage() {
                 const allPending = data.patients || [];
 
                 // คำขอใหม่: รอแล็บรับเรื่อง
-                setPendingPatients(allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง'));
+                setPendingPatients(allPending.filter((p: Patient) => p.process === 'รอแล็บรับเรื่อง') as PendingPatient[]);
 
                 // งานของฉัน: รอจัดส่ง, กำลังจัดส่ง, กำลังตรวจ AND belongs to current user
-                setMyTasks(allPending.filter((p: any) => {
-                    const isMyStatus = ['รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
+                setMyTasks(allPending.filter((p: Patient) => {
+                    const isMyStatus = p.process && ['รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process);
                     const isMine = session?.user?.email && p.responsibleEmails?.includes(session.user.email);
                     return isMyStatus && isMine;
-                }));
+                }) as PendingPatient[]);
             }
 
             // Fetch recent completed results
@@ -87,6 +91,21 @@ export default function LabQueuePage() {
             toast.error('ไม่สามารถโหลดข้อมูลได้');
         } finally {
             setLoading(false);
+        }
+
+        try {
+            const profileRes = await fetch('/api/profile');
+            if (profileRes.ok) {
+                const data = await profileRes.json();
+                setHospitalInfo({
+                    hospitalType: data.hospitalType,
+                    hospitalName: data.hospitalName,
+                    district: data.district,
+                    province: data.province
+                });
+            }
+        } catch (error) {
+            console.error('Fetch profile error:', error);
         }
     }, [session?.user?.email]);
 
@@ -103,19 +122,14 @@ export default function LabQueuePage() {
         fetchData();
     };
 
-    const handleStatusUpdate = async (hn: string, newStatus: string) => {
+    const handleStatusUpdate = async (hn: string, newStatus: string, pin?: string) => {
         try {
-            const res = await fetch(`/api/patients/${encodeURIComponent(hn)}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ process: newStatus })
-            });
-            if (res.ok) {
+            const result = await updatePatientStatus(hn, newStatus, { pin });
+            if (result.success) {
                 toast.success('อัปเดตสถานะสำเร็จ');
                 fetchData();
             } else {
-                const data = await res.json();
-                toast.error(data.error || 'ไม่สามารถอัปเดตสถานะได้');
+                toast.error(result.error || 'ไม่สามารถอัปเดตสถานะได้');
             }
         } catch (err) {
             toast.error('เกิดข้อผิดพลาดในการเชื่อมต่อ');
@@ -126,23 +140,14 @@ export default function LabQueuePage() {
         if (!selectedReceiveHn) return;
         setIsVerifyingPin(true);
         try {
-            // Verify PIN
-            const res = await fetch('/api/profile/pin', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pin })
-            });
-
-            if (!res.ok) {
-                toast.error('รหัส PIN ไม่ถูกต้อง');
-                setIsVerifyingPin(false);
-                return;
+            const result = await updatePatientStatus(selectedReceiveHn, 'กำลังตรวจ', { pin });
+            if (result.success) {
+                setShowPinModal(false);
+                toast.success('ตรวจสอบ PIN และรับตัวอย่างเลือดสำเร็จ');
+                fetchData();
+            } else {
+                toast.error(result.error || 'รหัส PIN ไม่ถูกต้อง หรือไม่สามารถอัปเดตสถานะได้');
             }
-
-            // Success PIN, now proceed to accept specimen
-            setShowPinModal(false);
-            await handleStatusUpdate(selectedReceiveHn, 'กำลังตรวจ');
-            toast.success('ตรวจสอบ PIN สำเร็จ');
         } catch (err) {
             toast.error('เกิดข้อผิดพลาดในการตรวจสอบรหัส PIN');
         } finally {
@@ -193,7 +198,7 @@ export default function LabQueuePage() {
 
     return (
         <RoleGuard allowedRoles={['เจ้าหน้าที่ห้องปฏิบัติการ', 'ผู้ดูแลระบบ', 'admin']}>
-            <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-kanit)]">
+            <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-prompt)]">
                 <Sidebar />
                 <main className="flex-1 md:ml-[195px]">
                     <Header />
@@ -411,7 +416,7 @@ export default function LabQueuePage() {
                     isOpen={showBulkUploadModal}
                     onClose={() => setShowBulkUploadModal(false)}
                     onSuccess={handleUploadSuccess}
-                    queuePatients={pendingPatients as any}
+                    queuePatients={pendingPatients as unknown as Patient[]}
                 />
 
                 {/* Digital Request Sheet Preview Modal */}
@@ -452,25 +457,48 @@ export default function LabQueuePage() {
                                         background: white;
                                     }
                                 `}</style>
-                                <PrintRequestSheet patients={[previewPatient as any]} signatures={previewSignatures} vitals={previewVitals} />
+                                <PrintRequestSheet patients={[previewPatient as unknown as Patient]} signatures={previewSignatures} vitals={previewVitals} hospitalInfo={hospitalInfo} />
                             </div>
 
-                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3">
+                            <div className="px-6 py-4 border-t border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 flex justify-end gap-3 flex-wrap">
                                 <button
                                     onClick={() => setShowPreviewModal(false)}
-                                    className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 transition"
                                 >
-                                    ปิดหน้าต่าง
+                                    ปิด
                                 </button>
+
+                                <button
+                                    onClick={async () => {
+                                        await handleStatusUpdate(previewPatient.hn, 'รอจัดส่ง');
+                                        setShowPreviewModal(false);
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 dark:text-emerald-400 dark:hover:bg-emerald-900/50 rounded-xl transition"
+                                >
+                                    <CheckCircle className="w-4 h-4" />
+                                    รับออร์เดอร์ (อย่างเดียว)
+                                </button>
+
                                 <button
                                     onClick={() => {
-                                        handleStatusUpdate(previewPatient.hn, 'รอจัดส่ง');
+                                        window.open(`/print/request-sheet/${encodeURIComponent(previewPatient.hn)}`, '_blank');
+                                    }}
+                                    className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-blue-700 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/30 dark:text-blue-400 dark:hover:bg-blue-900/50 rounded-xl transition"
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    ดูใบส่งตรวจ (แท็บใหม่)
+                                </button>
+
+                                <button
+                                    onClick={async () => {
+                                        await handleStatusUpdate(previewPatient.hn, 'รอจัดส่ง');
+                                        window.open(`/print/request-sheet/${encodeURIComponent(previewPatient.hn)}`, '_blank');
                                         setShowPreviewModal(false);
                                     }}
                                     className="flex items-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition shadow-sm"
                                 >
                                     <CheckCircle className="w-4 h-4" />
-                                    ยืนยันรับออร์เดอร์ (ข้อมูลถูกต้อง)
+                                    รับออร์เดอร์ & เปิดเอกสารใบส่งตรวจ
                                 </button>
                             </div>
                         </div>

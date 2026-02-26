@@ -119,7 +119,7 @@ export function PatientActionPanel({ patient }: PatientActionPanelProps) {
 
     return (
         <>
-            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 font-[family-name:var(--font-kanit)] transition-colors">
+            <div className="bg-white dark:bg-[#1F2937] rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 font-[family-name:var(--font-prompt)] transition-colors">
                 <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-bold text-gray-900 dark:text-white">Actions</h3>
                 </div>
@@ -165,7 +165,7 @@ export function PatientActionPanel({ patient }: PatientActionPanelProps) {
 
             {/* Modal */}
             {isOpen && (
-                <div className="fixed inset-0 z-50 overflow-y-auto font-[family-name:var(--font-kanit)]">
+                <div className="fixed inset-0 z-50 overflow-y-auto font-[family-name:var(--font-prompt)]">
                     <div className="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                         <div className="fixed inset-0 transition-opacity" aria-hidden="true">
                             <div className="absolute inset-0 bg-gray-500 dark:bg-black opacity-75 dark:opacity-80" onClick={() => setIsOpen(false)}></div>

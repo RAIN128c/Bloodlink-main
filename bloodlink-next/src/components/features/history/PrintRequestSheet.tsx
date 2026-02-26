@@ -1,34 +1,67 @@
+'use client';
+
 import { Patient } from '@/types';
 import { formatDateThai } from '@/lib/utils';
+import React from 'react';
 import QRCode from 'react-qr-code';
+import dynamic from 'next/dynamic';
 
-// A5 Landscape Print Styles for Request Sheet
+const Barcode = dynamic(() => import('react-barcode'), { ssr: false });
+
+// Note: Ensure strictly A5 Landscape printing — MUST fit on one page.
 const printStyles = `
     @media print {
-        @page {
-            size: A4 portrait;
-            margin: 10mm;
+        @page { size: A5 landscape; margin: 4mm; }
+        html, body {
+            width: 200mm; height: 140mm;
+            margin: 0; padding: 0;
+            overflow: hidden;
+            font-family: 'Prompt', sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
-        .page-break {
-            page-break-after: always;
+        .print-area { display: block !important; }
+        .no-print { display: none !important; }
+        .page-break { page-break-after: always; }
+        .request-sheet-container {
+            width: 200mm !important;
+            max-height: 140mm !important;
+            padding: 2mm 4mm !important;
+            margin: 0 !important;
+            box-shadow: none !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+            font-size: 10px !important;
         }
-        .screen-only {
-            display: none !important;
-        }
+        .request-sheet-container .grid { gap: 0 !important; }
+        .request-sheet-container [class*="min-h-[36px]"] { min-height: 28px !important; }
+        .request-sheet-container [class*="min-h-[28px]"] { min-height: 22px !important; }
+        .request-sheet-container [class*="py-1"] { padding-top: 2px !important; padding-bottom: 2px !important; }
+        .request-sheet-container [class*="p-1.5"] { padding: 3px !important; }
+        .request-sheet-container [class*="mt-1.5"] { margin-top: 2px !important; }
+        .request-sheet-container [class*="gap-1.5"] { gap: 2px !important; }
     }
+
 `;
+
+interface HospitalInfo {
+    hospitalType?: string;
+    hospitalName?: string;
+    district?: string;
+    province?: string;
+}
 
 interface PrintRequestSheetProps {
     patients: Patient[]; // Usually array of 1 for this sheet format, but accepts array for batch printing
-    hospitalName?: string;
-    signatures?: Record<string, { qr_token: string; signature_text: string; } | null>;
-    vitals?: Record<string, any>; // Record<hn, VitalsObject>
+    hospitalInfo?: HospitalInfo | null;
+    signatures?: Record<string, { qr_token?: string; signature_text?: string; document_url?: string } | null>;
+    vitals?: Record<string, unknown>; // Record<hn, VitalsObject>
     isPdfMode?: boolean; // Flag to render strictly for html2canvas
 }
 
-export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล', isPdfMode = false }: PrintRequestSheetProps) => {
+export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalInfo, isPdfMode = false }: PrintRequestSheetProps) => {
     return (
-        <div className={isPdfMode ? "bg-white text-black font-[family-name:var(--font-kanit)]" : "w-full text-black font-[family-name:var(--font-kanit)]"}>
+        <div className={isPdfMode ? "bg-white text-black font-[family-name:var(--font-prompt)]" : "w-full text-black font-[family-name:var(--font-prompt)]"}>
             {!isPdfMode && <style dangerouslySetInnerHTML={{ __html: printStyles }} />}
 
             {patients.map((patient, pageIndex) => {
@@ -51,6 +84,21 @@ export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName =
                 const checkIcon = (keyword: string) => testTypes.includes(keyword.toLowerCase()) ? <div className="absolute inset-0 flex items-center justify-center font-bold text-[14px] pointer-events-none">✓</div> : null;
                 const checkList = (keywords: string[]) => keywords.some(k => testTypes.includes(k.toLowerCase())) ? <div className="absolute inset-0 flex items-center justify-center font-bold text-[14px] pointer-events-none -mt-1 -ml-1">✓</div> : null;
 
+                const deriveSpecimen = (tests: string) => {
+                    const bloodKeywords = ['fbs', 'lipid', 'cbc', 'hba1c', 'cr', 'gfr', 'bun', 'ast', 'alt', 'lft', 'uric', 'electrolyte'];
+                    const urineKeywords = ['u-alb', 'u-sugar', 'microalbumin', 'upt', 'urine'];
+
+                    const hasBlood = bloodKeywords.some(k => tests.includes(k));
+                    const hasUrine = urineKeywords.some(k => tests.includes(k));
+
+                    if (hasBlood && hasUrine) return "Blood & Urine Sample";
+                    if (hasBlood) return "Blood Sample";
+                    if (hasUrine) return "Urine Sample";
+                    return tests || '-';
+                };
+
+                const specimenLabel = deriveSpecimen(testTypes);
+
                 const extractNameFromSignature = (text?: string) => {
                     if (!text) return null;
                     const match = text.match(/Digitally Signed by:\s*(.*?)\s*\|/);
@@ -60,187 +108,273 @@ export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalName =
                 const signerName = extractNameFromSignature(patientSignature?.signature_text);
                 const creatorDisplay = signerName || patient.creatorEmail || '.......................................';
 
+                const displayHospital = hospitalInfo?.hospitalName
+                    ? `${hospitalInfo.hospitalType === 'รพ.สต.' ? 'โรงพยาบาลส่งเสริมสุขภาพตำบล' : hospitalInfo.hospitalType || ''} ${hospitalInfo.hospitalName}`.trim()
+                    : 'โรงพยาบาลส่งเสริมสุขภาพตำบล';
+
+                const displayLocation = (hospitalInfo?.district || hospitalInfo?.province)
+                    ? `อ.${hospitalInfo.district || '-'} จ.${hospitalInfo.province || '-'}`
+                    : 'อ.เฉลิมพระเกียรติ จ.นครศรีธรรมราช';
+
                 return (
-                    <div key={pageIndex} className={`request-sheet-container relative bg-white mx-auto ${isPdfMode ? 'w-[794px] min-h-[1123px] p-8' : 'w-full max-w-[794px]'} ${pageIndex < patients.length - 1 && !isPdfMode ? 'page-break' : ''}`}>
+                    <div key={pageIndex} className={`request-sheet-container relative bg-white mx-auto ${isPdfMode ? 'w-[794px] min-h-[559px] p-8 flex flex-col justify-between' : 'w-full max-w-[794px]'} ${pageIndex < patients.length - 1 && !isPdfMode ? 'page-break' : ''}`}>
                         {/* Header Info */}
-                        <div className="flex flex-col gap-2 text-[14px] leading-tight mb-4">
-                            <div className="flex gap-2 items-end border-b border-black pb-1">
-                                <span className="font-bold text-[16px]">{hospitalName}</span>
-                                <span className="flex-1 border-b border-dotted border-black px-2">อ.เฉลิมพระเกียรติ จ.นครศรีธรรมราช</span>
+                        <div className="flex flex-col text-[12px] leading-snug mb-1">
+                            <div className="flex justify-between items-center border-b border-black pb-1 mb-1">
+                                <div className="flex gap-2 items-baseline">
+                                    <span className="font-bold text-[15px]">{displayHospital}</span>
+                                    <span className="text-[13px]">{displayLocation}</span>
+                                </div>
+                                <div className="flex items-center justify-end w-36 h-8 overflow-hidden mix-blend-multiply opacity-90">
+                                    <Barcode value={patient.hn} width={1} height={22} displayValue={false} margin={0} background="transparent" />
+                                </div>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 items-end">
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-end">
                                 <span className="font-bold">ชื่อ-สกุล</span>
-                                <span className="min-w-[200px] border-b border-dotted border-black px-2">{patient.name} {patient.surname}</span>
+                                <span className="flex-1 min-w-[140px] border-b border-dotted border-black px-1">{patient.name} {patient.surname}</span>
                                 <span className="font-bold">อายุ</span>
-                                <span className="w-16 border-b border-dotted border-black text-center">{patient.age || '-'}</span>
+                                <span className="w-10 border-b border-dotted border-black text-center">{patient.age || '-'}</span>
                                 <span>ปี</span>
-                                <span className="font-bold ml-2">HN</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{patient.hn}</span>
-                                <span className="font-bold ml-2">เลข ปชช.</span>
-                                <span className="flex-1 border-b border-dotted border-black text-center tracking-widest">{patient.idCard || '-'}</span>
+                                <span className="font-bold">HN</span>
+                                <span className="w-20 border-b border-dotted border-black text-center">{patient.hn}</span>
+                                <span className="font-bold">เลข ปชช.</span>
+                                <span className="w-36 border-b border-dotted border-black text-center tracking-wider text-[12px]">{patient.idCard || '-'}</span>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-end mt-1">
                                 <span className="font-bold">วัน/เดือน/ปี</span>
-                                <span className="w-32 border-b border-dotted border-black text-center">{formattedDate}</span>
+                                <span className="w-24 border-b border-dotted border-black text-center">{formattedDate}</span>
                                 <span className="font-bold">เวลา</span>
-                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.appointment_time || '............'}</span>
-                                <span className="font-bold ml-4">Diagnosis</span>
-                                <span className="flex-1 min-w-[150px] border-b border-dotted border-black px-2">{patient.disease || '-'}</span>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                                <span className="w-14 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).appointment_time as string : '........'}</span>
+                                <span className="font-bold">Diagnosis</span>
+                                <span className="flex-1 min-w-[100px] border-b border-dotted border-black px-1 text-center whitespace-nowrap overflow-hidden text-ellipsis">{patient.disease || '-'}</span>
                                 <span className="font-bold">Specimen</span>
-                                <span className="flex-1 border-b border-dotted border-black px-2">{patient.testType || '-'}</span>
+                                <span className="w-36 border-b border-dotted border-black px-1 text-center font-mono text-[11px] whitespace-nowrap overflow-hidden">{specimenLabel}</span>
+                            </div>
+                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                                <span className="font-bold">V/S BP1</span>
+                                <span className="w-16 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? ((vitals[patient.hn] as Record<string, unknown>).bp as string || '') : '.../....'}</span>
+                                <span className="text-[10px]">mmHg</span>
+                                <span className="font-bold ml-2">BP2</span>
+                                <span className="w-16 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? ((vitals[patient.hn] as Record<string, unknown>).bp2 as string || '') : '.../....'}</span>
+                                <span className="text-[10px]">mmHg</span>
+                                <span className="font-bold ml-4">P</span>
+                                <span className="w-10 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).pulse as string : '......'}</span>
+                                <span className="text-[10px]">/min</span>
+                                <span className="font-bold ml-4">RR</span>
+                                <span className="w-10 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).rr as string : '......'}</span>
+                                <span className="text-[10px]">/min</span>
+                                <span className="font-bold ml-4">T</span>
+                                <span className="w-10 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).temperature as string : '......'}</span>
+                                <span className="text-[10px]">°C</span>
                             </div>
 
-                            <div className="flex flex-wrap gap-2 items-end mt-1">
-                                <span className="font-bold">BP</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.bp || '......./.......'}</span>
-                                <span>mmHg</span>
-                                <span className="font-bold ml-4">Pulse</span>
-                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.pulse || '........'}</span>
-                                <span>/min</span>
-                                <span className="font-bold ml-4">Temp</span>
-                                <span className="w-20 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.temperature || '........'}</span>
-                                <span>°C</span>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2 items-end mt-1">
+                            <div className="flex flex-wrap gap-x-2 gap-y-0.5 items-end mt-1 mb-1">
                                 <span className="font-bold">น้ำหนัก</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.weight || '........'}</span>
-                                <span className="mr-2">กิโลกรัม</span>
-                                <span className="font-bold ml-2">ส่วนสูง</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.height || '........'}</span>
-                                <span className="mr-2">ซม.</span>
-                                <span className="font-bold ml-2">รอบเอว</span>
-                                <span className="w-24 border-b border-dotted border-black text-center">{vitals?.[patient.hn]?.waist || '........'}</span>
-                                <span>ซม.</span>
+                                <span className="w-12 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).weight as string : '......'}</span>
+                                <span className="text-[10px]">กิโลกรัม</span>
+                                <span className="font-bold">ส่วนสูง</span>
+                                <span className="w-12 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).height as string : '......'}</span>
+                                <span className="text-[10px]">ซม.</span>
+                                <span className="font-bold">รอบเอว</span>
+                                <span className="w-12 border-b border-dotted border-black text-center">{vitals?.[patient.hn] ? (vitals[patient.hn] as Record<string, unknown>).waist as string : '......'}</span>
+                                <span className="text-[10px]">ซม.</span>
                             </div>
                         </div>
 
                         {/* Disease Selection Table */}
-                        <div className="w-full border border-black grid grid-cols-6 text-[12px] leading-tight">
-                            {/* Headers */}
-                            <div className="border-r border-b border-black text-center font-bold p-1 bg-gray-100/50">DM</div>
-                            <div className="border-r border-b border-black text-center font-bold p-1 bg-gray-100/50">HT</div>
-                            <div className="border-r border-b border-black text-center font-bold p-1 bg-gray-100/50">DLP</div>
-                            <div className="border-r border-b border-black text-center font-bold p-1 bg-gray-100/50">CKD</div>
-                            <div className="border-r border-b border-black text-center font-bold p-1 bg-gray-100/50">Asthma/COPD</div>
-                            <div className="border-b border-black text-center font-bold p-1 bg-gray-100/50">Other</div>
-
-                            {/* Checkboxes row */}
-                            <div className="border-r border-b border-black p-1 flex justify-center"><div className="relative w-4 h-4 border border-black flex items-center justify-center">{hasDM && <span className="absolute -top-1 font-bold">✓</span>}</div></div>
-                            <div className="border-r border-b border-black p-1 flex justify-center"><div className="relative w-4 h-4 border border-black flex items-center justify-center">{hasHT && <span className="absolute -top-1 font-bold">✓</span>}</div></div>
-                            <div className="border-r border-b border-black p-1 flex justify-center"><div className="relative w-4 h-4 border border-black flex items-center justify-center">{hasDLP && <span className="absolute -top-1 font-bold">✓</span>}</div></div>
-                            <div className="border-r border-b border-black p-1 flex justify-center"><div className="relative w-4 h-4 border border-black flex items-center justify-center">{hasCKD && <span className="absolute -top-1 font-bold">✓</span>}</div></div>
-                            <div className="border-r border-b border-black p-1 flex justify-center"><div className="relative w-4 h-4 border border-black flex items-center justify-center">{hasAsthma && <span className="absolute -top-1 font-bold">✓</span>}</div></div>
-                            <div className="border-b border-black p-1"></div>
-
-                            {/* First Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">FBS{checkTest('fbs')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">FBS{checkTest('fbs')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">FBS{checkTest('fbs')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">FBS{checkTest('fbs')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">FBS{checkTest('fbs')}</div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['uric'])}</div> Uric acid <span className="border-b border-dotted border-black flex-1 mt-auto"></span></div>
-
-                            {/* Second Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">HbA1C{checkTest('hba1c')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Lipid{checkTest('lipid')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Lipid{checkTest('lipid')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">HbA1C{checkTest('hba1c')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Lipid{checkTest('lipid')}</div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['ast', 'sgot'])}</div> AST(SGOT)</div>
-
-                            {/* Third Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">Lipid{checkTest('lipid')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Cr, GFR{checkTest('cr') || checkTest('gfr')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Lipid{checkTest('lipid')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">CBC{checkTest('cbc')}</div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['alt', 'sgpt'])}</div> ALT(SGPT)</div>
-
-                            {/* Fourth Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">Cr, GFR{checkTest('cr') || checkTest('gfr')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Na, K,Cl{checkTest('na') || checkTest('k') || checkTest('cl') || checkTest('electrolyte')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Cr, GFR{checkTest('cr') || checkTest('gfr')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Na, K,Cl{checkTest('na') || checkTest('k') || checkTest('cl') || checkTest('electrolyte')}</div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['lft'])}</div> LFT</div>
-
-                            {/* Fifth Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">Hct{checkTest('hct')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">U-Alb{checkTest('u-alb')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-r border-b border-black p-1 relative text-center">Hct{checkTest('hct')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['anti-hiv', 'hiv'])}</div> Anti-HIV</div>
-
-                            {/* Sixth Item Row */}
-                            <div className="border-r border-b border-black p-1 relative text-center">U-Alb{checkTest('u-alb')}</div>
-                            <div className="border-r border-b border-black p-1 relative text-center">U-sugar{checkTest('u-sugar')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-r border-b border-black p-1 relative text-center">electrolytes{checkTest('electrolyte')}</div>
-                            <div className="border-r border-b border-black bg-gray-100/30"></div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['hbs-ag', 'hbs'])}</div> HBs-Ag</div>
-
-                            {/* Seventh Item Row */}
-                            <div className="border-r border-black p-1 relative text-center">U-sugar{checkTest('u-sugar')}</div>
-                            <div className="border-r border-black bg-gray-100/30"></div>
-                            <div className="border-r border-black bg-gray-100/30"></div>
-                            <div className="border-r border-black p-1 relative text-center">microalbumin{checkTest('microalbumin')}</div>
-                            <div className="border-r border-black bg-gray-100/30"></div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['vdrl'])}</div> VDRL</div>
-
-                            {/* Eighth Item Row */}
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-b border-black p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['upt'])}</div> UPT</div>
-
-                            {/* Ninth Item Row */}
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="border-t border-r border-black bg-gray-100/30 p-1"></div>
-                            <div className="p-1 flex gap-2 items-center"><div className="w-3 h-3 border border-black shrink-0 relative">{checkList(['tft', 'thyroid', 'tsh', 'ft3', 'ft4'])}</div> TFT</div>
-                        </div>
-
-                        {/* Footer / Specimen Status / Signature */}
-                        <div className="flex flex-wrap justify-between items-end mt-4 text-[13px] font-bold gap-4">
-                            <div className="flex flex-wrap gap-4 items-center">
-                                <span>ลักษณะ Specimen</span>
-                                <label className="flex items-center gap-1 font-normal"><div className="w-4 h-4 border border-black"></div> Normal</label>
-                                <label className="flex items-center gap-1 font-normal"><div className="w-4 h-4 border border-black"></div> Clot</label>
-                                <label className="flex items-center gap-1 font-normal"><div className="w-4 h-4 border border-black"></div> Hemolysis</label>
+                        <div className="w-full border border-black flex flex-col text-[11px] leading-tight">
+                            {/* Headers row — ALL square checkboxes */}
+                            <div className="grid grid-cols-6 w-full border-b-2 border-black bg-gray-50">
+                                <div className="border-r border-black py-1 flex justify-center items-center gap-1">
+                                    <div className="w-5 h-5 border border-black flex justify-center items-center bg-white">{hasDM && <span className="font-bold text-[13px]">✓</span>}</div>
+                                    <span className="font-bold text-[12px]">DM</span>
+                                </div>
+                                <div className="border-r border-black py-1 flex justify-center items-center gap-1">
+                                    <div className="w-5 h-5 border border-black flex justify-center items-center bg-white">{hasHT && <span className="font-bold text-[13px]">✓</span>}</div>
+                                    <span className="font-bold text-[12px]">HT</span>
+                                </div>
+                                <div className="border-r border-black py-1 flex justify-center items-center gap-1">
+                                    <div className="w-5 h-5 border border-black flex justify-center items-center bg-white">{hasDLP && <span className="font-bold text-[13px]">✓</span>}</div>
+                                    <span className="font-bold text-[12px]">DLP</span>
+                                </div>
+                                <div className="border-r border-black py-1 flex justify-center items-center gap-1">
+                                    <div className="w-5 h-5 border border-black flex justify-center items-center bg-white">{hasCKD && <span className="font-bold text-[13px]">✓</span>}</div>
+                                    <span className="font-bold text-[12px]">CKD</span>
+                                </div>
+                                <div className="border-r border-black py-1 flex justify-center items-center gap-1">
+                                    <div className="w-5 h-5 border border-black flex justify-center items-center bg-white shrink-0">{hasAsthma && <span className="font-bold text-[11px]">✓</span>}</div>
+                                    <span className="font-bold text-[10px] leading-tight text-center">Asthma/<br />COPD</span>
+                                </div>
+                                <div className="py-1 flex justify-center items-center font-bold text-[12px]">Other</div>
                             </div>
 
-                            <div className="flex items-center gap-2">
+                            {/* Data Rows */}
+                            {Array.from({ length: 9 }).map((_, i) => {
+                                const hLabs = (vitals?.[patient.hn] as Record<string, unknown>)?.historical_labs as Record<string, string> || {};
+
+                                const cellMap = [
+                                    // Row 1
+                                    [
+                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'] },
+                                        { label: "Uric acid", active: testTypes.includes('uric acid') || testTypes.includes('uric'), val: hLabs['uric acid'], isPlain: true, unit: 'mg/dL' }
+                                    ],
+                                    // Row 2
+                                    [
+                                        { label: "HbA1c", active: testTypes.includes('hba1c'), val: hLabs['hba1c'] },
+                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), val: hLabs['lipid'] },
+                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), val: hLabs['lipid'] },
+                                        { label: "HbA1c", active: testTypes.includes('hba1c'), val: hLabs['hba1c'] },
+                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), val: hLabs['lipid'] },
+                                        { label: "AST(SGOT)", active: testTypes.includes('ast(sgot)'), val: hLabs['ast'], isPlain: true }
+                                    ],
+                                    // Row 3
+                                    [
+                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), val: hLabs['lipid'] },
+                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), val: hLabs['cr'] },
+                                        { label: "", active: false },
+                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), val: hLabs['lipid'] },
+                                        { label: "CBC", active: testTypes.includes('cbc'), val: hLabs['cbc'] },
+                                        { label: "ALT(SGPT)", active: testTypes.includes('alt(sgpt)'), val: hLabs['alt'], isPlain: true }
+                                    ],
+                                    // Row 4
+                                    [
+                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), val: hLabs['cr'] },
+                                        { label: "Na, K, Cl", active: testTypes.includes('na, k, cl') || testTypes.includes('electrolytes'), val: hLabs['na'] },
+                                        { label: "", active: false },
+                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), val: hLabs['cr'] },
+                                        { label: "Na, K, Cl", active: testTypes.includes('na, k, cl') || testTypes.includes('electrolytes'), val: hLabs['na'] },
+                                        { label: "LFT", active: testTypes.includes('lft'), val: hLabs['lft'], isPlain: true }
+                                    ],
+                                    // Row 5
+                                    [
+                                        { label: "Hct", active: testTypes.includes('hct'), val: hLabs['hct'] },
+                                        { label: "U-Alb", active: testTypes.includes('u-alb'), val: hLabs['u-alb'] },
+                                        { label: "", active: false },
+                                        { label: "Hct", active: testTypes.includes('hct'), val: hLabs['hct'] },
+                                        { label: "", active: false },
+                                        { label: "Anti-HIV", active: testTypes.includes('anti-hiv'), val: hLabs['hiv'], isPlain: true }
+                                    ],
+                                    // Row 6
+                                    [
+                                        { label: "U-Alb", active: testTypes.includes('u-alb'), val: hLabs['u-alb'] },
+                                        { label: "U-sugar", active: testTypes.includes('u-sugar'), val: hLabs['u-sugar'] },
+                                        { label: "", active: false },
+                                        { label: "electrolytes", active: testTypes.includes('electrolytes'), val: hLabs['electrolyte'] },
+                                        { label: "", active: false },
+                                        { label: "HBs-Ag", active: testTypes.includes('hbs-ag'), val: hLabs['hbs'], isPlain: true }
+                                    ],
+                                    // Row 7
+                                    [
+                                        { label: "U-sugar", active: testTypes.includes('u-sugar'), val: hLabs['u-sugar'] },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "microalbumin", active: testTypes.includes('microalbumin'), val: hLabs['microalbumin'] },
+                                        { label: "", active: false },
+                                        { label: "VDRL", active: testTypes.includes('vdrl'), val: hLabs['vdrl'], isPlain: true }
+                                    ],
+                                    // Row 8
+                                    [
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "UPT", active: testTypes.includes('upt'), val: hLabs['upt'], isPlain: true }
+                                    ],
+                                    // Row 9
+                                    [
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "", active: false },
+                                        { label: "TFT", active: testTypes.includes('tft'), val: hLabs['tft'], isPlain: true }
+                                    ]
+                                ];
+
+                                const row = cellMap[i];
+
+                                return (
+                                    <div key={i} className={`grid grid-cols-6 w-full ${i < 8 ? 'border-b border-black' : ''}`}>
+                                        {row.map((cell: Record<string, unknown>, colIndex) => {
+                                            if (!cell.label) return <div key={colIndex} className={`${!cell.noBorder && colIndex < 5 ? 'border-r border-black' : ''} p-1.5 min-h-[28px]`}></div>;
+
+                                            // Handling the "Other" column (colIndex === 5) differently
+                                            if (cell.isPlain || colIndex === 5) {
+                                                return (
+                                                    <div key={colIndex} className={`${colIndex < 5 ? 'border-r border-black' : 'border-l border-black'} p-1.5 min-h-[28px] flex items-center gap-1.5`}>
+                                                        <span className="w-5 border-b border-black inline-block text-center font-bold text-[13px] leading-none pb-0.5">
+                                                            {cell.active ? '✓' : ''}
+                                                        </span>
+                                                        <span className={`text-[11px] leading-tight ${cell.active ? "font-bold" : ""}`}>{cell.label as string}</span>
+                                                    </div>
+                                                );
+                                            }
+
+                                            // Handling dynamic input formatting neatly to avoid overlaps
+                                            return (
+                                                <div key={colIndex} className="border-r border-black px-1.5 py-1 min-h-[36px] flex flex-col justify-between">
+                                                    <div className="flex w-full items-end gap-1">
+                                                        <span className="font-bold w-3 text-center leading-none text-[14px]">{cell.active ? '✓' : '\u00A0'}</span>
+                                                        <span className={`text-[11px] leading-tight ${cell.active ? "font-bold" : ""}`}>{cell.label as string}</span>
+                                                        <span className="flex-1 border-b border-black border-dashed min-w-[10px] mb-0.5"></span>
+                                                    </div>
+                                                    <div className="text-right text-[9px] text-gray-600 mt-0.5 pr-1 leading-none tracking-tight">
+                                                        (เดิม: {(cell.val as string) || '........'})
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Footer / Specimen + Branding + Signer — compact single row */}
+                        <div className="flex justify-between items-center mt-1.5 text-[11px] font-bold">
+                            <div className="flex flex-col gap-1.5">
+                                <div className="flex flex-wrap gap-2.5 items-center">
+                                    <span>ลักษณะ Specimen</span>
+                                    <label className="flex items-center gap-1 font-normal"><div className="w-3 h-3 border border-black"></div> Normal</label>
+                                    <label className="flex items-center gap-1 font-normal"><div className="w-3 h-3 border border-black"></div> Clot</label>
+                                    <label className="flex items-center gap-1 font-normal"><div className="w-3 h-3 border border-black"></div> Hemolysis</label>
+                                </div>
+                                <div className="flex items-center gap-0.5 opacity-90 mt-0.5 overflow-visible">
+                                    <span className="text-[11px] font-medium text-gray-500 italic leading-none">Powered by</span>
+                                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                                    <img src="/images/logo.png" alt="BloodLink" className="h-8 w-auto object-contain" />
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 self-start pt-1">
                                 <span>ผู้บันทึก</span>
-                                <span className="w-48 border-b border-dotted border-black inline-block text-center text-blue-700 whitespace-nowrap overflow-hidden text-ellipsis">
+                                <span className="w-40 border-b border-dotted border-black inline-block text-center text-blue-700 whitespace-nowrap overflow-hidden text-ellipsis text-[11px]">
                                     {creatorDisplay}
                                 </span>
                             </div>
                         </div>
 
-                        {/* Signature Block (if signed digitally) - Moved to flow normally below the grid */}
+                        {/* Signature Block (compact, inline with footer to prevent page 2) */}
                         {patientSignature && (
-                            <div className="flex justify-end mt-4 pr-4">
-                                <div className="flex items-center gap-3 opacity-90 border border-gray-300 p-2 rounded-lg max-w-full">
-                                    <div className="text-[10px] font-mono text-right">
-                                        <span className="text-indigo-600 font-bold text-[12px]">E-Signed Authenticated</span>
+                            <div className="flex justify-end mt-0.5">
+                                <div className="flex items-center gap-2 opacity-90 border border-gray-300 px-2 py-1 rounded max-w-full">
+                                    <div className="text-[9px] font-mono text-right leading-tight tracking-tight">
+                                        <span className="text-indigo-600 font-bold text-[11px]">E-Signed Authenticated</span>
                                         <br />
-                                        <span className="text-gray-600 inline-block max-w-[280px] sm:max-w-md break-words whitespace-pre-wrap">{patientSignature.signature_text}</span>
+                                        <span className="text-gray-500 inline-block max-w-[450px] whitespace-normal break-all leading-snug">
+                                            {patientSignature.signature_text?.replace(/\n/g, ' | ') ?? ''}
+                                        </span>
                                     </div>
                                     <QRCode
                                         value={`${typeof window !== 'undefined' ? window.location.origin : ''}/verify/${patientSignature.qr_token}`}
-                                        size={48}
-                                        style={{ height: "auto", maxWidth: "100%", width: "48px" }}
+                                        size={36}
+                                        style={{ height: "auto", maxWidth: "100%", width: "36px" }}
                                     />
                                 </div>
                             </div>

@@ -48,9 +48,6 @@ export function NotificationProvider({ children }: NotificationProviderProps) {
         targetPath: ''
     });
 
-    // Notification history state
-    const [notifications, setNotifications] = useState<Notification[]>([]);
-
     const notify = useCallback((type: NotificationType, title: string, message: string, targetPath?: string) => {
         // Show popup
         setCurrentNotification({ isOpen: true, type, title, message, targetPath });

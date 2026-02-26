@@ -55,6 +55,9 @@ export interface User {
     bio?: string;      // Staff introduction/bio
     avatarUrl?: string; // Profile picture URL
     hospitalType?: string; // 'RorPhorSot' | 'RorPhorChumchon'
+    hospitalName?: string;
+    district?: string;
+    province?: string;
     professionalId?: string; // e.g. license number or employee ID
     pinHash?: string; // 6-digit PIN hash for E-signatures
 }

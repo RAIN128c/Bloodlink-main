@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
-import { Permissions, isValidRole } from '@/lib/permissions';
+import { isValidRole } from '@/lib/permissions';
 import { checkRateLimit, getClientIp, RATE_LIMIT_CONFIGS } from '@/lib/rateLimit';
 
 export async function GET(request: NextRequest) {

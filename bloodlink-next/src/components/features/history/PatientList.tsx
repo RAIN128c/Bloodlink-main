@@ -1,15 +1,15 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { toast } from 'sonner';
 import { Patient } from '@/types';
-import { Loader2, Upload, Users, CheckSquare, Square, Search, Filter, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Users, CheckSquare, Square, Filter, Trash2 } from 'lucide-react';
 import { formatDateThai } from '@/lib/utils';
 import { BulkImportModal } from '@/components/modals/BulkImportModal';
 import { BulkAssignModal } from '@/components/modals/BulkAssignModal';
 import { ConfirmModal } from '@/components/modals/ConfirmModal';
-import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import { deletePatient } from '@/lib/actions/patient'; // Import delete action
@@ -23,9 +23,9 @@ import { PrintSummarySheet } from '@/components/features/history/PrintSummaryShe
 import { PrintRequestSheet } from '@/components/features/history/PrintRequestSheet'; // Import for PDF generation
 import { generatePDFFromElement } from '@/lib/utils/pdfGenerator';
 import { AppointmentService, Appointment } from '@/lib/services/appointmentService';
-import { Printer } from 'lucide-react'; // Import Printer Icon
 import { updatePatientStatus } from '@/lib/actions/patient'; // Import update action
 import { PinVerificationModal } from '@/components/shared/PinVerificationModal';
+import { PreLabInputModal } from '@/components/modals/PreLabInputModal';
 
 // Severity color mapping based on days overdue
 const getSeverityColor = (daysOverdue: number) => {
@@ -84,7 +84,7 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
     // --- PDF Freezing States ---
     const [pdfFreezingPatients, setPdfFreezingPatients] = useState<Patient[]>([]);
     const [pdfFreezingSignatures, setPdfFreezingSignatures] = useState<Record<string, { qr_token: string, signature_text: string } | null>>({});
-    const [pdfFreezingVitals, setPdfFreezingVitals] = useState<Record<string, any>>({});
+    const [pdfFreezingVitals, setPdfFreezingVitals] = useState<Record<string, unknown>>({});
     const [isFreezingInProgress, setIsFreezingInProgress] = useState(false);
     const [freezingProgress, setFreezingProgress] = useState('');
 
@@ -95,6 +95,13 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
     const [isOrderLabConfirmOpen, setIsOrderLabConfirmOpen] = useState(false);
     const [isOrderingLab, setIsOrderingLab] = useState(false);
     const [showPinModal, setShowPinModal] = useState(false);
+
+    // Pre-Lab Queue state (integrated into order flow)
+    const [preLabQueue, setPreLabQueue] = useState<Patient[]>([]);
+    const [preLabIndex, setPreLabIndex] = useState(0);
+
+    // Dynamic Hospital Info for PDF Freezing
+    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null);
 
     const { data: session } = useSession();
     const { effectiveRole: role } = useEffectiveRole();
@@ -135,7 +142,25 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
             }
         }
 
+        async function fetchHospitalInfo() {
+            try {
+                const response = await fetch('/api/profile');
+                if (response.ok) {
+                    const data = await response.json();
+                    setHospitalInfo({
+                        hospitalType: data.hospitalType,
+                        hospitalName: data.hospitalName,
+                        district: data.district,
+                        province: data.province
+                    });
+                }
+            } catch (err) {
+                console.error('Error fetching profile for hospital info:', err);
+            }
+        }
+
         fetchPatients();
+        fetchHospitalInfo();
 
         // Real-time subscription
         const channel = supabase
@@ -234,7 +259,32 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
 
     const handleInitOrderLab = () => {
         setIsOrderLabConfirmOpen(false);
-        setShowPinModal(true);
+        // Start Pre-Lab queue for all selected patients
+        const selectedHns = Array.from(selectedPatients);
+        const patientsForPreLab = patients.filter(p => selectedHns.includes(p.hn));
+        if (patientsForPreLab.length > 0) {
+            setPreLabQueue(patientsForPreLab);
+            setPreLabIndex(0);
+        } else {
+            setShowPinModal(true);
+        }
+    };
+
+    const handlePreLabAdvance = () => {
+        const nextIndex = preLabIndex + 1;
+        if (nextIndex < preLabQueue.length) {
+            setPreLabIndex(nextIndex);
+        } else {
+            // All done, proceed to PIN
+            setPreLabQueue([]);
+            setPreLabIndex(0);
+            setShowPinModal(true);
+        }
+    };
+
+    const handlePreLabCancel = () => {
+        setPreLabQueue([]);
+        setPreLabIndex(0);
     };
 
     const handleConfirmOrderLab = async (pin: string) => {
@@ -259,7 +309,7 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
         }
 
         if (hasError) {
-            alert('พบข้อผิดพลาดบางรายการ กรุณาตรวจสอบสถานะและลองใหม่หากจำเป็น');
+            toast.error('พบข้อผิดพลาดบางรายการ กรุณาตรวจสอบสถานะและลองใหม่หากจำเป็น');
             setIsOrderingLab(false);
             setIsOrderLabConfirmOpen(false);
             setIsFreezingInProgress(false);
@@ -268,8 +318,8 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
 
         // 2. Fetch Signatures & Vitals for the PDFs
         setFreezingProgress('รวบรวมข้อมูลใบส่งตรวจ (Request Sheets)...');
-        const signatures: Record<string, any> = {};
-        const vitals: Record<string, any> = {};
+        const signatures: Record<string, { qr_token: string, signature_text: string } | null> = {};
+        const vitals: Record<string, unknown> = {};
 
         for (const hn of selectedHns) {
             try {
@@ -470,12 +520,14 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                                     </div>
                                                 )}
                                                 {patient.hn ? (
-                                                    <Link
-                                                        href={`${basePath}/${patient.hn}`}
-                                                        className="inline-block w-fit px-5 py-1.5 bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#4338CA] dark:text-indigo-300 text-[12px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-900 transition-colors mt-1"
-                                                    >
-                                                        ตรวจสอบ
-                                                    </Link>
+                                                    <div className="flex gap-2 flex-wrap items-center mt-1">
+                                                        <Link
+                                                            href={`${basePath}/${patient.hn}`}
+                                                            className="inline-block w-fit px-5 py-1.5 bg-[#E0E7FF] dark:bg-indigo-900/50 text-[#4338CA] dark:text-indigo-300 text-[12px] font-medium rounded-[6px] hover:bg-[#C7D2FE] dark:hover:bg-indigo-900 transition-colors"
+                                                        >
+                                                            ตรวจสอบ
+                                                        </Link>
+                                                    </div>
                                                 ) : (
                                                     <button
                                                         onClick={() => setPatientToDelete('NO_HN_' + idx)}
@@ -578,6 +630,16 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                 isLoading={isOrderingLab}
             />
 
+            {/* Pre-Lab Input Modal (Queue Mode — integrated into order flow) */}
+            <PreLabInputModal
+                isOpen={preLabQueue.length > 0}
+                onClose={handlePreLabCancel}
+                patient={preLabQueue[preLabIndex] || null}
+                onSaveSuccess={handlePreLabAdvance}
+                onSkip={handlePreLabAdvance}
+                queueInfo={preLabQueue.length > 1 ? { current: preLabIndex + 1, total: preLabQueue.length } : undefined}
+            />
+
             {/* PIN Verification Modal */}
             <PinVerificationModal
                 isOpen={showPinModal}
@@ -594,6 +656,7 @@ export const PatientList = ({ basePath, title = 'ประวัติผู้�
                                 patients={[p]}
                                 signatures={{ [p.hn]: pdfFreezingSignatures[p.hn] }}
                                 vitals={pdfFreezingVitals}
+                                hospitalInfo={hospitalInfo}
                                 isPdfMode={true}
                             />
                         </div>

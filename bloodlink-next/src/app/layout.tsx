@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { Kanit, Prompt } from "next/font/google";
+import { Prompt } from "next/font/google";
 import { GlobalProvider } from "@/components/providers/GlobalProvider";
 import { ThemeProvider } from "@/components/providers/ThemeProvider";
 import { Toaster } from "sonner";
@@ -14,12 +14,6 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
-});
-
-const kanit = Kanit({
-  variable: "--font-kanit",
-  subsets: ["thai", "latin"],
-  weight: ["300", "400", "500", "600", "700"],
 });
 
 const prompt = Prompt({
@@ -41,7 +35,7 @@ export default function RootLayout({
   return (
     <html lang="th" suppressHydrationWarning>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${kanit.variable} ${prompt.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} ${prompt.variable} antialiased`}
       >
         <ThemeProvider
           attribute="class"

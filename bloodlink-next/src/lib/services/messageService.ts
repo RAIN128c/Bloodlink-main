@@ -52,6 +52,7 @@ export class MessageService {
             const [messagesResult, adminResult] = await Promise.allSettled([messagesPromise, adminInboxPromise]);
 
             // Handle Messages Result
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let messagesData: any[] = [];
             if (messagesResult.status === 'fulfilled') {
                 if (messagesResult.value.error) {
@@ -66,6 +67,7 @@ export class MessageService {
             }
 
             // Handle Admin Inbox Result (Non-fatal)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             let adminData: any[] = [];
             if (adminResult.status === 'fulfilled') {
                 if (adminResult.value.error) {
@@ -112,9 +114,9 @@ export class MessageService {
             );
 
             return { messages: allMessages };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error fetching messages:', error);
-            return { messages: [], error: error.message };
+            return { messages: [], error: (error as Error).message };
         }
     }
 
@@ -127,7 +129,6 @@ export class MessageService {
         type: string = 'message'
     ): Promise<{ success: boolean; error?: string }> {
         try {
-            console.log(`MessageService.sendMessage: From ${senderId} to ${receiverId}, using Admin Client? ${!!supabaseAdmin}`);
 
             const { error } = await supabaseAdmin
                 .from('messages')
@@ -144,11 +145,10 @@ export class MessageService {
                 console.error('MessageService.sendMessage Error:', error);
                 throw error;
             }
-            console.log('MessageService.sendMessage: Success');
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Error sending message:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: (error as Error).message };
         }
     }
 
@@ -177,8 +177,8 @@ export class MessageService {
             if (adminError) throw adminError;
 
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: (error as Error).message };
         }
     }
 
@@ -207,8 +207,8 @@ export class MessageService {
             if (adminError) throw adminError;
 
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: (error as Error).message };
         }
     }
 
@@ -234,9 +234,9 @@ export class MessageService {
             if (adminError) throw adminError;
 
             return { success: true };
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Bulk update error:', error);
-            return { success: false, error: error.message };
+            return { success: false, error: (error as Error).message };
         }
     }
 
@@ -250,8 +250,8 @@ export class MessageService {
 
             if (error) throw error;
             return { success: true };
-        } catch (error: any) {
-            return { success: false, error: error.message };
+        } catch (error: unknown) {
+            return { success: false, error: (error as Error).message };
         }
     }
 

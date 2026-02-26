@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { PatientService } from '@/lib/services/patientService';
 import { auth } from '@/auth';
+import { Patient } from '@/types';
 
 export async function GET(req: NextRequest) {
     try {
@@ -18,12 +19,12 @@ export async function GET(req: NextRequest) {
         if (processFilter === 'pending_lab') {
             // Include standard pending statuses + new Lab workflow states
             const pendingStatuses = ['รอแล็บรับเรื่อง', 'รอจัดส่ง', 'กำลังจัดส่ง', 'กำลังตรวจ'];
-            const filtered = patients.filter((p: any) => pendingStatuses.includes(p.process));
+            const filtered = patients.filter((p: Patient) => p.process && pendingStatuses.includes(p.process));
 
             // Fetch the true 'sender' (who changed status to รอแล็บรับเรื่อง)
             // and the true 'receiver' (who changed status to กำลังตรวจ)
             // by querying status_history for these specific patients.
-            const hns = filtered.map((p: any) => p.hn);
+            const hns = filtered.map((p: Patient) => p.hn);
 
             // Create a mapping of HN -> { senderName, receiverName }
             const historyMap: Record<string, { sender?: string, receiver?: string, latestSenderTime?: number, latestReceiverTime?: number }> = {};
@@ -64,10 +65,9 @@ export async function GET(req: NextRequest) {
                 }
             }
 
-            console.log(`[pending_lab] Found ${filtered.length} patients, HNs:`, hns);
 
             return NextResponse.json({
-                patients: filtered.map((p: any) => ({
+                patients: filtered.map((p: Patient) => ({
                     hn: p.hn,
                     name: p.name,
                     surname: p.surname,

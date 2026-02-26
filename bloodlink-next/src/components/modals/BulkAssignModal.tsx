@@ -87,8 +87,8 @@ export function BulkAssignModal({ isOpen, onClose, selectedPatients, onAssignCom
             if (data.success > 0) {
                 onAssignComplete();
             }
-        } catch (err: any) {
-            setError(err.message || 'เกิดข้อผิดพลาด');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'เกิดข้อผิดพลาด');
         } finally {
             setIsLoading(false);
         }
@@ -105,7 +105,7 @@ export function BulkAssignModal({ isOpen, onClose, selectedPatients, onAssignCom
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm font-[family-name:var(--font-kanit)] modal-backdrop">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm font-[family-name:var(--font-prompt)] modal-backdrop">
             <div className="bg-white dark:bg-[#1F2937] rounded-xl w-[calc(100%-2rem)] max-w-[500px] max-h-[85vh] mx-4 shadow-2xl overflow-hidden flex flex-col modal-content">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">

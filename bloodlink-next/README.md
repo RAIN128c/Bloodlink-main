@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🩸 BloodLink System (Healthcare & Lab Management)
 
-## Getting Started
+**BloodLink** เป็นแพลตฟอร์มบริหารจัดการผลเลือดและประวัติผู้ป่วย (Lab Data Management System) สำหรับโรงพยาบาลส่งเสริมสุขภาพตำบล (รพ.สต.) และคลินิก จุดมุ่งหมายคือทำให้การส่งต่อข้อมูลคนไข้ระหว่าง **พยาบาล/แพทย์** และ **นักเทคนิคการแพทย์** เป็นไปอย่างไร้รอยต่อ สะดวก และตรวจสอบกลับได้เสมอ
 
-First, run the development server:
+---
 
+## 🚀 สรุปอัปเดตระบบใหญ่ล่าสุด (Production Ready)
+
+การอัปเดตครั้งนี้ครอบคลุมการแก้ไขกว่า **97 ไฟล์ (7,200+ บรรทัด)** เพื่อเสริมความแข็งแกร่งด้านความปลอดภัย, ความถูกต้องของข้อมูล (Data Integrity), และปรับปรุงประสบการณ์ผู้ใช้โดยรวม (UX):
+
+1. **ระบบ PIN Code ลายเซ็นอิเล็กทรอนิกส์ (E-Signature):** 
+   - รองรับ PIN 6 หลักสำหรับบุคลากรทุกคน (ตั้งค่าได้ที่เมนู "โปรไฟล์")
+   - มีการประทับตรา Digital Signature และ QR Code เพื่อให้สามารถใช้ตรวจสอบความถูกต้องของใบส่งตรวจผ่านแอปพลิเคชันได้ 
+2. **ระบบการพิมพ์สมบูรณ์แบบ (Batch Printing & Snapshot):**
+   - รองรับการสั่งพิมพ์ "ใบปะหน้าสรุปคิว (A4)" ควบคู่ไปกับ "ใบส่งตรวจวิเคราะห์ (A5)" 
+   - ทำงานสอดคล้องกับเครื่องพรินเตอร์ทุกประเภท ผ่านระบบ *Frozen Snapshot* ป้องกันปัญหาการเลื่อนของ Layout 
+3. **ระบบคิวแยกรายบุคคล (Private Task & Assignee):**
+   - เจ้าหน้าที่เทคนิคการแพทย์แต่ละคนสามารถกดปุ่ม "รับคิวผู้นี้" เพื่อให้หลอดเลือดเข้ามาอยู่ในกระดาน **"งานของฉัน (My Tasks)"** ทำให้ไม่ทับซ้อนกับเพื่อนร่วมงาน
+4. **แก้ไขบัคข้อมูลสูญหาย & ปิดช่องโหว่ (Role Guards):**
+   - การลงทะเบียนแก้ไขผู้ป่วย ป้องกันข้อมูลบางส่วน (`surname`, `hospitalType`) หลุดหาย
+   - ปิดกั้นไม่ให้พยาบาลเผลอกดสถานะข้ามขั้น หากแล็บยังไม่ได้กดยืนยันการแจ้งรับเลือด และควบคุมสิทธิ์อ่าน-เขียน (RBAC) ผ่าน Server Actions รัดกุมกว่า API ธรรมดา
+
+---
+
+## 📖 คู่มือการใช้งาน (User Manual)
+
+### 🩺 สำหรับฝ่ายพยาบาล / แพทย์ (Nurse/Doctor Workflow)
+1. **เพิ่มผู้ป่วยใหม่ / ค้นหาผู้ป่วย:** 
+   - ไปที่เมนู **"ผู้ป่วย"** -> ระบุ HN และชื่อ-สกุล -> เลือกโรคประจำตัว (คลิกได้มากกว่า 1 โรค)
+2. **ส่งแล็บ (เจาะเลือด):** 
+   - ในหน้าประวัติผู้ป่วย เลือกแท็บ **"บันทึกก่อนตรวจ (Pre-Lab)"**
+   - กรอกความดัน (BP), น้ำหนัก, ส่วนสูง, รายการแล็บที่แพทย์สั่งเจาะ (เช่น FBS, Lipid, CBC, HbA1c ฯลฯ)
+3. **ตรวจสอบสถานะ (ติดตามเลือด):** 
+   - ไปที่ **"สถานะผลตรวจเลือด"** ดูได้ว่าหลอดเลือดที่คุณเจาะ กำลังส่งไปห้องแล็บ, แล็บกำลังปั่น, หรือผลแล็บอัปโหลดเสร็จแล้ว 
+   - *หมายเหตุ:* หน้าสถานะนี้สามารถสั่ง **พิมพ์ประวัติใบส่งตรวจย้อนหลัง** ได้เสมอ หากเผลอปิดโบรชัวร์
+
+### 🔬 สำหรับห้องปฏิบัติการ / เทคนิคการแพทย์ (Lab Tech Workflow)
+1. **คิวงานแล็บ (Lab Queue):** 
+   - ไปที่เมนู **"คิวงานแล็บ"** จะพบรายชื่อคนที่พยาบาลเพิ่งเจาะเลือดส่งมา 
+   - **(ใหม่)** สามารถติ๊กเลือกชื่อหลายๆ คน แล้วกด **"แสดงตัวอย่างก่อนพิมพ์รวม"** แล้วสั่งปริ้นท์ใบส่งตรวจ A5 เป็นปึกๆ เรียงกันได้ในทีเดียว
+   - กดยอมรับคิว (ต้องใส่ PIN) เพื่อให้คนไข้รายนั้นเข้าสู่สถานะ **"ตรวจวิเคราะห์"**
+2. **อัปโหลดผลแล็บ (Results Upload):** 
+   - ผ่านหน้าต่างการตรวจวิเคราะห์ สามารถถ่ายรูปผลตรวจจากเครื่อง Automate เพื่อให้ระบบ **OCR** ช่วยดึงค่าตัวเลขออกมาแปลงใส่ฟอร์มให้อัตโนมัติ (ตรวจสอบและแก้ไขเลขทศนิยมเองได้)
+   - ไฟล์รูปผลลัพธ์จะแสดงแนบเข้าในประวัติคนไข้ทันที
+3. **อนุมัติและแจ้งพิมพ์ผล:** 
+   - กลับมาที่เมนู **"ผลตรวจเลือด (Results)"** เลือกติ๊กคนไข้ที่ผลแล็บครบถ้วน กดปุ่ม **พิมพ์เพื่อยืนยัน**
+   - ไพ่ (Card) รายชื่อของคนไข้คนนั้น จะหายไปจากหน้าจอเรียลไทม์ และสถานะคนไข้จะกลายเป็น **"เสร็จสิ้น"** 
+
+### ⚙️ สำหรับแอดมิน (Admin Workflow)
+- ควบคุมข้อมูลสถานพยาบาลทั้งหมด และดู **สถิติรายงาน (Reports)** ย้อนหลัง ว่าวันนี้เจาะเลือดไปกี่เคส โรคอะไรเยอะสุด สามารถระบุคัดกรองวันที่แล้วสั่งพิมพ์หน้าแดชบอร์ดรายงานเป็น A4 ได้เลย!
+
+---
+
+## 🛠️ Tech Stack & Development Guide
+- **Frontend Framework:** Next.js 14+ (App Router), Tailwind CSS, Framer Motion
+- **Backend/Database:** Supabase (PostgreSQL), Prisma ORM
+- **State & Action:** React Strict Mode, Next.js Server Actions 
+- **Icons & UI:** Lucide-React, Sonner Toast
+- **Digital Infrastructure:** Vercel Hosting
+
+### วิธีเช็ค Run / Build
 ```bash
+# ติดตั้ง Packages (หาก Node.js เก่ากว่า v18 ให้ระวังปัญหาขัดข้อง)
+npm install
+
+# รัน Development Server
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+
+# ทดสอบ Build ตรวจสอบหา Bug ก่อนขึ้นโปรดักชัน
+npm run build
+npm run start
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
-
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
-
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
-
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+*Developed exclusively by สมาคมคนเถื่อน for the ultimate medical technology ecosystem.* 💙

@@ -23,6 +23,7 @@ export function PinVerificationModal({
 
     useEffect(() => {
         if (isOpen) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setPin('');
             setTimeout(() => inputRef.current?.focus(), 100);
         }

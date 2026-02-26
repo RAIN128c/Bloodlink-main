@@ -29,6 +29,7 @@ export function Header({ hideSearch = false, title, isAdminPage = false }: Heade
 
     // Prevent hydration mismatch
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
 
         // Fetch current user profile
@@ -107,7 +108,7 @@ export function Header({ hideSearch = false, title, isAdminPage = false }: Heade
         <>
             {/* Setup Reminder Modal (dismissable popup) */}
             {showSetupModal && (
-                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-[family-name:var(--font-kanit)]">
+                <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 animate-in fade-in duration-200 font-[family-name:var(--font-prompt)]">
                     <div className="bg-white dark:bg-gray-800 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
                         <div className="px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-between">
                             <div className="flex items-center gap-2 text-white">
@@ -173,7 +174,7 @@ export function Header({ hideSearch = false, title, isAdminPage = false }: Heade
                     </div>
                 </div>
             )}
-            <div className="flex items-start mb-2 pt-0 flex-shrink-0 font-[family-name:var(--font-kanit)] pl-14 md:pl-0">
+            <div className="flex items-start mb-2 pt-0 flex-shrink-0 font-[family-name:var(--font-prompt)] pl-14 md:pl-0">
                 {/* Home Button - Fixed to top edge */}
                 <Link
                     href={isAdminPage ? "/admin" : "/dashboard"}

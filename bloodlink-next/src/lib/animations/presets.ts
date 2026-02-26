@@ -8,6 +8,7 @@ export const EASING = {
     ALERT: [0.36, 0.07, 0.19, 0.97], // Gentle attention
 } as const;
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const VARIANTS: Record<string, any> = {
     fadeIn: {
         hidden: { opacity: 0 },
@@ -43,6 +44,7 @@ export const VARIANTS: Record<string, any> = {
     },
     // Error Shake (Rollback)
     shake: {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         x: [0, -10, 10, -5, 5, 0] as any,
         transition: { duration: 0.4 }
     }

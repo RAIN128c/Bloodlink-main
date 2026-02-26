@@ -2,14 +2,13 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { resetPassword } from '@/lib/actions/auth';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { Loader2, Eye, EyeOff, Lock, CheckCircle2, ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
 
 function ResetPasswordForm() {
-    const router = useRouter();
     const searchParams = useSearchParams();
     const token = searchParams.get('token');
 
@@ -50,7 +49,7 @@ function ResetPasswordForm() {
             } else {
                 setError(result.error || 'ไม่สามารถเปลี่ยนรหัสผ่านได้');
             }
-        } catch (err) {
+        } catch {
             setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         } finally {
             setIsLoading(false);
@@ -172,11 +171,12 @@ export default function ResetPasswordPage() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
     return (
-        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-4 font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-4 font-[family-name:var(--font-prompt)] transition-colors">
             <div className="bg-white dark:bg-[#1F2937] rounded-3xl shadow-xl w-full max-w-md p-8 md:p-10 transition-colors">
 
                 {/* Logo */}

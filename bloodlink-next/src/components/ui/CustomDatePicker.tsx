@@ -26,18 +26,18 @@ const css = `
     margin: 0;
   }
   .rdp-caption_label {
-    font-family: var(--font-kanit), sans-serif;
+    font-family: var(--font-prompt), sans-serif;
     font-weight: 600;
     font-size: 16px;
   }
   .rdp-head_cell {
-    font-family: var(--font-kanit), sans-serif;
+    font-family: var(--font-prompt), sans-serif;
     font-weight: 500;
     font-size: 14px;
     color: #6B7280;
   }
   .rdp-day {
-    font-family: var(--font-kanit), sans-serif;
+    font-family: var(--font-prompt), sans-serif;
     border-radius: 8px;
     transition: all 0.2s;
   }

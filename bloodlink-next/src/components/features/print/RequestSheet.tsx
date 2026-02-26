@@ -32,30 +32,32 @@ interface RequestSheetProps {
     hospitalName?: string;
 }
 
+// Helper to render checkbox
+const CheckBox = ({ checked, label }: { checked?: boolean; label: string }) => (
+    <div className="flex items-center gap-1">
+        <div className={`w-4 h-4 border border-black flex items-center justify-center ${checked ? 'font-bold' : ''}`}>
+            {checked && '✓'}
+        </div>
+        <span className="text-[12px]">{label}</span>
+    </div>
+);
+
+// Helper for grid cell with label and value
+const GridCell = ({ label, value, unit }: { label: string; value?: string; unit?: string }) => (
+    <div className="flex flex-col border border-black p-1 h-[45px] justify-between">
+        <span className="text-[10px] font-semibold">{label}</span>
+        <div className="flex justify-end items-end gap-1">
+            <span className="text-[14px] font-bold">{value || '-'}</span>
+            {unit && <span className="text-[10px] text-gray-600 mb-0.5">{unit}</span>}
+        </div>
+    </div>
+);
+
 export const RequestSheet = ({ patient, hospitalName = 'โรงพยาบาลส่งเสริมสุขภาพตำบล.............' }: RequestSheetProps) => {
     const currentDate = new Date();
     const formattedDate = formatDateThai(currentDate.toISOString());
 
-    // Helper to render checkbox
-    const CheckBox = ({ checked, label }: { checked?: boolean; label: string }) => (
-        <div className="flex items-center gap-1">
-            <div className={`w-4 h-4 border border-black flex items-center justify-center ${checked ? 'font-bold' : ''}`}>
-                {checked && '✓'}
-            </div>
-            <span className="text-[12px]">{label}</span>
-        </div>
-    );
 
-    // Helper for grid cell with label and value
-    const GridCell = ({ label, value, unit }: { label: string; value?: string; unit?: string }) => (
-        <div className="flex flex-col border border-black p-1 h-[45px] justify-between">
-            <span className="text-[10px] font-semibold">{label}</span>
-            <div className="flex justify-end items-end gap-1">
-                <span className="text-[14px] font-bold">{value || '-'}</span>
-                {unit && <span className="text-[10px] text-gray-600 mb-0.5">{unit}</span>}
-            </div>
-        </div>
-    );
 
     return (
         <div className="print-only fixed inset-0 bg-white z-[9999] p-4 text-black font-[family-name:var(--font-sarabun)]">

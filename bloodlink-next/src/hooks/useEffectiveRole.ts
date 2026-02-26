@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 
 // Key for debug role override in sessionStorage
@@ -13,11 +13,12 @@ const ROLE_OVERRIDE_KEY = 'debug_role_override';
  */
 export function useEffectiveRole() {
     const { data: session, status } = useSession();
-    const actualRole = (session?.user as any)?.role;
+    const actualRole = (session?.user as { role?: string })?.role;
     const [effectiveRole, setEffectiveRole] = useState<string | undefined>(actualRole);
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
         // Check for override on mount — only Admin can use debug override
         const override = sessionStorage.getItem(ROLE_OVERRIDE_KEY);

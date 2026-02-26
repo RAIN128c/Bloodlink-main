@@ -11,7 +11,7 @@ export async function GET(
         const { hn } = await params;
         const session = await auth();
         const email = session?.user?.email;
-        const role = (session?.user as any)?.role;
+        const role = (session?.user as { role?: string })?.role;
 
         // Get responsible persons
         const responsiblePersons = await PatientService.getResponsiblePersons(hn);
@@ -42,7 +42,7 @@ export async function POST(
         const { hn } = await params;
         const session = await auth();
         const email = session?.user?.email;
-        const role = (session?.user as any)?.role;
+        const role = (session?.user as { role?: string })?.role;
 
         if (!email) {
             return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });

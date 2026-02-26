@@ -1,14 +1,14 @@
 'use client';
 
 import { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { useNotifications } from '@/components/providers/NotificationContext';
 import { NotificationType } from '@/components/shared/NotificationPopup';
 import { supabase } from '@/lib/supabase';
 
 interface InboxContextType {
     unreadCount: number;
-    messages: any[];
+    messages: Record<string, unknown>[];
     refreshUnreadCount: () => Promise<void>;
 }
 
@@ -25,23 +25,22 @@ export function useInbox() {
 export function InboxProvider({ children }: { children: ReactNode }) {
     const { data: session } = useSession();
     const [unreadCount, setUnreadCount] = useState(0);
-    const [messages, setMessages] = useState<any[]>([]);
+    const [messages, setMessages] = useState<Record<string, unknown>[]>([]);
     const { notify } = useNotifications();
-    const userId = (session?.user as any)?.userId;
+    const userId = (session?.user as { userId?: string })?.userId;
     const previousCountRef = useRef(0);
     const isFirstLoadRef = useRef(true);
 
-    const triggerPopup = useCallback((message: any) => {
+    const triggerPopup = useCallback((message: Record<string, unknown>) => {
         // Only show popup for system notifications, NOT for direct messages
-        const messageType = message.type || 'message';
+        const messageType = message.type as string || 'message';
         if (messageType === 'message' || messageType === 'direct') {
-            console.log('[InboxContext] Skipping popup for direct message:', messageType);
             return; // Don't show popup for direct messages - user will see unread count
         }
 
         let type: NotificationType = 'success';
-        const subject = message.subject || '';
-        const content = message.content || '';
+        const subject = message.subject as string || '';
+        const content = message.content as string || '';
 
         // Map status/content to notification type
         if (subject.includes('นัดหมาย') || content.includes('นัดหมาย')) {
@@ -90,7 +89,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
             if (response.ok) {
                 const data = await response.json();
                 const messages = Array.isArray(data) ? data : [];
-                const unreadMessages = messages.filter((m: any) => !m.is_read);
+                const unreadMessages = messages.filter((m: Record<string, unknown>) => !m.is_read);
                 const newCount = unreadMessages.length;
 
                 // We no longer trigger popups here because Supabase Realtime handles it directly.
@@ -109,6 +108,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
 
     // Fetch on mount and session change
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         refreshUnreadCount();
     }, [refreshUnreadCount]);
 
@@ -119,7 +119,6 @@ export function InboxProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         if (!userId) return;
 
-        console.log('Setting up Supabase Realtime subscription for user:', userId);
 
         const channel = supabase
             .channel('inbox-notifications')
@@ -132,8 +131,7 @@ export function InboxProvider({ children }: { children: ReactNode }) {
                     filter: `receiver_id=eq.${userId}`
                 },
                 (payload) => {
-                    console.log('New message received:', payload);
-                    const newMessage = payload.new as any;
+                    const newMessage = payload.new as Record<string, unknown>;
 
                     // Refresh count
                     refreshUnreadCount();
@@ -143,11 +141,9 @@ export function InboxProvider({ children }: { children: ReactNode }) {
                 }
             )
             .subscribe((status) => {
-                console.log('Supabase Realtime subscription status:', status);
             });
 
         return () => {
-            console.log('Cleaning up Supabase Realtime subscription');
             supabase.removeChannel(channel);
         };
     }, [userId, refreshUnreadCount, triggerPopup]); // removed notify from deps as triggerPopup uses it

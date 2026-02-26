@@ -33,10 +33,10 @@ export async function POST(request: NextRequest) {
             customMessage
         );
         return NextResponse.json(result);
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('Status notification API error:', error);
         return NextResponse.json(
-            { error: 'Internal server error', message: error.message },
+            { error: 'Internal server error', message: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }
         );
     }

@@ -100,7 +100,7 @@ export function ProfileCard({ user, showEditButton = false, editPath, compact = 
                 {user.bio ? (
                     <div className="mt-6 p-4 rounded-xl bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-800">
                         <p className="text-[15px] text-gray-600 dark:text-gray-300 leading-relaxed italic">
-                            "{user.bio}"
+                            &quot;{user.bio}&quot;
                         </p>
                     </div>
                 ) : (

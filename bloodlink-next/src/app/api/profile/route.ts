@@ -38,6 +38,10 @@ export async function GET() {
             roleDisplay: getRoleDisplay(user.role || 'user'),
             status: user.status,
             avatarUrl: user.avatarUrl,
+            hospitalType: user.hospitalType,
+            hospitalName: user.hospitalName,
+            district: user.district,
+            province: user.province,
             professionalId: user.professionalId
         };
 
@@ -65,8 +69,11 @@ export async function PUT(req: NextRequest) {
             surname: data.surname,
             phone: data.phone,
             position: data.position,
-            professionalId: data.professionalId,
-            avatarUrl: data.avatarUrl
+            avatarUrl: data.avatarUrl,
+            hospitalName: data.hospitalName,
+            district: data.district,
+            province: data.province,
+            professionalId: data.professionalId
         };
 
         const success = await AuthService.updateUser(session.user.email, updateData);

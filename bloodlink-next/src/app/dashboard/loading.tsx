@@ -5,7 +5,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Loading() {
     return (
         <MainLayout>
-            <div className="max-w-[900px] w-full mx-auto flex flex-col font-[family-name:var(--font-kanit)]">
+            <div className="max-w-[900px] w-full mx-auto flex flex-col font-[family-name:var(--font-prompt)]">
                 <Header />
 
                 <div className="flex flex-col gap-4 pb-5">

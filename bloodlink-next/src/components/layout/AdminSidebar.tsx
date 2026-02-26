@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import clsx from 'clsx';
-import { LayoutGrid, Users, Stethoscope, Mail, FileText, LogOut, Menu, X } from 'lucide-react';
-import { signOut, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { LayoutGrid, Stethoscope, Mail, FileText, LogOut, Menu, X, Users } from 'lucide-react';
+import { signOut } from '@/components/providers/SupabaseAuthProvider';
 import { useInbox } from '@/components/providers/InboxContext';
 import { useTheme } from 'next-themes';
 
@@ -16,6 +16,7 @@ export function AdminSidebar() {
     const [mounted, setMounted] = useState(false);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -26,6 +27,7 @@ export function AdminSidebar() {
 
     // Close mobile menu when route changes
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setIsMobileMenuOpen(false);
     }, [pathname]);
 
@@ -38,6 +40,7 @@ export function AdminSidebar() {
             setTime(now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }));
 
             const thaiOptions: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             setDateThai(now.toLocaleDateString('th-TH', { ...thaiOptions, year: 'numeric' }).replace(now.getFullYear(), now.getFullYear() + 543));
 
@@ -84,7 +87,7 @@ export function AdminSidebar() {
 
             {/* Sidebar */}
             <aside className={clsx(
-                "sidebar w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-kanit)] transition-all duration-300",
+                "sidebar w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-prompt)] transition-all duration-300",
                 // Mobile: hidden by default, show when menu open
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
             )}>

@@ -1,6 +1,6 @@
 'use client';
 
-import { AlertTriangle, X } from 'lucide-react';
+import { AlertTriangle } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 interface ConfirmModalProps {
@@ -30,7 +30,8 @@ export function ConfirmModal({
 
     useEffect(() => {
         if (isOpen) {
-            setIsVisible(true);
+            const timer = setTimeout(() => setIsVisible(true), 0);
+            return () => clearTimeout(timer);
         } else {
             const timer = setTimeout(() => setIsVisible(false), 300);
             return () => clearTimeout(timer);

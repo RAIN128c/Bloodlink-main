@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { X, Search, Loader2, Send, CheckCircle, AlertCircle } from 'lucide-react';
-import { CurrentUser } from '@/components/profile/ProfileDropdown';
+import { X, Search, Loader2, Send, AlertCircle } from 'lucide-react';
 
 interface ComposeMessageModalProps {
     isOpen: boolean;
@@ -35,26 +34,26 @@ export function ComposeMessageModal({ isOpen, onClose, onMessageSent, currentUse
     const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
+        const fetchUsers = async () => {
+            setIsFetchingUsers(true);
+            try {
+                const response = await fetch('/api/admin/users');
+                if (response.ok) {
+                    const data = await response.json();
+                    // Filter out current user
+                    setUsers(data.filter((u: User) => u.userId !== currentUserId));
+                }
+            } catch (err) {
+                console.error('Failed to fetch users:', err);
+            } finally {
+                setIsFetchingUsers(false);
+            }
+        };
+
         if (isOpen && step === 1) {
             fetchUsers();
         }
-    }, [isOpen, step]);
-
-    const fetchUsers = async () => {
-        setIsFetchingUsers(true);
-        try {
-            const response = await fetch('/api/admin/users');
-            if (response.ok) {
-                const data = await response.json();
-                // Filter out current user
-                setUsers(data.filter((u: User) => u.userId !== currentUserId));
-            }
-        } catch (err) {
-            console.error('Failed to fetch users:', err);
-        } finally {
-            setIsFetchingUsers(false);
-        }
-    };
+    }, [isOpen, step, currentUserId]);
 
     const filteredUsers = users.filter(user =>
         user.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -87,8 +86,8 @@ export function ComposeMessageModal({ isOpen, onClose, onMessageSent, currentUse
 
             onMessageSent();
             handleClose();
-        } catch (err: any) {
-            setError(err.message || 'ส่งข้อความไม่สำเร็จ');
+        } catch (err: unknown) {
+            setError((err as Error).message || 'ส่งข้อความไม่สำเร็จ');
         } finally {
             setIsSending(false);
         }
@@ -108,7 +107,7 @@ export function ComposeMessageModal({ isOpen, onClose, onMessageSent, currentUse
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm font-[family-name:var(--font-kanit)] modal-backdrop">
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 dark:bg-black/70 backdrop-blur-sm font-[family-name:var(--font-prompt)] modal-backdrop">
             <div className="bg-white dark:bg-[#1F2937] rounded-xl w-[calc(100%-2rem)] max-w-[600px] max-h-[85vh] mx-4 shadow-2xl overflow-hidden flex flex-col modal-content">
                 {/* Header */}
                 <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center flex-shrink-0">

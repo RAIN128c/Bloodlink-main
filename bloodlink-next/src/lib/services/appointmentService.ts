@@ -14,6 +14,9 @@ interface DBAppointment {
     height?: string | null;
     waist?: string | null;
     bp?: string | null;
+    bp2?: string | null;
+    rr?: string | null;
+    historical_labs?: Record<string, string> | null;
     pulse?: string | null;
     temperature?: string | null;
     dtx?: string | null;
@@ -34,6 +37,9 @@ export interface Appointment {
     height?: string;
     waist?: string;
     bp?: string;
+    bp2?: string;
+    rr?: string;
+    historical_labs?: Record<string, string>;
     pulse?: string;
     temperature?: string;
     dtx?: string;
@@ -81,6 +87,9 @@ export class AppointmentService {
                     height: row.height || '',
                     waist: row.waist || '',
                     bp: row.bp || '',
+                    bp2: row.bp2 || '',
+                    rr: row.rr || '',
+                    historical_labs: row.historical_labs || {},
                     pulse: row.pulse || '',
                     temperature: row.temperature || '',
                     dtx: row.dtx || ''
@@ -117,6 +126,9 @@ export class AppointmentService {
                 height: data.height,
                 waist: data.waist,
                 bp: data.bp,
+                bp2: data.bp2,
+                rr: data.rr,
+                historical_labs: data.historical_labs || {},
                 pulse: data.pulse,
                 temperature: data.temperature,
                 dtx: data.dtx
@@ -161,7 +173,7 @@ export class AppointmentService {
     static async updateStatus(id: string, status: string, vitals?: Partial<Appointment>): Promise<boolean> {
         try {
             // Update the status column which is standard
-            const updateData: any = {
+            const updateData: Record<string, unknown> = {
                 updated_at: new Date().toISOString(),
                 status: status
             };
@@ -172,6 +184,9 @@ export class AppointmentService {
                 if (vitals.height !== undefined) updateData.height = vitals.height;
                 if (vitals.waist !== undefined) updateData.waist = vitals.waist;
                 if (vitals.bp !== undefined) updateData.bp = vitals.bp;
+                if (vitals.bp2 !== undefined) updateData.bp2 = vitals.bp2;
+                if (vitals.rr !== undefined) updateData.rr = vitals.rr;
+                if (vitals.historical_labs !== undefined) updateData.historical_labs = vitals.historical_labs;
                 if (vitals.pulse !== undefined) updateData.pulse = vitals.pulse;
                 if (vitals.temperature !== undefined) updateData.temperature = vitals.temperature;
                 if (vitals.dtx !== undefined) updateData.dtx = vitals.dtx;
@@ -193,7 +208,7 @@ export class AppointmentService {
                 updateData.end_time = null;
             }
 
-            let { error } = await supabase
+            const { error } = await supabase
                 .from('appointments')
                 .update(updateData)
                 .eq('id', id);

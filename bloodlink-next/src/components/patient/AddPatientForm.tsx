@@ -4,7 +4,7 @@ import { useState } from 'react';
 import { addPatient } from '@/lib/actions/patient';
 import { useRouter } from 'next/navigation';
 import { Loader2, Save, User, Activity, ShieldX, UsersRound, X, UserPlus, AlertCircle } from 'lucide-react';
-import { useSession, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { useSession } from '@/components/providers/SupabaseAuthProvider';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
 import { CustomSelect } from '@/components/ui/CustomSelect';
@@ -116,7 +116,7 @@ export function AddPatientForm() {
 
     if (!canAdd) {
         return (
-            <div className="flex flex-col items-center justify-center py-16 text-center font-[family-name:var(--font-kanit)]">
+            <div className="flex flex-col items-center justify-center py-16 text-center font-[family-name:var(--font-prompt)]">
                 <div className="bg-red-50 dark:bg-red-900/20 p-8 rounded-2xl border border-red-200 dark:border-red-800">
                     <ShieldX className="w-16 h-16 text-red-500 mx-auto mb-4" />
                     <h2 className="text-xl font-bold text-red-600 dark:text-red-400 mb-2">ไม่มีสิทธิ์เข้าถึง</h2>
@@ -135,7 +135,7 @@ export function AddPatientForm() {
     }
 
     return (
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 font-[family-name:var(--font-kanit)]">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-8 font-[family-name:var(--font-prompt)]">
 
             {submitError && (
                 <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-600 dark:text-red-400 px-4 py-3 rounded-xl text-sm font-medium flex items-center">

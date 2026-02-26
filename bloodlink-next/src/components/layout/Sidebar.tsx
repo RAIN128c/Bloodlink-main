@@ -5,8 +5,8 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useRef, useCallback } from 'react';
 import clsx from 'clsx';
-import { LayoutGrid, FileText, Calendar, LogOut, Plus, Menu, X, Home, Settings } from 'lucide-react';
-import { signOut, SupabaseAuthProvider } from '@/components/providers/SupabaseAuthProvider';
+import { LayoutGrid, FileText, Calendar, LogOut, Plus, Menu, X, Home } from 'lucide-react';
+import { signOut } from '@/components/providers/SupabaseAuthProvider';
 import { useTheme } from 'next-themes';
 import { Permissions } from '@/lib/permissions';
 import { useEffectiveRole } from '@/hooks/useEffectiveRole';
@@ -100,7 +100,7 @@ export function Sidebar() {
                 if (patientsRes.ok) {
                     const data = await patientsRes.json();
                     const allPending = data.patients || [];
-                    const queueCount = allPending.filter((p: any) => p.process === 'รอแล็บรับเรื่อง').length;
+                    const queueCount = allPending.filter((p: { process: string }) => p.process === 'รอแล็บรับเรื่อง').length;
                     setLabQueueCount(queueCount);
                 }
             } catch { /* non-critical */ }
@@ -193,6 +193,7 @@ export function Sidebar() {
             setTime(now.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' }));
 
             const thaiOptions: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
             // @ts-ignore
             setDateThai(now.toLocaleDateString('th-TH', { ...thaiOptions, year: 'numeric' }).replace(now.getFullYear(), now.getFullYear() + 543));
 
@@ -243,7 +244,7 @@ export function Sidebar() {
 
             {/* Sidebar */}
             <aside className={clsx(
-                "w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-kanit)] transition-transform duration-300",
+                "w-[195px] bg-white dark:bg-[#111827] rounded-tr-[80px] shadow-[0_4px_4px_0_rgba(0,0,0,0.25)] flex flex-col fixed left-0 top-0 bottom-0 z-50 font-[family-name:var(--font-prompt)] transition-transform duration-300",
                 // Mobile: hidden by default (translate -full), show when menu open (translate 0)
                 // Desktop: always show (translate 0)
                 isMobileMenuOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"

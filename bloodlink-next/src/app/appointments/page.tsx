@@ -24,12 +24,12 @@ export default function AppointmentsPage() {
                 const response = await fetch('/api/patients');
                 if (response.ok) {
                     const allPatients: Patient[] = await response.json();
-                    console.log('Fetched Patients:', allPatients); // DEBUG
+
 
                     // Filter for appointments (process='นัดหมาย')
                     // And potentially ensure they have a valid appointmentDate
                     const appts = allPatients.filter(p => p.process === 'นัดหมาย' && p.appointmentDate);
-                    console.log('Filtered Appointments:', appts); // DEBUG
+
                     setAppointments(appts);
                 }
             } catch (error) {

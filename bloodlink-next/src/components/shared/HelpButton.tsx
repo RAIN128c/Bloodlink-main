@@ -26,12 +26,13 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
 
     // Check if actual user is Admin (not overridden role)
     const { data: session } = useSession();
-    const actualRole = (session?.user as any)?.role;
+    const actualRole = (session?.user as { role?: string })?.role;
     const isActualAdmin = Permissions.isAdmin(actualRole);
 
     // Load override role from sessionStorage on mount
     useEffect(() => {
         const stored = sessionStorage.getItem(ROLE_OVERRIDE_KEY);
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         if (stored) setOverrideRole(stored);
     }, []);
 
@@ -129,7 +130,7 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
     return (
         <>
             {/* Floating Help Button */}
-            <div ref={menuRef} className="fixed bottom-6 right-6 z-50 font-[family-name:var(--font-kanit)] print:hidden">
+            <div ref={menuRef} className="fixed bottom-6 right-6 z-50 font-[family-name:var(--font-prompt)] print:hidden">
                 <button
                     onClick={() => setIsMenuOpen(!isMenuOpen)}
                     className="w-12 h-12 rounded-full bg-[#2D3748] text-white shadow-lg hover:bg-[#1F2937] transition-all flex items-center justify-center hover:scale-105"
@@ -271,7 +272,7 @@ export function HelpButton({ onNotify }: HelpButtonProps) {
 
             {/* Help Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-[60] flex items-center justify-center font-[family-name:var(--font-kanit)] p-4">
+                <div className="fixed inset-0 z-[60] flex items-center justify-center font-[family-name:var(--font-prompt)] p-4">
                     <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)} />
                     <div className="relative bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
                         {/* Header */}

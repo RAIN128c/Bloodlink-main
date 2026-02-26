@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useCallback } from 'react';
-import { X, Upload, FileText, Image as ImageIcon, AlertCircle, CheckCircle, AlertTriangle, Loader2 } from 'lucide-react';
+import { X, Upload, FileText, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import * as XLSX from 'xlsx';
 import html2canvas from 'html2canvas';
@@ -54,7 +54,7 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
             if (!container) return null;
 
             container.innerHTML = `
-                <div style="padding:24px;background:#fff;font-family:'Segoe UI',sans-serif;min-width:600px;">
+                <div style="padding:24px;background:#fff;min-width:600px;">
                     <h3 style="margin:0 0 12px;font-size:14px;color:#374151;">📄 ${excelFile.name}</h3>
                     <style>
                         table { border-collapse:collapse; width:100%; font-size:12px; }
@@ -109,7 +109,7 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
             canvas.height = viewport.height;
             canvas.width = viewport.width;
 
-            await page.render({ canvasContext: context, viewport } as any).promise;
+            await page.render({ canvasContext: context, viewport } as Parameters<typeof page.render>[0]).promise;
 
             const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/png'));
             if (!blob) return null;
@@ -244,9 +244,9 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
             toast.success('อัปโหลดผลตรวจเรียบร้อย');
             onSuccess();
             handleClose();
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Upload error:', error);
-            toast.error(error.message || 'เกิดข้อผิดพลาดในการอัปโหลด');
+            toast.error((error as Error).message || 'เกิดข้อผิดพลาดในการอัปโหลด');
         } finally {
             setIsUploading(false);
         }
@@ -316,7 +316,10 @@ export function LabUploadModal({ isOpen, onClose, onSuccess, patient }: LabUploa
                         ) : (
                             <div className="border border-gray-200 dark:border-gray-600 rounded-xl p-4">
                                 {preview ? (
-                                    <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-lg mb-3" />
+                                    <>
+                                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                                        <img src={preview} alt="Preview" className="w-full max-h-48 object-contain rounded-lg mb-3" />
+                                    </>
                                 ) : (
                                     <div className="flex items-center gap-3 mb-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
                                         <FileText className="w-8 h-8 text-red-500" />

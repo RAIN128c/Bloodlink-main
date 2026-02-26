@@ -2,7 +2,7 @@
 
 import { Header } from '@/components/layout/Header';
 
-import { ChevronLeft, Edit2, Loader2, Trash2, Save, User, Phone, Mail, Search, CheckCircle } from 'lucide-react';
+import { ChevronLeft, Edit2, Loader2, Trash2, User, Phone, Mail, Search, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useParams, useRouter } from 'next/navigation';
@@ -285,7 +285,7 @@ export default function DoctorDetailPage() {
                                     title="คลิกเพื่อแก้ไขประวัติ"
                                 >
                                     {user.bio ? (
-                                        <p className="italic">"{user.bio}"</p>
+                                        <p className="italic">&quot;{user.bio}&quot;</p>
                                     ) : (
                                         <span className="text-gray-400 italic flex items-center gap-2">
                                             <Edit2 className="w-4 h-4" />

@@ -1,9 +1,9 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
 import { AuthService } from '@/lib/services/authService';
-import { Role } from '@/lib/permissions';
+// import { Role } from '@/lib/permissions';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
         if (!session?.user) {

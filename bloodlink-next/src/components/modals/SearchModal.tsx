@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { X, Search } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 interface SearchModalProps {
@@ -18,12 +18,12 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     // Reset state when opening
     useEffect(() => {
         if (isOpen) {
-            setDigits(Array(9).fill(''));
-            setError(false);
-            // Focus first input after a short delay to allow render
-            setTimeout(() => {
+            const timer = setTimeout(() => {
+                setDigits(Array(9).fill(''));
+                setError(false);
                 inputRefs.current[0]?.focus();
             }, 100);
+            return () => clearTimeout(timer);
         }
     }, [isOpen]);
 
@@ -86,7 +86,7 @@ export function SearchModal({ isOpen, onClose }: SearchModalProps) {
     };
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center font-[family-name:var(--font-kanit)]">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center font-[family-name:var(--font-prompt)]">
             {/* Backdrop */}
             <div
                 className="absolute inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-[2px] modal-backdrop"

@@ -19,7 +19,6 @@ export function PatientList({ initialPatients }: { initialPatients: Patient[] })
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'patients' },
                 (payload) => {
-                    console.log('Real-time patient update:', payload);
                     if (payload.eventType === 'INSERT') {
                         setPatients((prev) => [payload.new as Patient, ...prev]);
                     } else if (payload.eventType === 'UPDATE') {
@@ -51,6 +50,8 @@ export function PatientList({ initialPatients }: { initialPatients: Patient[] })
             p.surname.toLowerCase().includes(search.toLowerCase()) ||
             p.hn.includes(search);
 
+        if (!matchesSearch) return false;
+
         // Status matching logic
         if (filter === 'All') return true;
         if (filter === 'ใช้งาน') return p.status === 'ใช้งาน';
@@ -61,7 +62,7 @@ export function PatientList({ initialPatients }: { initialPatients: Patient[] })
     });
 
     return (
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden font-[family-name:var(--font-kanit)]">
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden font-[family-name:var(--font-prompt)]">
             {/* Header / Controls */}
             <div className="p-5 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <h2 className="text-lg font-bold text-gray-900">Recent Patients</h2>
@@ -160,7 +161,7 @@ export function PatientList({ initialPatients }: { initialPatients: Patient[] })
                             <tr>
                                 <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                                     <FileText className="mx-auto h-12 w-12 text-gray-300 mb-3" />
-                                    <p className="font-medium">No patients found matching "{search}"</p>
+                                    <p className="font-medium">No patients found matching &quot;{search}&quot;</p>
                                 </td>
                             </tr>
                         )}

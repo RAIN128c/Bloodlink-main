@@ -1,6 +1,6 @@
 {
   "name": "bloodlink-next",
-  "version": "0.9.9",
+  "version": "1.0.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -34,6 +34,7 @@
     "papaparse": "^5.5.3",
     "pdfjs-dist": "^5.4.624",
     "react": "19.2.0",
+    "react-barcode": "^1.6.1",
     "react-day-picker": "^9.12.0",
     "react-dom": "19.2.0",
     "react-dropzone": "^14.3.8",

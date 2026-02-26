@@ -3,7 +3,7 @@
 import { Header } from '@/components/layout/Header';
 import { MainLayout } from '@/components/layout/MainLayout';
 import Link from 'next/link';
-import { FileText, X, Check, Clock, Beaker, CheckCircle, Loader2 } from 'lucide-react';
+import { FileText, Check, Clock, Beaker, CheckCircle, Loader2 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import clsx from 'clsx';
 import { Patient } from '@/types';
@@ -29,7 +29,7 @@ const getIndicator = (process: string): string => {
 
 export default function TestStatusPage() {
     const [filter, setFilter] = useState('all');
-    const [showSidebar, setShowSidebar] = useState(true);
+    const [showSidebar] = useState(true);
     const [patients, setPatients] = useState<Patient[]>([]);
     const [noTestPatients, setNoTestPatients] = useState<Patient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
@@ -70,23 +70,6 @@ export default function TestStatusPage() {
         ? patients
         : patients.filter(p => getIndicator(p.process) === filter);
 
-    const getStatusIcon = (indicator: string) => {
-        switch (indicator) {
-            case 'completed': return <CheckCircle className="w-6 h-6" />;
-            case 'testing': return <Beaker className="w-6 h-6" />;
-            case 'received': return <Clock className="w-6 h-6" />;
-            default: return <Clock className="w-6 h-6" />;
-        }
-    };
-
-    const getStatusColor = (indicator: string) => {
-        switch (indicator) {
-            case 'completed': return 'text-[#16a34a] bg-[#dcfce7]';
-            case 'testing': return 'text-[#ca8a04] bg-[#fef9c3]';
-            case 'received': return 'text-[#2563eb] bg-[#dbeafe]';
-            default: return 'text-gray-500 bg-gray-100';
-        }
-    };
 
     return (
         <MainLayout>

@@ -3,7 +3,6 @@ import { PatientService } from '@/lib/services/patientService';
 import { supabaseAdmin } from '@/lib/supabase';
 import { auth } from '@/auth';
 import { Permissions } from '@/lib/permissions';
-import { MessageService } from '@/lib/services/messageService';
 
 export async function GET(
     request: Request,
@@ -76,7 +75,7 @@ export async function PUT(
         const success = await PatientService.updatePatientStatus(
             hn,
             process,
-            { history, date, time, changedByEmail: session.user.email, changedByName: session.user.name || session.user.email, changedByRole: (session.user as any).role }
+            { history, date, time, changedByEmail: session.user.email, changedByName: session.user.name || session.user.email, changedByRole: (session.user as { role?: string }).role }
         );
 
         if (success) {

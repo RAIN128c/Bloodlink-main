@@ -4,7 +4,7 @@ import { MessageService } from '@/lib/services/messageService';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET(request: NextRequest) {
+export async function GET() {
     try {
         const session = await auth();
         if (!session?.user?.userId) {
@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
         }
 
         return NextResponse.json(messages);
-    } catch (error) {
+    } catch {
         return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
     }
 }

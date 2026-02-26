@@ -25,6 +25,7 @@ export function PrintReportModal({ isOpen, onClose, onPrint }: PrintReportModalP
     });
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         setMounted(true);
     }, []);
 
@@ -64,8 +65,8 @@ export function PrintReportModal({ isOpen, onClose, onPrint }: PrintReportModalP
                     <button
                         onClick={() => toggleSection('summary')}
                         className={`w-full flex items-center p-3 rounded-xl border-2 transition-all text-left ${sections.summary
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                     >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${sections.summary ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
@@ -88,8 +89,8 @@ export function PrintReportModal({ isOpen, onClose, onPrint }: PrintReportModalP
                     <button
                         onClick={() => toggleSection('orders')}
                         className={`w-full flex items-center p-3 rounded-xl border-2 transition-all text-left ${sections.orders
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                     >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${sections.orders ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
@@ -112,8 +113,8 @@ export function PrintReportModal({ isOpen, onClose, onPrint }: PrintReportModalP
                     <button
                         onClick={() => toggleSection('userActivity')}
                         className={`w-full flex items-center p-3 rounded-xl border-2 transition-all text-left ${sections.userActivity
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                     >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${sections.userActivity ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'
@@ -136,8 +137,8 @@ export function PrintReportModal({ isOpen, onClose, onPrint }: PrintReportModalP
                     <button
                         onClick={() => toggleSection('systemLogs')}
                         className={`w-full flex items-center p-3 rounded-xl border-2 transition-all text-left opacity-90 ${sections.systemLogs
-                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
-                                : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
+                            ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                            : 'border-transparent hover:bg-gray-50 dark:hover:bg-gray-800'
                             }`}
                     >
                         <div className={`w-10 h-10 rounded-full flex items-center justify-center mr-4 flex-shrink-0 transition-colors ${sections.systemLogs ? 'bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400' : 'bg-gray-100 dark:bg-gray-800 text-gray-500'

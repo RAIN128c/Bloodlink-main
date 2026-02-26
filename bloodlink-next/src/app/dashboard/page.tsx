@@ -110,7 +110,6 @@ export default function DashboardPage() {
                 'postgres_changes',
                 { event: '*', schema: 'public', table: 'patients' },
                 () => {
-                    console.log('Real-time update: Refreshing dashboard stats...');
                     fetchStats();
                 }
             )

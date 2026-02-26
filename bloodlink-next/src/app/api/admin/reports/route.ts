@@ -76,7 +76,7 @@ export async function GET() {
             const initials = name.split(' ').map((n: string) => n.charAt(0).toUpperCase()).slice(0, 2).join('');
 
             // Map action to badge type
-            let actionDisplay = log.action || 'Activity';
+            const actionDisplay = log.action || 'Activity';
 
             return {
                 id: log.id,
@@ -128,7 +128,7 @@ export async function GET() {
         });
 
         // 3. Fetch Daily Summary from patients
-        const { data: patientsData, error: patientsError } = await supabase
+        const { error: patientsError } = await supabase
             .from('patients')
             .select('*')
             .gte('created_at', today.toISOString())
@@ -150,14 +150,11 @@ export async function GET() {
 
         // Count by process status
         let completed = 0;
-        let pending = 0;
 
         patients.forEach(p => {
             const process = p.process?.trim();
             if (process === 'ส่งผลตรวจ' || process === 'เสร็จสิ้น' || process === 'รับยาแล้ว') {
                 completed++;
-            } else if (process === 'นัดหมาย' || process === 'รอแล็บรับเรื่อง' || process === 'รอจัดส่ง' || process === 'กำลังจัดส่ง' || process === 'กำลังตรวจ' || process === 'รอผล' || process === 'กำลังตรวจสอบ') {
-                pending++;
             }
         });
 

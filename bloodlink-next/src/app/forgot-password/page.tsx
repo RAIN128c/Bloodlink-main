@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
             } else {
                 setError(result.error || 'เกิดข้อผิดพลาด');
             }
-        } catch (err) {
+        } catch {
             setError('เกิดข้อผิดพลาดในการเชื่อมต่อ');
         } finally {
             setIsLoading(false);
@@ -40,7 +40,7 @@ export default function ForgotPasswordPage() {
     };
 
     return (
-        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-4 font-[family-name:var(--font-kanit)] transition-colors">
+        <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-4 font-[family-name:var(--font-prompt)] transition-colors">
             <div className="bg-white dark:bg-[#1F2937] rounded-3xl shadow-xl w-full max-w-md p-8 md:p-10 transition-colors">
 
                 {/* Logo */}

@@ -5,8 +5,9 @@ import { Patient } from '@/types';
 import { revalidatePath } from 'next/cache';
 import { auth } from '@/auth';
 import { Permissions } from '@/lib/permissions';
-import { NotificationService } from '@/lib/services/notificationService';
 import { SignatureService } from '@/lib/services/signatureService';
+import { AppointmentService } from '@/lib/services/appointmentService';
+import { supabaseAdmin } from '@/lib/supabase-admin';
 
 export async function getPatients(): Promise<Patient[]> {
     return await PatientService.getPatients();
@@ -37,14 +38,7 @@ export async function searchPatients(query: string): Promise<Patient[]> {
     );
 }
 
-/**
- * Update patient status - Role-based workflow validation
- * Each role can only update specific transitions
- * Now with auto-notifications to relevant staff
- */
-import { AppointmentService } from '@/lib/services/appointmentService';
 
-// ... (existing imports)
 
 export async function updatePatientStatus(
     hn: string,
@@ -66,7 +60,7 @@ export async function updatePatientStatus(
     }
 ) {
     const session = await auth();
-    const user = session?.user as any;
+    const user = session?.user as { role?: string, email?: string, name?: string };
     const role = user?.role;
     const email = user?.email;
     const userName = user?.name || email;
@@ -106,14 +100,13 @@ export async function updatePatientStatus(
         }
 
         // Verify PIN
-        const isValidPin = await SignatureService.verifyPin(email, data.pin);
+        const isValidPin = await SignatureService.verifyPin(email as string, data.pin as string);
         if (!isValidPin) {
             return { success: false, error: 'รหัส PIN ไม่ถูกต้อง' };
         }
     }
 
     // Pass user info for status history logging
-    console.log(`[Action] Updating status for ${hn} to ${processStatus} by ${email}`);
 
     // Explicitly call updatePatientStatus
     const success = await PatientService.updatePatientStatus(hn, processStatus, {
@@ -124,7 +117,6 @@ export async function updatePatientStatus(
     });
 
     if (success) {
-        console.log(`[Action] Status update success. Checking appointment creation...`);
 
         // Extract Vitals
         const vitals = {
@@ -139,7 +131,6 @@ export async function updatePatientStatus(
 
         // IF status is Appointment, Create actual Appointment Record
         if (processStatus === 'นัดหมาย' && data.date) {
-            console.log(`[Action] Creating appointment record...`);
             const apptResult = await AppointmentService.createAppointment({
                 patient_hn: hn,
                 appointment_date: data.date,
@@ -150,14 +141,11 @@ export async function updatePatientStatus(
 
             if (!apptResult.success) {
                 console.error(`[Action] Appointment creation failed: ${apptResult.error}`);
-            } else {
-                console.log(`[Action] Appointment created successfully.`);
             }
         }
 
         // IF status is 'รอแล็บรับเรื่อง' (Lab Processing Started), Capture Vitals
         if (processStatus === 'รอแล็บรับเรื่อง') {
-            console.log(`[Action] Patient arrived for Lab, processing Vitals...`);
 
             // Check if there is an active pending appointment to attach these vitals to
             const pendingAppts = await AppointmentService.getAppointmentsByHn(hn);
@@ -165,7 +153,6 @@ export async function updatePatientStatus(
 
             if (activeAppt && activeAppt.id) {
                 // Update existing appointment with V/S and set to completed
-                console.log(`[Action] Attaching V/S to existing appointment ${activeAppt.id}`);
                 await AppointmentService.updateStatus(activeAppt.id, 'completed', vitals);
 
                 // Cancel any other lingering ones
@@ -176,7 +163,6 @@ export async function updatePatientStatus(
                 }
             } else {
                 // Walk-in scenario: Create a completed appointment right now to hold the V/S
-                console.log(`[Action] Creating a Walk-In appointment to hold V/S`);
                 const today = new Date();
                 const apptResult = await AppointmentService.createAppointment({
                     patient_hn: hn,
@@ -201,11 +187,10 @@ export async function updatePatientStatus(
         // Apply E-Signature if applicable
         if (eSignatureStatuses.includes(processStatus)) {
             const roleType = processStatus === 'รอแล็บรับเรื่อง' ? 'sender' : 'receiver';
-            console.log(`[Action] Applying E-Signature for ${hn} role: ${roleType}`);
             const signatureResult = await SignatureService.createSignature({
                 patient_hn: hn,
                 document_type: 'request_sheet',
-                signer_email: email,
+                signer_email: email as string,
                 signer_role: roleType,
             });
 
@@ -237,7 +222,7 @@ export async function updatePatientStatus(
  */
 export async function addPatient(data: Partial<Patient>, additionalResponsible: string[] = []) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
     const email = session?.user?.email;
 
     // Only Doctor/Nurse/Admin can add patients
@@ -263,6 +248,45 @@ export async function addPatient(data: Partial<Patient>, additionalResponsible: 
 }
 
 /**
+ * Update patient test type (Lab Request) - Pre-Lab only
+ * Uses supabaseAdmin to bypass RLS issues on client
+ */
+export async function updatePatientTestType(
+    hn: string,
+    testType: string
+) {
+    const session = await auth();
+    const role = (session?.user as { role?: string })?.role;
+    const email = session?.user?.email;
+
+    if (!email) {
+        return { success: false, error: 'User email not found' };
+    }
+
+    try {
+        const { error } = await supabaseAdmin
+            .from('patients')
+            .update({
+                test_type: testType,
+                updated_at: new Date().toISOString()
+            })
+            .eq('hn', hn);
+
+        if (error) {
+            console.error('Update test_type error:', error);
+            return { success: false, error: error.message };
+        }
+
+        revalidatePath(`/history/${hn}`);
+        revalidatePath(`/patients/${hn}`);
+        return { success: true };
+    } catch (error) {
+        console.error('Update updatePatientTestType exception:', error);
+        return { success: false, error: 'System error' };
+    }
+}
+
+/**
  * Update patient data - Only responsible persons or Admin
  */
 export async function updatePatientData(
@@ -270,7 +294,7 @@ export async function updatePatientData(
     data: { gender?: string; age?: string; bloodType?: string; disease?: string; allergies?: string }
 ) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
     const email = session?.user?.email;
 
     // Admin can edit all
@@ -319,7 +343,7 @@ export async function getResponsiblePersons(hn: string) {
  */
 export async function addResponsiblePerson(hn: string, newUserEmail: string) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
     const email = session?.user?.email;
 
     if (!email) {
@@ -349,7 +373,7 @@ export async function addResponsiblePerson(hn: string, newUserEmail: string) {
  */
 export async function removeResponsiblePerson(hn: string, targetEmail: string) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
     const email = session?.user?.email;
 
     if (!email) {
@@ -379,7 +403,7 @@ export async function removeResponsiblePerson(hn: string, targetEmail: string) {
 export async function checkUserResponsibility(hn: string) {
     const session = await auth();
     const email = session?.user?.email;
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
 
     if (!email) return { isResponsible: false, isAdmin: false };
 
@@ -396,7 +420,7 @@ export async function checkUserResponsibility(hn: string) {
  */
 export async function deletePatient(hn: string) {
     const session = await auth();
-    const role = (session?.user as any)?.role;
+    const role = (session?.user as { role?: string })?.role;
 
     if (!Permissions.isAdmin(role) && !Permissions.isDoctorOrNurse(role)) {
         return { success: false, error: 'Unauthorized' };

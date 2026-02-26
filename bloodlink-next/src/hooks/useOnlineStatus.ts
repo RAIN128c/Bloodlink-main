@@ -25,7 +25,7 @@ export function useOnlineStatus() {
 
             clearTimeout(timeoutId);
             setIsOnline(res.ok);
-        } catch (error) {
+        } catch {
             // If fetch failed (network error), we are offline
             setIsOnline(false);
         }
@@ -33,6 +33,7 @@ export function useOnlineStatus() {
 
     useEffect(() => {
         // Initial check
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         checkConnection();
 
         // Check every 60 seconds (reduced from 5s to save API requests)

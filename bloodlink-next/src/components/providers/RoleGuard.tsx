@@ -31,6 +31,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     useEffect(() => {
         // Always allow public paths immediately
         if (isPublicPath) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
             setRoleStatus('valid');
             return;
         }
@@ -93,7 +94,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     // Show loading while checking
     if (roleStatus === 'loading' && !isPublicPath) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 font-[family-name:var(--font-kanit)]">
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 font-[family-name:var(--font-prompt)]">
                 <div className="flex flex-col items-center gap-4">
                     <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />
                     <p className="text-gray-500 dark:text-gray-400">กำลังตรวจสอบสิทธิ์...</p>
@@ -111,7 +112,7 @@ export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
     if (roleStatus === 'invalid') {
         const displayRole = session?.user?.role?.trim() || 'ไม่มีบทบาท';
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 font-[family-name:var(--font-kanit)]">
+            <div className="min-h-screen flex items-center justify-center bg-gray-100 dark:bg-gray-900 font-[family-name:var(--font-prompt)]">
                 <div className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-lg max-w-md text-center">
                     <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                         <span className="text-3xl">⚠️</span>

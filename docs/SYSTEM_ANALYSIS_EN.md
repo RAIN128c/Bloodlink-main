@@ -1,79 +1,34 @@
-# System Analysis & ER Diagram: Bloodlink
+# System Analysis & Architecture: Bloodlink
 
 ## 1. System Overview
-**Bloodlink** is a comprehensive Web Application designed for managing patient blood test workflows in a clinic or laboratory setting. It facilitates the entire process from patient registration, queuing, sample collection, lab result entry, result validation by doctors, to result delivery and historical tracking.
+**Bloodlink** is a high-performance Web Application designed to digitize patient blood test workflows in clinics or hospitals (รพ.สต.). It establishes an untethered link between Patient Registration, Lab Queue Tracking, Result Entry via OCR, Doctor Validation, and Batch Printing processes.
 
-## 2. Technology Stack
-*   **Frontend Framework:** Next.js (App Router)
-*   **Language:** TypeScript
-*   **Styling:** Tailwind CSS + Shadcn UI
-*   **Backend & Database:** Supabase (PostgreSQL)
-*   **Authentication:** NextAuth.js + Supabase Auth
-*   **State Management:** React Context + Local State
-*   **Real-time:** Supabase Realtime (Websockets)
+## 2. Technology Stack & Frameworks
+*   **Web Framework:** Next.js 14+ (App Router)
+*   **Language:** Strict TypeScript
+*   **Styling:** Tailwind CSS + Framer Motion (for fluid micro-interactions)
+*   **Backend & ORM:** Supabase (PostgreSQL) integrated with **Prisma ORM**
+*   **Authentication:** NextAuth.js (Session JWT) + Custom 6-Digit PIN E-Signature System
 
-## 3. Core Modules & Features
-1.  **Patient Management:** Registration, Queue/Status Tracking, History.
-2.  **Lab Information System (LIS):** Result Entry, Validation (Ref Ranges), Workflow (Draft/Submit).
-3.  **Role-Based Access Control (RBAC):** Admin, Doctor, MedTech, Nurse.
-4.  **Appointment System:** Scheduling and Tracking.
-5.  **Notifications:** Internal Messaging and System Alerts.
+## 3. Core Modules & Flow
+1.  **Patient & Pre-Lab Registry:** Comprehensive digital footprint for vitals, blood pressure, and lab request selection.
+2.  **Smart Lab Queue (My Tasks):** MedTechs assume specific queues to avoid job collisions using private task assignment rules.
+3.  **OCR Lab Automation:** Accelerates entries by capturing automated machine printouts and translating them into dynamic form inputs fields instantly.
+4.  **Batch Print Pipelines:** Solves native browser "popup blocking" and RAM crashes by writing deep `Snapshot` hashes into the database prior to spawning A4/A5 PDF print tabs.
 
-## 4. Database Schema (ER Diagram)
+## 4. Prisma Relational Schema (ER Diagram Insight)
+Top-level structural relations:
+*   **`User`**: Admin, Nurse, MedTech records with hashed PINs for digital signing.
+*   **`Patient`**: Primary medical records bound to unique Hospital Numbers (HN).
+*   **`StatusHistory`**: Immutable log trails tracking who updated what status and when.
+*   **`LabResult`**: Extensive test metrics (Chemistry, Hematology) bound to specific queues.
+*   **`PrintSnapshot`**: Ephemeral payload storage managing asynchronous batch prints.
 
-*(See generated image or below structure)*
+## 5. Security & Access Control Infrastructure (RBAC)
+1.  **Auth Guard & Role Validations:** Explicit definitions via `RoleGuard` prevent UI leaks.
+2.  **Server Actions Guarding:** Eliminates vulnerable REST API surfaces by pushing mission-critical mutations (like Approving Lab Results or altering Patient profiles) directly via secure Next.js Server Actions bound with `auth()` token verification.
+3.  **Digital E-Signature Generation:** Modifying a state to 'Completed' demands a valid 6-digit PIN which undergoes Bcrypt parsing to generate a timestamped Digital Signature QR footprint.
 
-```mermaid
-erDiagram
-    USERS {
-        uuid id PK
-        string email
-        string name
-        string role
-    }
-    PATIENTS {
-        string hn PK
-        string name
-        string status
-        string process
-    }
-    LAB_RESULTS {
-        int id PK
-        string hn FK
-        string wbc
-        string rbc
-        string plt
-    }
-    LAB_REFERENCE_RANGES {
-        uuid id PK
-        string test_key
-        float min_value
-        float max_value
-    }
-    %% Relations omitted for brevity
-    PATIENTS ||--o{ LAB_RESULTS : "has"
-```
-
-## 5. Detailed Codebase Structure
-
-### 5.1 Core Logic (`src/lib`)
-*   **`src/lib/supabase.ts`**: Central database client.
-*   **`src/lib/permissions.ts`**: Security Core. Defines `Role` types and access helpers.
-*   **`src/lib/services/`**: Data Access Layer (Patient, Lab, Appointment, Notification services).
-
-### 5.2 Application Routes (`src/app`)
-*   **Authentication:** `src/app/(auth)/login`
-*   **Admin:** `src/app/admin` (Protected by RoleGuard)
-*   **Patient Workflow:**
-    *   `src/app/dashboard`: Command center.
-    *   `src/app/results/[hn]/page.tsx`: **Critical**. Lab Result Entry Form with Validation Logic.
-*   **API:** `src/app/api/*` (Secure endpoints).
-
-## 6. Security Architecture
-1.  **Authentication:** Secure Login via NextAuth + Supabase.
-2.  **RBAC:** Strict strict access control via `RoleGuard` (Frontend) and Server-Side Checks (Backend).
-3.  **RLS:** Row Level Security in Postgres ensures data isolation.
-
-## 7. Key Decisions
-*   **Why specific types?** Results stored as Text to handle special chars (`<0.1`), HNs as Text to preserve leading zeros (`00123`).
-*   **Why UUIDs?** To prevent ID guessing and enumeration attacks.
+## 6. Development Patterns
+*   **Optimistic UI:** Used throughout the result approval phase to instantly dissolve patient cards while completing the SQL transaction safely in the background.
+*   **Component Modularity:** Logical slicing of `src/components/features` vs `shared` elements for adherence to DRY principles.

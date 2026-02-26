@@ -25,7 +25,7 @@ export async function POST(req: NextRequest) {
         }
 
         // Upload to Supabase Storage 'request_sheets' bucket
-        const { data: uploadData, error: uploadError } = await supabaseAdmin.storage
+        const { error: uploadError } = await supabaseAdmin.storage
             .from('request_sheets')
             .upload(filePath, buffer, {
                 contentType: 'application/pdf',
@@ -64,10 +64,10 @@ export async function POST(req: NextRequest) {
             path: filePath
         });
 
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error('PDF Upload API Error:', error);
         return NextResponse.json(
-            { error: error.message || 'Internal server error' },
+            { error: error instanceof Error ? error.message : 'Internal server error' },
             { status: 500 }
         );
     }
