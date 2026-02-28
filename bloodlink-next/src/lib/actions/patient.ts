@@ -205,6 +205,20 @@ export async function updatePatientStatus(
 
         // Notification is already handled inside PatientService.updatePatientStatus
 
+        // If Lab is accepting the order or receiving the specimen, assign them to the task
+        if ((processStatus === 'รอจัดส่ง' || processStatus === 'กำลังตรวจ') && email) {
+            // Add the current user as a responsible person so it appears in ONLY THEIR "My Tasks"
+            await PatientService.addResponsiblePerson(hn, email, email);
+        }
+
+        // If Lab has finished the process (uploaded results and status becomes เสร็จสิ้น), remove them from the responsibility list
+        if (processStatus === 'เสร็จสิ้น' && email) {
+            // Check if the user is a lab staff, then remove them so they don't linger on the patient's record
+            if (Permissions.isLabStaff(role)) {
+                await PatientService.removeResponsiblePerson(hn, email);
+            }
+        }
+
         revalidatePath('/dashboard');
         revalidatePath('/test-status');
         revalidatePath(`/history/${hn}`);

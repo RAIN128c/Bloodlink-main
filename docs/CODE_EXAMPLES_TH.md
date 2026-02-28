@@ -1,8 +1,8 @@
 # ตัวอย่างโค้ดที่สำคัญ (Core Code Architecture Examples)
 
-ส่วนนี้รวบรวมโครงสร้างโค้ดหลักล่าสุดในระดับ Production เพื่อเป็น Reference 
+ส่วนนี้อธิบายโครงสร้างโค้ดหลักในระดับ Production เพื่อเป็นแนวทางอ้างอิงในการพัฒนาและต่อยอดระบบ
 
-## 1. ระบบลายเซ็นอิเล็กทรอนิกส์ & การประทับเวลา (E-Signature Server Action)
+## 1. ระบบลายเซ็นอิเล็กทรอนิกส์และการประทับเวลา (E-Signature Server Action)
 ไฟล์: `src/lib/actions/patient.ts`
 ใช้สำหรับตรวจสอบ PIN และลงนามในใบส่งตรวจแบบดิจิทัล:
 
@@ -15,8 +15,12 @@ export async function approveLabResultAction({ hn, pin }: { hn: string, pin: str
     if (!session?.user) throw new Error("Unauthorized");
 
     // 2. ดึงข้อมูล User และตรวจสอบ PIN
-    const user = await prisma.user.findUnique({ where: { email: session.user.email }});
-    const isValidPin = await bcrypt.compare(pin, user.pinHash);
+    const { data: user } = await supabase
+        .from('users')
+        .select('pin_hash')
+        .eq('email', session.user.email)
+        .single();
+    const isValidPin = await bcrypt.compare(pin, user.pin_hash);
     
     if (!isValidPin) {
         return { success: false, error: "Invalid PIN" };
@@ -25,15 +29,15 @@ export async function approveLabResultAction({ hn, pin }: { hn: string, pin: str
     // 3. สร้างตราประทับ Digital Signature
     const signatureToken = generateSignatureToken(user.id, hn);
     
-    // 4. บันทึกผลเลือด (Database Transaction)
-    await prisma.patient.update({
-        where: { hn },
-        data: {
+    // 4. บันทึกผลเลือด (Database Update)
+    await supabase
+        .from('patients')
+        .update({
             process: 'เสร็จสิ้น',
             signatureToken,
             approvedBy: user.id
-        }
-    });
+        })
+        .eq('hn', hn);
 
     return { success: true };
 }
@@ -89,10 +93,10 @@ const handleUploadImage = async (file: File) => {
         // ผูกค่าที่ได้กลับเข้าตาราง
         if(extractedData.success) {
             onFieldsExtracted(extractedData.fields);
-            toast.success("ดึงข้อมูลตัวเลขสำเร็จ กรุณาตรวจสอบอีกครั้ง");
+            toast.success("ดึงข้อมูลตัวเลขสำเร็จ กรุณาตรวจสอบความถูกต้องอีกครั้ง");
         }
     } catch (e) {
-        toast.error("สแกนล้มเหลว");
+        toast.error("การสแกนข้อมูลล้มเหลว");
     } finally {
         setIsScanning(false);
     }

@@ -52,7 +52,7 @@ export function PatientActionPanel({ patient }: PatientActionPanelProps) {
     const statusOptions = getStatusOptions(currentStatus);
 
     const handleUpdate = async () => {
-        if (!nextAllowedStatus && !Permissions.isAdmin(effectiveRole)) {
+        if (!Permissions.canUpdateToStatus(effectiveRole, currentStatus, selectedStatus) && !Permissions.isAdmin(effectiveRole)) {
             toast.error('คุณไม่มีสิทธิ์อัปเดตสถานะนี้');
             return;
         }
