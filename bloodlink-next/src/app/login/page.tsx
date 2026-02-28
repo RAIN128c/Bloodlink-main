@@ -1,8 +1,9 @@
 'use client';
 
 import { authenticate, register } from '@/lib/actions';
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState, useEffect } from 'react'
+import Link from 'next/link'
+import { useSearchParams } from 'next/navigation'
 import { Loader2, Eye, EyeOff } from 'lucide-react';
 import Image from 'next/image';
 import { useTheme } from 'next-themes';
@@ -13,13 +14,20 @@ import { Turnstile } from '@marsidev/react-turnstile';
 type FormMode = 'login' | 'register';
 
 export default function LoginPage() {
-    const { resolvedTheme } = useTheme();
-    const [mounted, setMounted] = useState(false);
+    const { resolvedTheme } = useTheme()
+    const searchParams = useSearchParams()
+    const [mounted, setMounted] = useState(false)
+    const [accountRemovedAlert, setAccountRemovedAlert] = useState(false)
 
     useEffect(() => {
         // eslint-disable-next-line react-hooks/set-state-in-effect
-        setMounted(true);
-    }, []);
+        setMounted(true)
+
+        // Check if user was redirected due to account removal
+        if (searchParams.get('reason') === 'account_removed') {
+            setAccountRemovedAlert(true)
+        }
+    }, [searchParams])
 
     const [mode, setMode] = useState<FormMode>('login');
 
@@ -189,6 +197,14 @@ export default function LoginPage() {
                         <p className="text-[26px] text-gray-700 dark:text-gray-200 font-normal whitespace-nowrap z-10 transition-colors mb-8">
                             ยินดีต้อนรับสู่
                         </p>
+
+                        {/* Account Removed Alert */}
+                        {accountRemovedAlert && mode === 'login' && (
+                            <div className="mb-4 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg text-center animate-fadeIn" role="alert">
+                                <p className="text-sm font-semibold text-amber-800 dark:text-amber-300 mb-1">บัญชีของคุณถูกลบออกจากระบบ</p>
+                                <p className="text-xs text-amber-600 dark:text-amber-400">กรุณาติดต่อผู้ดูแลระบบหากต้องการใช้งานอีกครั้ง</p>
+                            </div>
+                        )}
 
                         {/* Login Form */}
                         {mode === 'login' && (

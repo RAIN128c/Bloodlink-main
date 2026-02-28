@@ -1,48 +1,51 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
-import { User } from '@supabase/supabase-js';
-import { createClient } from '@/utils/supabase/client';
+import { createContext, useContext, useEffect, useRef, useState, ReactNode } from 'react'
+import { User } from '@supabase/supabase-js'
+import { createClient } from '@/utils/supabase/client'
 
 export type SessionPayload = {
     user: {
-        id: string;
-        userId: string;
-        name: string;
-        surname: string;
-        email: string;
-        role: string;
-        status: string;
-    } | null;
-} | null;
+        id: string
+        userId: string
+        name: string
+        surname: string
+        email: string
+        role: string
+        status: string
+    } | null
+} | null
 
 type SessionContextType = {
-    data: SessionPayload;
-    status: 'loading' | 'authenticated' | 'unauthenticated';
-    update: () => Promise<void>;
-};
+    data: SessionPayload
+    status: 'loading' | 'authenticated' | 'unauthenticated'
+    update: () => Promise<void>
+}
 
-const SessionContext = createContext<SessionContextType | undefined>(undefined);
+const SessionContext = createContext<SessionContextType | undefined>(undefined)
 
 export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
-    const [data, setData] = useState<SessionPayload>(null);
-    const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading');
-    const supabase = createClient();
+    const [data, setData] = useState<SessionPayload>(null)
+    const [authStatus, setAuthStatus] = useState<'loading' | 'authenticated' | 'unauthenticated'>('loading')
+    const signingOut = useRef(false)
+    const supabase = createClient()
 
     const updateSession = async (user: User | null) => {
+        // Prevent re-entry while signing out a deleted user
+        if (signingOut.current) return
+
         if (!user) {
-            setData(null);
-            setAuthStatus('unauthenticated');
-            return;
+            setData(null)
+            setAuthStatus('unauthenticated')
+            return
         }
 
         try {
-            // Fetch comprehensive public profile (since JWT may not have full custom claims yet)
             const { data: profile } = await supabase
                 .from('users')
                 .select('*')
                 .eq('id', user.id)
-                .single();
+                .single()
 
             if (profile) {
                 setData({
@@ -55,37 +58,44 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
                         role: profile.role,
                         status: profile.status
                     }
-                });
-                setAuthStatus('authenticated');
+                })
+                setAuthStatus('authenticated')
             } else {
-                setData(null);
-                setAuthStatus('unauthenticated');
+                // User profile was deleted by admin — sign out and redirect with reason
+                signingOut.current = true
+                await supabase.auth.signOut()
+                setData(null)
+                setAuthStatus('unauthenticated')
+                window.location.href = '/login?reason=account_removed'
             }
-        } catch (error) {
-            console.error('Failed to fetch user profile:', error);
-            setData(null);
-            setAuthStatus('unauthenticated');
+        } catch {
+            // On error, sign out to prevent stuck state
+            signingOut.current = true
+            await supabase.auth.signOut()
+            setData(null)
+            setAuthStatus('unauthenticated')
+            window.location.href = '/login?reason=account_removed'
         }
-    };
+    }
 
     useEffect(() => {
         // Initial Fetch
         supabase.auth.getUser().then(({ data: { user } }) => {
-            updateSession(user);
-        });
+            updateSession(user)
+        })
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
             if (event === 'SIGNED_OUT') {
-                setData(null);
-                setAuthStatus('unauthenticated');
-            } else if (session?.user) {
-                updateSession(session.user);
+                setData(null)
+                setAuthStatus('unauthenticated')
+            } else if (session?.user && !signingOut.current) {
+                updateSession(session.user)
             }
-        });
+        })
 
-        return () => subscription.unsubscribe();
-    }, [supabase]);
+        return () => subscription.unsubscribe()
+    }, [supabase])
 
     return (
         <SessionContext.Provider value={{ data, status: authStatus, update: async () => { } }}>
