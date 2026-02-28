@@ -338,19 +338,28 @@ export class AuthService {
 
     static async deleteUser(userId: string): Promise<boolean> {
         try {
-            const { error } = await supabase
+            // 1. Delete from users table
+            const { error: dbError } = await supabase
                 .from('users')
                 .delete()
-                .eq('id', userId);
+                .eq('id', userId)
 
-            if (error) {
-                console.error('Delete user error:', error);
-                return false;
+            if (dbError) {
+                return false
             }
-            return true;
-        } catch (error) {
-            console.error('Delete user error:', error);
-            return false;
+
+            // 2. Delete from Supabase Auth to prevent orphaned auth accounts
+            try {
+                const { supabaseAdmin } = await import('@/lib/supabase-admin')
+                await supabaseAdmin.auth.admin.deleteUser(userId)
+            } catch {
+                // Auth deletion is best-effort — profile is already removed
+                // so the user will be signed out gracefully by SupabaseAuthProvider
+            }
+
+            return true
+        } catch {
+            return false
         }
     }
 
