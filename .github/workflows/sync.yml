@@ -32,9 +32,12 @@ jobs:
         run: |
           set -e
 
-          # ตั้งค่า Git (ใช้ชื่อกลางเพื่อไม่เปิดเผยตัวตน)
-          git config --global user.name "Automated Sync"
-          git config --global user.email "noreply@system.local"
+          # ดึงชื่อ owner จาก DOWNSTREAM_REPO (เช่น "username/repo" → "username")
+          OWNER=$(echo "$DOWNSTREAM_REPO" | cut -d'/' -f1)
+
+          # ตั้งค่า Git ใช้ชื่อ+อีเมลของเจ้าของ repo ปลายทาง (Vercel ต้องการ)
+          git config --global user.name "$OWNER"
+          git config --global user.email "${OWNER}@users.noreply.github.com"
 
           # Clone repo ปลายทาง
           git clone --depth=1 "https://x:${DOWNSTREAM_PAT}@github.com/${DOWNSTREAM_REPO}.git" _downstream
