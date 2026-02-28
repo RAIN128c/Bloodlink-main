@@ -1,76 +1,79 @@
-name: Auto Sync Upstream
+name: Push to Downstream
+
+# วิธีตั้งค่า:
+# 1. สร้าง PAT ของบัญชีปลายทาง (Fine-grained token, สิทธิ์ Contents: Read & Write เฉพาะ repo ปลายทาง)
+# 2. เพิ่ม Secrets ใน repo นี้ (Settings > Secrets > Actions):
+#    - DOWNSTREAM_PAT  = PAT ที่สร้างจากข้อ 1
+#    - DOWNSTREAM_REPO = owner/repo-name ของปลายทาง (เช่น username/my-project)
+# 3. (ไม่บังคับ) เพิ่ม VERCEL_DEPLOY_HOOK ถ้าปลายทางใช้ Vercel
 
 on:
-  schedule:
-    - cron: '0 0 * * *' # รันทุกเที่ยงคืน (UTC) = 7 โมงเช้าไทย
+  push:
+    branches: [main]
   workflow_dispatch: # อนุญาตให้กดรันมือได้
 
 permissions:
-  contents: write  # จำเป็นสำหรับ force push
+  contents: read
 
 jobs:
-  sync:
+  push-downstream:
     runs-on: ubuntu-latest
+    # ข้าม job ถ้ายังไม่ได้ตั้ง secrets
+    if: vars.DOWNSTREAM_REPO != '' 
+
     steps:
-      - name: Checkout this repo
+      - name: Checkout source
         uses: actions/checkout@v4
-        with:
-          # ใช้ SYNC_PAT ที่มีสิทธิ์ 'workflow' แทน GITHUB_TOKEN (ถ้าไม่มีถึงจะถอยไปใช้ GITHUB_TOKEN)
-          token: ${{ secrets.SYNC_PAT || secrets.GITHUB_TOKEN }}
-          fetch-depth: 0  # ดึง history ทั้งหมดเพื่อ merge ได้ถูกต้อง
 
-      - name: Setup Git Config
+      - name: Sync to downstream (squashed, no history leak)
+        env:
+          DOWNSTREAM_PAT: ${{ secrets.DOWNSTREAM_PAT }}
+          DOWNSTREAM_REPO: ${{ vars.DOWNSTREAM_REPO }}
         run: |
-          # 🚨 หลอก Vercel โดยใช้บัญชีของเจ้าของ Fork โดยตรง (เพื่อยืนยันว่าเป็นเจ้าของ Deploy เอง)
-          git config --global user.name "${{ github.actor }}"
-          git config --global user.email "${{ github.actor }}@users.noreply.github.com"
+          set -e
 
-      - name: Sync from Upstream
-        run: |
-          # 1. เชื่อมต่อ Repo ต้นฉบับ
-          git remote add upstream https://github.com/RAIN128c/Bloodlink-main.git
-          git fetch upstream || exit 1
+          # ตั้งค่า Git (ใช้ชื่อกลางเพื่อไม่เปิดเผยตัวตน)
+          git config --global user.name "Automated Sync"
+          git config --global user.email "noreply@system.local"
 
-          # 2. ค้นหา Master/Main สาขาที่ถูกต้อง
-          if git rev-parse --verify upstream/main >/dev/null 2>&1; then UPSTREAM_BRANCH="upstream/main"; else UPSTREAM_BRANCH="upstream/master"; fi
-          echo "✅ ใช้ branch: $UPSTREAM_BRANCH"
+          # Clone repo ปลายทาง
+          git clone --depth=1 "https://x:${DOWNSTREAM_PAT}@github.com/${DOWNSTREAM_REPO}.git" _downstream
+          cd _downstream
 
-          # 3. เตรียมการดึงไฟล์ทั้งหมด (แบบไม่สืบทอดประวัติ Commit ของ RAIN128c)
-          git checkout main
-          
-          # เปลี่ยนไปยัง Branch ชั่วคราว โดยดึงไฟล์ล่าสุดของต้นฉบับมาทั้งหมด (รวมไฟล์ลบ/เพิ่ม)
-          git checkout -B sync-temp $UPSTREAM_BRANCH
+          # เก็บ .git ของปลายทางไว้
+          mv .git ../_downstream_git
 
-          # 4. 🔥 กู้คืนไฟล์ Workflows ของเครื่องเราเอง ไม่ให้ถูกทับ
-          git checkout main -- .github/workflows/ || echo "No workflows to restore"
+          # ลบไฟล์เก่าทั้งหมด
+          rm -rf ./* ./.[^.]*  2>/dev/null || true
 
-          # 5. ถอย HEAD กลับมาที่ main เพื่อเตรียม Commit แบบรวบยอด (Squash)
-          git reset --soft main
+          # คัดลอกไฟล์ทั้งหมดจากต้นทาง (ไม่รวม .git)
+          cd ..
+          rsync -a --exclude='.git' --exclude='_downstream' --exclude='_downstream_git' ./ _downstream/
 
-          # 6. เช็คว่ามีอะไรเปลี่ยนแปลงไหม ถ้ามีให้สร้าง Commit ใหม่ในชื่อเจ้าของ Fork
+          # คืน .git ของปลายทาง
+          mv _downstream_git _downstream/.git
+          cd _downstream
+
+          # ลบ workflow ของต้นทางออก เพื่อไม่ให้ปลายทางมี workflow นี้
+          rm -rf .github/workflows/sync.yml 2>/dev/null || true
+
+          # Commit และ Push (ถ้ามีการเปลี่ยนแปลง)
+          git add -A
           if git diff --staged --quiet; then
-            echo "✅ ต้นฉบับไม่มีอะไรอัปเดต (No changes)"
+            echo "✅ ไม่มีการเปลี่ยนแปลง (No changes to sync)"
           else
-            git commit -m "sync: auto update from upstream (bypass vercel format)"
-            git checkout main
-            git merge sync-temp --ff-only
-
-            # ใส่ SYNC_PAT และสั่ง Push กลับเข้า Fork
-            if [ -n "${{ secrets.SYNC_PAT }}" ]; then
-              git remote set-url origin https://${{ github.actor }}:${{ secrets.SYNC_PAT }}@github.com/${{ github.repository }}.git
-            fi
-            git push origin main
-            echo "✅ Sync สำเร็จ (ข้ามข้อจำกัด Vercel 100%)"
+            TIMESTAMP=$(date -u +"%Y-%m-%d %H:%M UTC")
+            git commit -m "update: latest changes (${TIMESTAMP})"
+            git push
+            echo "✅ Sync สำเร็จ — ปลายทางได้รับอัปเดตแล้ว"
           fi
 
-      - name: Trigger Vercel Deploy Hook (Bypass Bot Check)
+      - name: Trigger Vercel Deploy (optional)
         if: success()
         env:
           VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
         run: |
           if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
-            echo "🚀 กำลังสั่ง Vercel ให้ Deploy ผ่านประตูลับ (Deploy Hook)..."
-            curl -X POST "$VERCEL_DEPLOY_HOOK"
-          else
-            echo "⏭️ ข้ามการ Deploy Vercel เนื่องจากไม่ได้ตั้ง VERCEL_DEPLOY_HOOK secret"
+            curl -s -X POST "$VERCEL_DEPLOY_HOOK"
+            echo "✅ Vercel Deploy triggered"
           fi

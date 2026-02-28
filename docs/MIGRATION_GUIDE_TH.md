@@ -1,51 +1,40 @@
-# คู่มือการอัปเกรดระบบ Bloodlink (สำหรับผู้ที่ทำการ Fork)
+# คู่มือการตั้งค่าระบบ Bloodlink (Setup Guide)
 
-เนื่องจากมีการปรับปรุงระบบครั้งใหญ่เพื่อรองรับการปรับปรุงอัตโนมัติ (Auto-Update)
-สำหรับผู้ที่ทำการ Fork โปรเจคไปแล้ว จำเป็นต้องดำเนินการดังนี้เพียงขั้นตอนเดียวในการติดตั้งระบบ
-
-หลังจากดำเนินการขั้นตอนนี้เสร็จสิ้น ระบบจะทำการอัปเดตข้อมูลให้ตรงตามต้นฉบับในเวลาเที่ยงคืนของทุกวันโดยอัตโนมัติ
+คู่มือนี้สำหรับการตั้งค่าเริ่มต้นระบบ Bloodlink บนสภาพแวดล้อมใหม่
 
 ---
 
-## ขั้นตอนที่ 1: กด Sync Fork ใน GitHub
-1.  เข้าไปที่หน้า **Repository** ของท่านใน GitHub
-2.  มองหาปุ่ม **"Sync fork"** (อยู่บริเวณใต้ปุ่มสีเขียว Code)
-3.  กดปุ่ม **"Update branch"**
-    *   *ผลลัพธ์:* ไฟล์ระบบใหม่ (`sync.yml`) จะถูกดึงเข้ามาในโปรเจคของท่าน
+## ขั้นตอนที่ 1: ตั้งค่า Supabase
+1.  สร้างโปรเจค Supabase ใหม่ที่ [supabase.com/dashboard](https://supabase.com/dashboard)
+2.  ไปที่เมนู **SQL Editor** → รัน SQL Schema ที่อยู่ใน `docs/` เพื่อสร้างตาราง
+3.  คัดลอก API Keys:
+    *   `NEXT_PUBLIC_SUPABASE_URL`
+    *   `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+    *   `SUPABASE_SERVICE_ROLE_KEY` (ระวัง! ห้ามเปิดเผย)
 
-## ขั้นตอนที่ 2: เปิดใช้งานบอทอัปเดต (Enable Workflows)
-GitHub จะปิดการทำงานของบอท (Workflows) ใน Fork ไว้เป็นค่าเริ่มต้น ท่านต้องไปเปิดเอง
-1.  คลิกที่แท็บ **"Actions"** ด้านบนของหน้า Repository
-2.  ท่านจะเห็นปุ่มสีเขียวขนาดใหญ่เขียนว่า **"I understand my workflows, go ahead and enable them"**
-3.  **กดปุ่มสีเขียวนั้น** เพื่ออนุญาตให้บอททำงาน
-
-## ขั้นตอนที่ 3: เปิดสิทธิ์แก้ไขฐานข้อมูล (Run SQL)
-เพื่อให้ระบบสามารถอัปเดตโครงสร้างฐานข้อมูล (Database Schema) เองได้ในอนาคต
-1.  ไปที่ [Supabase Dashboard](https://supabase.com/dashboard) ของท่าน
-2.  เลือกเมนู **SQL Editor** (ไอคอนกระดาษทางซ้าย)
-3.  คัดลอกโค้ดด้านล่างไปวาง แล้วกด **RUN**
-
-```sql
--- สร้างฟังก์ชันเพื่อให้ระบบเว็บสามารถอัปเดต Database เองได้ในอนาคต
-create or replace function exec_sql(query text)
-returns void
-language plpgsql
-security definer
-as $$
-begin
-  execute query;
-end;
-$$;
+## ขั้นตอนที่ 2: ตั้งค่า Environment Variables
+สร้างไฟล์ `.env.local` ภายใน `bloodlink-next/`:
+```env
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhxx...
+SUPABASE_SERVICE_ROLE_KEY=eyJhxx...
+NEXTAUTH_SECRET=<random_string>
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-## ขั้นตอนที่ 4: (เฉพาะผู้ใช้ Vercel) เพิ่ม Key ใหม่
-หากท่าน Deploy เว็บผ่าน Vercel
-1.  ไปที่ Vercel Project Settings > **Environment Variables**
-2.  เพิ่มตัวแปรชื่อ: `SUPABASE_SERVICE_ROLE_KEY`
-    *   *ค่า (Value):* หาได้จาก Supabase > Project Settings > API > `service_role` secret (ระวัง! ห้ามเปิดเผยคีย์นี้ให้ใคร)
-3.  กด **Redeploy** 1 ครั้ง
+## ขั้นตอนที่ 3: รันระบบ
+```bash
+cd bloodlink-next
+npm install
+npm run dev
+```
+
+## ขั้นตอนที่ 4: (Vercel) การ Deploy
+1.  เชื่อมต่อ GitHub Repository กับ Vercel
+2.  เพิ่ม Environment Variables ทั้งหมดจากข้อ 2 ใน Vercel Project Settings
+3.  ตั้ง Root Directory เป็น `bloodlink-next`
+4.  กด Deploy
 
 ---
 
-**เสร็จสิ้นกระบวนการ**
-หลังจากนี้ ระบบจะดำเนินการตรวจสอบและดึงการอัปเดตจาก Repository ต้นฉบับมาติดตั้งด้วยตนเองทุกคืน โดยไม่ต้องดำเนินการซ้ำอีก
+**เสร็จสิ้นกระบวนการ** — ระบบพร้อมใช้งานทั้ง Development และ Production

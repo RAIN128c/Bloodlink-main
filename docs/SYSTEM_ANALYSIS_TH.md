@@ -28,7 +28,7 @@
 | Form | React Hook Form + Zod | Input Validation |
 | Security | Cloudflare Turnstile | CAPTCHA ป้องกัน Bot |
 | Hosting | Vercel | Auto-deploy จาก GitHub |
-| CI/CD | GitHub Actions | `sync.yml` (auto-sync forks), `migrate-users.yml` |
+| CI/CD | GitHub Actions | `sync.yml` (push-based auto-deploy), `migrate-users.yml` |
 
 ## 3. ฟีเจอร์แกนกลางและกระบวนการทำงาน (Core Workflows)
 
