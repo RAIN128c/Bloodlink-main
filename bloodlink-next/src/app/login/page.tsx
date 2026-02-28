@@ -1,7 +1,7 @@
 'use client';
 
-import { authenticate, register } from '@/lib/actions';
-import { useState, useEffect } from 'react'
+import { authenticate, register } from '@/lib/actions'
+import { useState, useEffect, Suspense } from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { Loader2, Eye, EyeOff } from 'lucide-react';
@@ -14,6 +14,14 @@ import { Turnstile } from '@marsidev/react-turnstile';
 type FormMode = 'login' | 'register';
 
 export default function LoginPage() {
+    return (
+        <Suspense>
+            <LoginContent />
+        </Suspense>
+    )
+}
+
+function LoginContent() {
     const { resolvedTheme } = useTheme()
     const searchParams = useSearchParams()
     const [mounted, setMounted] = useState(false)
@@ -482,5 +490,5 @@ export default function LoginPage() {
                 }
             `}</style>
         </div>
-    );
+    )
 }
