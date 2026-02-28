@@ -1,0 +1,25 @@
+version: 2
+updates:
+  # อัปเดต npm packages (Next.js, React, Supabase, ฯลฯ)
+  - package-ecosystem: "npm"
+    directory: "/bloodlink-next"
+    schedule:
+      interval: "weekly" # ตรวจสอบทุกสัปดาห์
+      day: "monday"
+      time: "09:00"
+      timezone: "Asia/Bangkok"
+    open-pull-requests-limit: 5 # เปิด PR อัตโนมัติไม่เกิน 5 อันพร้อมกัน
+    labels:
+      - "security"
+      - "dependencies"
+
+  # อัปเดต GitHub Actions (พวก actions/checkout, etc.)
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly" # ตรวจสอบทุกเดือน
+      day: "first"
+    open-pull-requests-limit: 3
+    labels:
+      - "security"
+      - "actions"
