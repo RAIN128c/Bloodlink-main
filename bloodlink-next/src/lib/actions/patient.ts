@@ -167,7 +167,7 @@ export async function updatePatientStatus(
                 const apptResult = await AppointmentService.createAppointment({
                     patient_hn: hn,
                     appointment_date: today.toISOString().split('T')[0],
-                    appointment_time: today.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }),
+                    appointment_time: today.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' }),
                     type: 'ตรวจทั่วไป (Walk-in)',
                     note: data.history,
                     ...vitals

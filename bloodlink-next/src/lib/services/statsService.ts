@@ -41,7 +41,7 @@ export class StatsService {
 
                     // Format time: HH:mm
                     const date = new Date(log.created_at);
-                    const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    const timeStr = date.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Bangkok' });
 
                     return {
                         name: log.name || 'User',

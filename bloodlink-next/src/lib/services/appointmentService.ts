@@ -68,7 +68,7 @@ export class AppointmentService {
                 if (row.start_time) {
                     const d = new Date(row.start_time);
                     date = d.toISOString().split('T')[0]; // YYYY-MM-DD
-                    time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    time = d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' });
                 }
 
                 // Use end_time as completion indicator

@@ -60,7 +60,7 @@ export class PatientService {
                 appts?.forEach(a => {
                     if (a.start_time && !appointmentTimeMap.has(a.patient_hn)) {
                         const d = new Date(a.start_time);
-                        appointmentTimeMap.set(a.patient_hn, d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false }));
+                        appointmentTimeMap.set(a.patient_hn, d.toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' }));
                     }
                 });
             }
@@ -150,7 +150,7 @@ export class PatientService {
                     .single();
 
                 if (latestAppt && latestAppt.start_time) {
-                    actualTime = new Date(latestAppt.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false });
+                    actualTime = new Date(latestAppt.start_time).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Bangkok' });
                 }
             }
 
