@@ -218,64 +218,64 @@ export const PrintRequestSheet = ({ patients, signatures, vitals, hospitalInfo, 
                                 const cellMap = [
                                     // Row 1
                                     [
-                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
-                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
-                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
-                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
-                                        { label: "FBS", active: testTypes.includes('fbs'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs (dm)'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs (ht)'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs (dlp)'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs (ckd)'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
+                                        { label: "FBS", active: testTypes.includes('fbs (asthma/copd)'), val: hLabs['fbs'], currentVal: cLabs['fbs'] },
                                         { label: "Uric acid", active: testTypes.includes('uric acid') || testTypes.includes('uric'), val: hLabs['uric acid'], currentVal: cLabs['uric'], isPlain: true, unit: 'mg/dL' }
                                     ],
                                     // Row 2
                                     [
-                                        { label: "HbA1c", active: testTypes.includes('hba1c'), isPlain: true },
-                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), isPlain: true },
-                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), isPlain: true },
-                                        { label: "HbA1c", active: testTypes.includes('hba1c'), isPlain: true },
-                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), isPlain: true },
+                                        { label: "HbA1c", active: testTypes.includes('hba1c (dm)'), isPlain: true },
+                                        { label: "Lipid", active: testTypes.includes('lipid (ht)'), isPlain: true },
+                                        { label: "Lipid", active: testTypes.includes('lipid (dlp)'), isPlain: true },
+                                        { label: "HbA1c", active: testTypes.includes('hba1c (ckd)'), isPlain: true },
+                                        { label: "Lipid", active: testTypes.includes('lipid (asthma/copd)'), isPlain: true },
                                         { label: "AST(SGOT)", active: testTypes.includes('ast(sgot)'), val: hLabs['ast'], currentVal: cLabs['ast'], isPlain: true }
                                     ],
                                     // Row 3
                                     [
-                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), isPlain: true },
-                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), isPlain: true },
+                                        { label: "Lipid", active: testTypes.includes('lipid (dm)'), isPlain: true },
+                                        { label: "Cr, GFR", active: testTypes.includes('cr, gfr (ht)'), isPlain: true },
                                         { label: "", active: false },
-                                        { label: "Lipid", active: testTypes.includes('lipid profile') || testTypes.includes('lipid'), isPlain: true },
+                                        { label: "Lipid", active: testTypes.includes('lipid (ckd)'), isPlain: true },
                                         { label: "CBC", active: testTypes.includes('cbc'), isPlain: true },
                                         { label: "ALT(SGPT)", active: testTypes.includes('alt(sgpt)'), val: hLabs['alt'], currentVal: cLabs['alt'], isPlain: true }
                                     ],
                                     // Row 4
                                     [
-                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), isPlain: true },
-                                        { label: "Na, K, Cl", active: testTypes.includes('na, k, cl') || testTypes.includes('electrolytes'), isPlain: true },
+                                        { label: "Cr, GFR", active: testTypes.includes('cr, gfr (dm)'), isPlain: true },
+                                        { label: "Na, K, Cl", active: testTypes.includes('na, k, cl (ht)'), isPlain: true },
                                         { label: "", active: false },
-                                        { label: "Cr, GFR", active: testTypes.includes('creatinine') || testTypes.includes('egfr'), isPlain: true },
-                                        { label: "Na, K, Cl", active: testTypes.includes('na, k, cl') || testTypes.includes('electrolytes'), isPlain: true },
+                                        { label: "Cr, GFR", active: testTypes.includes('cr, gfr (ckd)'), isPlain: true },
+                                        { label: "", active: false },
                                         { label: "LFT", active: testTypes.includes('lft'), val: hLabs['lft'], currentVal: cLabs['lft'], isPlain: true }
                                     ],
                                     // Row 5
                                     [
-                                        { label: "Hct", active: testTypes.includes('hct'), val: hLabs['hct'], currentVal: cLabs['hct'] },
-                                        { label: "U-Alb", active: testTypes.includes('u-alb'), val: hLabs['u-alb'], currentVal: cLabs['u-alb'] },
+                                        { label: "Hct", active: testTypes.includes('hct (dm)'), val: hLabs['hct'], currentVal: cLabs['hct'] },
+                                        { label: "U-Alb", active: testTypes.includes('u-alb (ht)'), val: hLabs['u-alb'], currentVal: cLabs['u-alb'] },
                                         { label: "", active: false },
-                                        { label: "Hct", active: testTypes.includes('hct'), val: hLabs['hct'], currentVal: cLabs['hct'] },
+                                        { label: "Hct", active: testTypes.includes('hct (ckd)'), val: hLabs['hct'], currentVal: cLabs['hct'] },
                                         { label: "", active: false },
                                         { label: "Anti-HIV", active: testTypes.includes('anti-hiv'), val: hLabs['hiv'], currentVal: cLabs['hiv'], isPlain: true }
                                     ],
                                     // Row 6
                                     [
-                                        { label: "U-Alb", active: testTypes.includes('u-alb'), val: hLabs['u-alb'], currentVal: cLabs['u-alb'] },
-                                        { label: "U-sugar", active: testTypes.includes('u-sugar'), val: hLabs['u-sugar'], currentVal: cLabs['u-sugar'] },
+                                        { label: "U-Alb", active: testTypes.includes('u-alb (dm)'), val: hLabs['u-alb'], currentVal: cLabs['u-alb'] },
+                                        { label: "U-sugar", active: testTypes.includes('u-sugar (ht)'), val: hLabs['u-sugar'], currentVal: cLabs['u-sugar'] },
                                         { label: "", active: false },
-                                        { label: "electrolytes", active: testTypes.includes('electrolytes'), val: hLabs['electrolyte'], currentVal: cLabs['electrolyte'], isPlain: true },
+                                        { label: "electrolytes", active: testTypes.includes('electrolytes (ckd)'), val: hLabs['electrolyte'], currentVal: cLabs['electrolyte'], isPlain: true },
                                         { label: "", active: false },
                                         { label: "HBs-Ag", active: testTypes.includes('hbs-ag'), val: hLabs['hbs'], currentVal: cLabs['hbs'], isPlain: true }
                                     ],
                                     // Row 7
                                     [
-                                        { label: "U-sugar", active: testTypes.includes('u-sugar'), val: hLabs['u-sugar'], currentVal: cLabs['u-sugar'] },
+                                        { label: "U-sugar", active: testTypes.includes('u-sugar (dm)'), val: hLabs['u-sugar'], currentVal: cLabs['u-sugar'] },
                                         { label: "", active: false },
                                         { label: "", active: false },
-                                        { label: "microalbumin", active: testTypes.includes('microalbumin'), val: hLabs['microalbumin'], currentVal: cLabs['microalbumin'], isPlain: true },
+                                        { label: "microalbumin", active: testTypes.includes('microalbumin (ckd)'), val: hLabs['microalbumin'], currentVal: cLabs['microalbumin'], isPlain: true },
                                         { label: "", active: false },
                                         { label: "VDRL", active: testTypes.includes('vdrl'), val: hLabs['vdrl'], currentVal: cLabs['vdrl'], isPlain: true }
                                     ],

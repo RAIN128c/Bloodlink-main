@@ -93,16 +93,15 @@ export const RequestSheet = ({ patient, hospitalName = 'โรงพยาบา
                 </div>
 
                 {/* Vitals Grid */}
-                <div className="grid grid-cols-7 gap-0 mb-4 text-center">
+                <div className="grid grid-cols-8 gap-0 mb-4 text-center">
                     <GridCell label="น้ำหนัก" value="" unit="kg" />
                     <GridCell label="ส่วนสูง" value="" unit="cm" />
                     <GridCell label="รอบเอว" value="" unit="cm" />
-                    <GridCell label="สพ." value="" unit="cm" /> {/* Hip - placeholder if needed or remove */}
-                    <GridCell label="BP" value="" unit="mmHg" />
-                    <GridCell label="Pulse" value="" unit="/min" />
-                    <GridCell label="Temp" value="" unit="C" />
-                    <GridCell label="DTX" value="" unit="mg/dL" />
-                    {/* Fill empty cells to make row complete if 7 cols doesn't fit perfectly or adjust cols */}
+                    <GridCell label="BP1" value="" unit="mmHg" />
+                    <GridCell label="BP2" value="" unit="mmHg" />
+                    <GridCell label="P" value="" unit="/min" />
+                    <GridCell label="RR" value="" unit="/min" />
+                    <GridCell label="T" value="" unit="°C" />
                 </div>
 
                 {/* Diagnosis & Lab Request Layout */}
@@ -125,12 +124,13 @@ export const RequestSheet = ({ patient, hospitalName = 'โรงพยาบา
                     <div className="col-span-9 p-2">
                         <div className="grid grid-cols-4 gap-y-2 gap-x-4">
                             {[
-                                'FBS', 'HbA1c', 'Lipid Profile', 'Creatinine',
-                                'eGFR', 'Urinalysis', 'Electrolytes', 'Uric Acid',
-                                'LFT', 'Anti-HIV', 'HBs-Ag', 'VDRL',
-                                'UPT', 'CBC'
+                                'FBS (DM)', 'HbA1c (DM)', 'Lipid (DM)', 'Cr, GFR (DM)',
+                                'FBS (HT)', 'Lipid (HT)', 'Cr, GFR (HT)', 'Na, K, Cl (HT)',
+                                'FBS (CKD)', 'Hct (CKD)', 'Electrolytes (CKD)', 'Microalbumin (CKD)',
+                                'Uric Acid', 'AST(SGOT)', 'ALT(SGPT)', 'LFT',
+                                'CBC', 'Anti-HIV', 'HBs-Ag', 'VDRL', 'UPT', 'TFT'
                             ].map(lab => (
-                                <CheckBox key={lab} label={lab} checked={patient.testType?.includes(lab)} />
+                                <CheckBox key={lab} label={lab.replace(/ \(.+\)/, '')} checked={patient.testType?.includes(lab)} />
                             ))}
                         </div>
                     </div>

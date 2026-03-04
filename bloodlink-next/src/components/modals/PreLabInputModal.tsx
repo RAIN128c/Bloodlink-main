@@ -31,7 +31,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
     const [pulse, setPulse] = useState('')
     const [rr, setRr] = useState('')
     const [temperature, setTemperature] = useState('')
-    const [dtx, setDtx] = useState('')
+
     const [weight, setWeight] = useState('')
     const [height, setHeight] = useState('')
     const [waist, setWaist] = useState('')
@@ -45,15 +45,34 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
     // Lab Request (testType)
     const [selectedTests, setSelectedTests] = useState<string[]>([])
 
-    const LAB_TEST_OPTIONS = [
-        'CBC', 'FBS', 'HbA1c', 'Lipid Profile',
-        'Creatinine', 'eGFR', 'Urinalysis', 'Electrolytes',
-        'Uric Acid', 'LFT', 'AST(SGOT)', 'ALT(SGPT)',
-        'Hct', 'U-Alb', 'U-sugar', 'Na, K, Cl', 'Microalbumin',
-        'Anti-HIV', 'HBs-Ag', 'VDRL', 'UPT', 'TFT'
-    ] as const
+    const LAB_TEST_GROUPS = [
+        {
+            category: 'DM (เบาหวาน)',
+            tests: ['FBS (DM)', 'HbA1c (DM)', 'Lipid (DM)', 'Cr, GFR (DM)', 'Hct (DM)', 'U-Alb (DM)', 'U-sugar (DM)']
+        },
+        {
+            category: 'HT (ความดันโลหิตสูง)',
+            tests: ['FBS (HT)', 'Lipid (HT)', 'Cr, GFR (HT)', 'Na, K, Cl (HT)', 'U-Alb (HT)', 'U-sugar (HT)']
+        },
+        {
+            category: 'DLP (ไขมันในเลือดสูง)',
+            tests: ['FBS (DLP)', 'Lipid (DLP)']
+        },
+        {
+            category: 'CKD (ไตเรื้อรัง)',
+            tests: ['FBS (CKD)', 'HbA1c (CKD)', 'Lipid (CKD)', 'Cr, GFR (CKD)', 'Hct (CKD)', 'Electrolytes (CKD)', 'Microalbumin (CKD)']
+        },
+        {
+            category: 'Asthma/COPD',
+            tests: ['FBS (Asthma/COPD)', 'Lipid (Asthma/COPD)']
+        },
+        {
+            category: 'อื่นๆ (General/Other)',
+            tests: ['Uric Acid', 'AST(SGOT)', 'ALT(SGPT)', 'LFT', 'CBC', 'Na, K, Cl', 'Anti-HIV', 'HBs-Ag', 'VDRL', 'UPT', 'TFT']
+        }
+    ];
 
-    const NCD_SET = ['FBS', 'HbA1c', 'Lipid Profile', 'Creatinine', 'Urinalysis']
+    const NCD_SET = ['FBS (DM)', 'HbA1c (DM)', 'Lipid (DM)', 'Cr, GFR (DM)', 'U-Alb (DM)', 'U-sugar (DM)']
 
     useEffect(() => {
         if (isOpen && patient?.hn) {
@@ -65,7 +84,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
 
     const resetForm = () => {
         setBp1(''); setBp2(''); setPulse(''); setRr('')
-        setTemperature(''); setDtx(''); setWeight(''); setHeight(''); setWaist('')
+        setTemperature(''); setWeight(''); setHeight(''); setWaist('')
         setHistoricalLabs({})
         setCurrentLabs({})
         setPendingAppointments([])
@@ -99,7 +118,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                 setPulse(selected.pulse || '')
                 setRr(selected.rr || '')
                 setTemperature(selected.temperature || '')
-                setDtx(selected.dtx || '')
+
                 setWeight(selected.weight || '')
                 setHeight(selected.height || '')
                 setWaist(selected.waist || '')
@@ -138,7 +157,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
             setPulse(appt.pulse || '')
             setRr(appt.rr || '')
             setTemperature(appt.temperature || '')
-            setDtx(appt.dtx || '')
+
             setWeight(appt.weight || '')
             setHeight(appt.height || '')
             setWaist(appt.waist || '')
@@ -180,7 +199,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                 pulse: pulse,
                 rr: rr,
                 temperature: temperature,
-                dtx: dtx,
+
                 weight: weight,
                 height: height,
                 waist: waist,
@@ -240,28 +259,41 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
 
     // Map test names to lab field keys
     const testToLabKey: Record<string, { key: string; label: string }> = {
-        'FBS': { key: 'fbs', label: 'FBS' },
-        'HbA1c': { key: 'hba1c', label: 'HbA1C' },
-        'Lipid Profile': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
-        'Creatinine': { key: 'cr', label: 'Cr / GFR' },
-        'eGFR': { key: 'cr', label: 'Cr / GFR' },
+        'FBS (DM)': { key: 'fbs', label: 'FBS' },
+        'FBS (HT)': { key: 'fbs', label: 'FBS' },
+        'FBS (DLP)': { key: 'fbs', label: 'FBS' },
+        'FBS (CKD)': { key: 'fbs', label: 'FBS' },
+        'FBS (Asthma/COPD)': { key: 'fbs', label: 'FBS' },
+        'HbA1c (DM)': { key: 'hba1c', label: 'HbA1C' },
+        'HbA1c (CKD)': { key: 'hba1c', label: 'HbA1C' },
+        'Lipid (DM)': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Lipid (HT)': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Lipid (DLP)': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Lipid (CKD)': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Lipid (Asthma/COPD)': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Cr, GFR (DM)': { key: 'cr', label: 'Cr / GFR' },
+        'Cr, GFR (HT)': { key: 'cr', label: 'Cr / GFR' },
+        'Cr, GFR (CKD)': { key: 'cr', label: 'Cr / GFR' },
+        'Na, K, Cl (HT)': { key: 'electrolyte', label: 'Electrolytes' },
+        'Electrolytes (CKD)': { key: 'electrolyte', label: 'Electrolytes' },
+        'Hct (DM)': { key: 'hct', label: 'Hct' },
+        'Hct (CKD)': { key: 'hct', label: 'Hct' },
+        'U-Alb (DM)': { key: 'u-alb', label: 'U-Alb' },
+        'U-Alb (HT)': { key: 'u-alb', label: 'U-Alb' },
+        'U-sugar (DM)': { key: 'u-sugar', label: 'U-sugar' },
+        'U-sugar (HT)': { key: 'u-sugar', label: 'U-sugar' },
+        'Microalbumin (CKD)': { key: 'microalbumin', label: 'Microalbumin' },
         'Uric Acid': { key: 'uric', label: 'Uric Acid' },
         'AST(SGOT)': { key: 'ast', label: 'AST (SGOT)' },
         'ALT(SGPT)': { key: 'alt', label: 'ALT (SGPT)' },
-        'CBC': { key: 'cbc', label: 'CBC' },
-        'Hct': { key: 'hct', label: 'Hct' },
         'LFT': { key: 'lft', label: 'LFT' },
-        'Na, K, Cl': { key: 'na', label: 'Na, K, Cl' },
-        'U-Alb': { key: 'u-alb', label: 'U-Alb' },
-        'U-sugar': { key: 'u-sugar', label: 'U-sugar' },
-        'Electrolytes': { key: 'electrolyte', label: 'Electrolytes' },
-        'Microalbumin': { key: 'microalbumin', label: 'Microalbumin' },
+        'CBC': { key: 'cbc', label: 'CBC' },
+        'Na, K, Cl': { key: 'electrolyte', label: 'Electrolytes' },
         'Anti-HIV': { key: 'hiv', label: 'Anti-HIV' },
         'HBs-Ag': { key: 'hbs', label: 'HBs-Ag' },
         'VDRL': { key: 'vdrl', label: 'VDRL' },
         'UPT': { key: 'upt', label: 'UPT' },
         'TFT': { key: 'tft', label: 'TFT' },
-        'Urinalysis': { key: 'urinalysis', label: 'Urinalysis' },
     }
 
     // List of tests that actually have a space to write results on the form
@@ -274,7 +306,8 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
         const seen = new Set<string>()
         const fields: { key: string; label: string }[] = []
         for (const test of selectedTests) {
-            if (!writableLabTests.includes(test)) continue;
+            const isWritable = writableLabTests.some(w => test.startsWith(w));
+            if (!isWritable) continue;
             const mapping = testToLabKey[test]
             if (mapping && !seen.has(mapping.key)) {
                 seen.add(mapping.key)
@@ -400,37 +433,46 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                                         + NCD Set
                                     </button>
                                 </div>
-                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 px-2">
-                                    {LAB_TEST_OPTIONS.map((test) => {
-                                        const isChecked = selectedTests.includes(test)
-                                        return (
-                                            <label key={test} className="flex items-center gap-2 cursor-pointer group">
-                                                <div className={`w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0 ${isChecked
-                                                    ? 'bg-indigo-600 border-indigo-600'
-                                                    : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-indigo-400'
-                                                    }`}>
-                                                    {isChecked && (
-                                                        <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                                                        </svg>
-                                                    )}
-                                                </div>
-                                                <input
-                                                    type="checkbox"
-                                                    className="hidden"
-                                                    checked={isChecked}
-                                                    onChange={(e) => {
-                                                        if (e.target.checked) {
-                                                            setSelectedTests(prev => [...prev, test])
-                                                        } else {
-                                                            setSelectedTests(prev => prev.filter(t => t !== test))
-                                                        }
-                                                    }}
-                                                />
-                                                <span className="text-[12px] text-gray-700 dark:text-gray-200">{test}</span>
-                                            </label>
-                                        )
-                                    })}
+                                <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                    {LAB_TEST_GROUPS.map((group) => (
+                                        <div key={group.category} className="bg-gray-50 dark:bg-gray-800/50 p-3 rounded-lg border border-gray-100 dark:border-gray-700">
+                                            <h4 className="text-[13px] font-bold text-gray-800 dark:text-gray-200 mb-2 pb-1 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                                {group.category}
+                                            </h4>
+                                            <div className="grid grid-cols-2 gap-2">
+                                                {group.tests.map((test) => {
+                                                    const isChecked = selectedTests.includes(test)
+                                                    return (
+                                                        <label key={test} className="flex items-start gap-2 cursor-pointer group p-1.5 hover:bg-gray-100 dark:hover:bg-gray-700/50 rounded-md transition-colors">
+                                                            <div className={`mt-0.5 w-4 h-4 rounded border flex items-center justify-center transition-all flex-shrink-0 ${isChecked
+                                                                ? 'bg-indigo-600 border-indigo-600'
+                                                                : 'bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-500 group-hover:border-indigo-400'
+                                                                }`}>
+                                                                {isChecked && (
+                                                                    <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                                                    </svg>
+                                                                )}
+                                                            </div>
+                                                            <input
+                                                                type="checkbox"
+                                                                className="hidden"
+                                                                checked={isChecked}
+                                                                onChange={(e) => {
+                                                                    if (e.target.checked) {
+                                                                        setSelectedTests(prev => [...prev, test])
+                                                                    } else {
+                                                                        setSelectedTests(prev => prev.filter(t => t !== test))
+                                                                    }
+                                                                }}
+                                                            />
+                                                            <span className="text-[12px] text-gray-700 dark:text-gray-200 leading-tight">{test}</span>
+                                                        </label>
+                                                    )
+                                                })}
+                                            </div>
+                                        </div>
+                                    ))}
                                 </div>
                                 {selectedTests.length > 0 && (
                                     <p className="text-[11px] text-indigo-600 dark:text-indigo-400 px-2">
@@ -466,10 +508,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                                         <label className="text-[12px] font-medium text-gray-700 dark:text-gray-300">Temp (°C)</label>
                                         <input type="text" value={temperature} onChange={e => setTemperature(e.target.value.replace(/[^\d.]/g, ''))} placeholder="36.5" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
                                     </div>
-                                    <div className="space-y-1">
-                                        <label className="text-[12px] font-medium text-gray-700 dark:text-gray-300">DTX (mg/dL)</label>
-                                        <input type="text" value={dtx} onChange={e => setDtx(e.target.value.replace(/\D/g, ''))} placeholder="98" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
-                                    </div>
+
                                     <div className="space-y-1">
                                         <label className="text-[12px] font-medium text-gray-700 dark:text-gray-300">น้ำหนัก (kg)</label>
                                         <input type="text" value={weight} onChange={e => setWeight(e.target.value.replace(/[^\d.]/g, ''))} placeholder="65" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
@@ -479,8 +518,8 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                                         <input type="text" value={height} onChange={e => setHeight(e.target.value.replace(/[^\d.]/g, ''))} placeholder="170" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
                                     </div>
                                     <div className="space-y-1 sm:col-span-2">
-                                        <label className="text-[12px] font-medium text-gray-700 dark:text-gray-300">รอบเอว (นิ้ว)</label>
-                                        <input type="text" value={waist} onChange={e => setWaist(e.target.value.replace(/[^\d.]/g, ''))} placeholder="32" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
+                                        <label className="text-[12px] font-medium text-gray-700 dark:text-gray-300">รอบเอว (ซม.)</label>
+                                        <input type="text" value={waist} onChange={e => setWaist(e.target.value.replace(/[^\d.]/g, ''))} placeholder="80" className="w-full text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-white rounded-md p-2 border focus:ring-1 focus:ring-indigo-500 outline-none" />
                                     </div>
                                 </div>
                             </div>

@@ -79,22 +79,45 @@ export function SupabaseAuthProvider({ children }: { children: ReactNode }) {
     }
 
     useEffect(() => {
-        // Initial Fetch
-        supabase.auth.getUser().then(({ data: { user } }) => {
-            updateSession(user)
-        })
+        let mounted = true
+
+        const initializeAuth = async () => {
+            // Fast initial load using local session
+            const { data: { session }, error } = await supabase.auth.getSession()
+
+            if (!mounted) return
+
+            if (error || !session?.user) {
+                setData(null)
+                setAuthStatus('unauthenticated')
+                return
+            }
+
+            // Only fetch profile if not signing out
+            if (!signingOut.current) {
+                await updateSession(session.user)
+            }
+        }
+
+        initializeAuth()
 
         // Listen for changes
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+            if (!mounted) return
+
             if (event === 'SIGNED_OUT') {
                 setData(null)
                 setAuthStatus('unauthenticated')
-            } else if (session?.user && !signingOut.current) {
+            } else if (session?.user && !signingOut.current && (event === 'SIGNED_IN' || event === 'USER_UPDATED' || event === 'TOKEN_REFRESHED')) {
+                // Ensure we only update if signed in, preventing double INITIAL_SESSION fires if possible
                 updateSession(session.user)
             }
         })
 
-        return () => subscription.unsubscribe()
+        return () => {
+            mounted = false
+            subscription.unsubscribe()
+        }
     }, [supabase])
 
     return (
