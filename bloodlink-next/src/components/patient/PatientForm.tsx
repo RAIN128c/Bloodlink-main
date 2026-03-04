@@ -364,25 +364,35 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
 
                             {/* Gender */}
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">เพศกำเนิด</label>
+                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
+                                    เพศกำเนิด <span className="text-red-500">*</span>
+                                </label>
                                 <div className="flex gap-4 mt-2">
-                                    {['ชาย', 'หญิง'].map((g) => (
-                                        <label key={g} className="flex items-center gap-2 cursor-pointer">
+                                    {[
+                                        { value: 'Male', label: 'ชาย (Male)' },
+                                        { value: 'Female', label: 'หญิง (Female)' }
+                                    ].map((g) => (
+                                        <label key={g.value} className="flex items-center gap-2 cursor-pointer">
                                             <input
                                                 type="radio"
                                                 name="gender"
-                                                value={g}
-                                                checked={formData.gender === g}
+                                                value={g.value}
+                                                checked={
+                                                    formData.gender === g.value ||
+                                                    (formData.gender === 'ชาย' && g.value === 'Male') ||
+                                                    (formData.gender === 'หญิง' && g.value === 'Female')
+                                                }
                                                 onChange={handleChange}
                                                 disabled={!canEdit}
                                                 className="w-4 h-4 accent-[#6366F1] disabled:opacity-50 disabled:cursor-not-allowed"
                                             />
                                             <span className="text-[14px] text-[#4B5563] dark:text-gray-300">
-                                                {g}
+                                                {g.label}
                                             </span>
                                         </label>
                                     ))}
                                 </div>
+                                {errors.gender && <span className="text-red-500 text-[11px]">{errors.gender}</span>}
                             </div>
 
                             {/* ID Card */}
@@ -550,7 +560,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
 
                             {/* Allergies */}
                             <div className="flex flex-col gap-1.5">
-                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">อาการแพ้</label>
+                                <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">ยาที่แพ้</label>
                                 <input type="text" name="allergies" value={formData.allergies} onChange={handleChange} disabled={!canEdit} className="w-full p-[10px_14px] rounded-[12px] border border-[#E5E7EB] dark:border-gray-600 bg-[#F9FAFB] dark:bg-[#374151] text-[14px] text-[#111827] dark:text-white focus:outline-none focus:border-[#6366F1] transition-all disabled:opacity-50 disabled:cursor-not-allowed" />
                                 <span className="text-[11px] text-[#9CA3AF] dark:text-gray-500">ไม่มีใส่ &quot;-&quot;</span>
                             </div>

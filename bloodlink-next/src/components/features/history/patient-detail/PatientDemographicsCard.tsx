@@ -154,17 +154,23 @@ export const PatientDemographicsCard: React.FC<PatientDemographicsCardProps> = (
                         {isEditing && editData ? (
                             <div className="w-[100px]">
                                 <CustomSelect
-                                    value={editData.gender}
+                                    value={
+                                        editData.gender === 'ชาย' ? 'Male' :
+                                            editData.gender === 'หญิง' ? 'Female' :
+                                                editData.gender
+                                    }
                                     onChange={(val) => setEditData({ ...editData, gender: val })}
                                     options={[
-                                        { label: 'ชาย', value: 'ชาย' },
-                                        { label: 'หญิง', value: 'หญิง' }
+                                        { label: 'ชาย (Male)', value: 'Male' },
+                                        { label: 'หญิง (Female)', value: 'Female' }
                                     ]}
                                     className="min-w-[80px]"
                                 />
                             </div>
                         ) : (
-                            <span className="text-[14px] font-bold text-[#1e1b4b] dark:text-white">{patientData.gender}</span>
+                            <span className="text-[14px] font-bold text-[#1e1b4b] dark:text-white">
+                                {patientData.gender === 'Male' ? 'ชาย (Male)' : patientData.gender === 'Female' ? 'หญิง (Female)' : patientData.gender === 'ชาย' ? 'ชาย (Male)' : patientData.gender === 'หญิง' ? 'หญิง (Female)' : patientData.gender}
+                            </span>
                         )}
                     </div>
 
@@ -380,7 +386,7 @@ export const PatientDemographicsCard: React.FC<PatientDemographicsCardProps> = (
 
                     {/* Allergy Tags */}
                     <div className="flex flex-col gap-0.5">
-                        <label className="text-[12px] text-[#6B7280] dark:text-gray-400">อาการแพ้</label>
+                        <label className="text-[12px] text-[#6B7280] dark:text-gray-400">ยาที่แพ้</label>
                         {isEditing && editData ? (
                             <div className="flex flex-col gap-2">
                                 <div className="flex flex-wrap gap-1">
@@ -401,7 +407,7 @@ export const PatientDemographicsCard: React.FC<PatientDemographicsCardProps> = (
                                 />
                             </div>
                         ) : (
-                            renderTagsView(patientData.allergy, 'อาการแพ้')
+                            renderTagsView(patientData.allergy, 'ยาที่แพ้')
                         )}
                     </div>
 

@@ -4,7 +4,7 @@ export const patientSchema = z.object({
     hn: z.string().min(1, 'กรุณากรอก HN'), // Allow alphanumeric HN for flexibility, but enforce requirement
     name: z.string().min(1, 'กรุณากรอกชื่อ'),
     surname: z.string().optional(),
-    gender: z.enum(['Male', 'Female', 'Other']),
+    gender: z.string().refine((val) => ['Male', 'Female'].includes(val), { message: 'กรุณาเลือกเพศ' }),
     age: z.coerce.number().min(0, 'อายุต้องไม่ต่ำกว่า 0').max(120, 'อายุไม่ถูกต้อง'),
     bloodType: z.enum(['A', 'B', 'O', 'AB']).optional(),
     disease: z.string().optional(),

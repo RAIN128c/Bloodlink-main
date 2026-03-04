@@ -99,7 +99,7 @@ export const UpdateStatusModal: React.FC<UpdateStatusModalProps> = ({
                                                 { value: 'Check-up', label: 'ตรวจสุขภาพ (Check-up)' },
                                                 { value: 'Follow-up', label: 'ติดตามผล (Follow-up)' },
                                                 { value: 'Consultation', label: 'ปรึกษาแพทย์' },
-                                                { value: 'Other', label: 'อื่นๆ' }
+                                                { value: 'Other', label: 'กำกวม' }
                                             ]}
                                             placeholder="เลือกประเภท"
                                         />

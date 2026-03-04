@@ -42,8 +42,7 @@ export function AddPatientForm() {
     } = useForm<PatientFormData>({
         resolver: zodResolver(patientSchema) as Resolver<PatientFormData>,
         defaultValues: {
-            gender: 'Male',
-            bloodType: 'O',
+            // gender and bloodType default to undefined so user has to select
         }
     });
 
@@ -195,14 +194,14 @@ export function AddPatientForm() {
                                 control={control}
                                 render={({ field }) => (
                                     <CustomSelect
-                                        label="เพศ (Gender)"
-                                        value={field.value}
+                                        label="เพศ (Gender) *"
+                                        value={field.value || ''}
                                         onChange={field.onChange}
                                         error={errors.gender?.message}
                                         options={[
+                                            { value: '', label: 'กรุณาเลือก (Select)' },
                                             { value: 'Male', label: 'ชาย (Male)' },
-                                            { value: 'Female', label: 'หญิง (Female)' },
-                                            { value: 'Other', label: 'อื่นๆ (Other)' }
+                                            { value: 'Female', label: 'หญิง (Female)' }
                                         ]}
                                         triggerClassName="rounded-xl px-4 py-2.5 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 h-auto"
                                     />
