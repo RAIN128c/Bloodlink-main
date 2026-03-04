@@ -39,6 +39,9 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
     // Historical Labs (JSONB)
     const [historicalLabs, setHistoricalLabs] = useState<Record<string, string>>({})
 
+    // Current Labs (JSONB)
+    const [currentLabs, setCurrentLabs] = useState<Record<string, string>>({})
+
     // Lab Request (testType)
     const [selectedTests, setSelectedTests] = useState<string[]>([])
 
@@ -64,6 +67,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
         setBp1(''); setBp2(''); setPulse(''); setRr('')
         setTemperature(''); setDtx(''); setWeight(''); setHeight(''); setWaist('')
         setHistoricalLabs({})
+        setCurrentLabs({})
         setPendingAppointments([])
         setSelectedAppointmentId(null)
         setIsWalkIn(false)
@@ -100,6 +104,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                 setHeight(selected.height || '')
                 setWaist(selected.waist || '')
                 setHistoricalLabs(selected.historical_labs || {})
+                setCurrentLabs(((selected as unknown as Record<string, unknown>).current_labs as Record<string, string>) || {})
             } else {
                 // No pending appointments → Walk-in mode automatically
                 setIsWalkIn(true)
@@ -115,6 +120,10 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
 
     const handleLabChange = (key: string, value: string) => {
         setHistoricalLabs(prev => ({ ...prev, [key]: value }))
+    }
+
+    const handleCurrentLabChange = (key: string, value: string) => {
+        setCurrentLabs(prev => ({ ...prev, [key]: value }))
     }
 
     const handleSelectAppointment = (apptId: string | null) => {
@@ -134,6 +143,7 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
             setHeight(appt.height || '')
             setWaist(appt.waist || '')
             setHistoricalLabs(appt.historical_labs || {})
+            setCurrentLabs(((appt as unknown as Record<string, unknown>).current_labs as Record<string, string>) || {})
         }
     }
 
@@ -174,7 +184,8 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                 weight: weight,
                 height: height,
                 waist: waist,
-                historical_labs: historicalLabs
+                historical_labs: historicalLabs,
+                current_labs: currentLabs
             }
 
             if (isWalkIn || !selectedAppointmentId) {
@@ -227,16 +238,51 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
         }
     }
 
-    const labFields = [
-        { key: 'fbs', label: 'FBS' },
-        { key: 'hba1c', label: 'HbA1C' },
-        { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
-        { key: 'cr', label: 'Cr / GFR' },
-        { key: 'uric', label: 'Uric Acid' },
-        { key: 'ast', label: 'AST (SGOT)' },
-        { key: 'alt', label: 'ALT (SGPT)' },
-        { key: 'cbc', label: 'CBC' }
+    // Map test names to lab field keys
+    const testToLabKey: Record<string, { key: string; label: string }> = {
+        'FBS': { key: 'fbs', label: 'FBS' },
+        'HbA1c': { key: 'hba1c', label: 'HbA1C' },
+        'Lipid Profile': { key: 'lipid', label: 'Lipid (TC/TG/HDL/LDL)' },
+        'Creatinine': { key: 'cr', label: 'Cr / GFR' },
+        'eGFR': { key: 'cr', label: 'Cr / GFR' },
+        'Uric Acid': { key: 'uric', label: 'Uric Acid' },
+        'AST(SGOT)': { key: 'ast', label: 'AST (SGOT)' },
+        'ALT(SGPT)': { key: 'alt', label: 'ALT (SGPT)' },
+        'CBC': { key: 'cbc', label: 'CBC' },
+        'Hct': { key: 'hct', label: 'Hct' },
+        'LFT': { key: 'lft', label: 'LFT' },
+        'Na, K, Cl': { key: 'na', label: 'Na, K, Cl' },
+        'U-Alb': { key: 'u-alb', label: 'U-Alb' },
+        'U-sugar': { key: 'u-sugar', label: 'U-sugar' },
+        'Electrolytes': { key: 'electrolyte', label: 'Electrolytes' },
+        'Microalbumin': { key: 'microalbumin', label: 'Microalbumin' },
+        'Anti-HIV': { key: 'hiv', label: 'Anti-HIV' },
+        'HBs-Ag': { key: 'hbs', label: 'HBs-Ag' },
+        'VDRL': { key: 'vdrl', label: 'VDRL' },
+        'UPT': { key: 'upt', label: 'UPT' },
+        'TFT': { key: 'tft', label: 'TFT' },
+        'Urinalysis': { key: 'urinalysis', label: 'Urinalysis' },
+    }
+
+    // List of tests that actually have a space to write results on the form
+    const writableLabTests = [
+        'FBS', 'Hct', 'U-Alb', 'U-sugar'
     ]
+
+    // Get unique lab fields for selected tests only (and only writable ones)
+    const selectedLabFields = (() => {
+        const seen = new Set<string>()
+        const fields: { key: string; label: string }[] = []
+        for (const test of selectedTests) {
+            if (!writableLabTests.includes(test)) continue;
+            const mapping = testToLabKey[test]
+            if (mapping && !seen.has(mapping.key)) {
+                seen.add(mapping.key)
+                fields.push(mapping)
+            }
+        }
+        return fields
+    })()
 
     if (!patient) return null
     if (!isOpen) return null
@@ -439,29 +485,46 @@ export function PreLabInputModal({ isOpen, onClose, patient, onSaveSuccess, onSk
                                 </div>
                             </div>
 
-                            {/* Section 3: Historical Labs */}
-                            <div className="space-y-4 bg-white dark:bg-[#1F2937] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
-                                <h3 className="font-semibold px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-md border border-amber-100 dark:border-amber-800 border-l-4 border-l-amber-500 text-sm">
-                                    4. ค่าแล็บเดิม (เพื่อเปรียบเทียบแนวโน้ม)
-                                </h3>
-                                <div className="grid grid-cols-2 gap-4 px-2">
-                                    {labFields.map((field) => (
-                                        <div key={field.key} className="flex flex-col space-y-1 bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 p-2.5 rounded-lg relative group">
-                                            <label className="text-[12px] font-bold text-gray-800 dark:text-gray-300">{field.label}</label>
-                                            <input
-                                                type="text"
-                                                value={historicalLabs[field.key] || ''}
-                                                onChange={e => handleLabChange(field.key, e.target.value)}
-                                                placeholder="กรอกค่าเดิม..."
-                                                className="w-full text-sm bg-white dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md p-2 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
-                                            />
-                                        </div>
-                                    ))}
+                            {/* Section 4: Current Labs + Historical Labs (only for selected tests) */}
+                            {selectedLabFields.length > 0 && (
+                                <div className="space-y-4 bg-white dark:bg-[#1F2937] p-4 rounded-xl shadow-sm border border-gray-100 dark:border-gray-700">
+                                    <h3 className="font-semibold px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-800 dark:text-amber-300 rounded-md border border-amber-100 dark:border-amber-800 border-l-4 border-l-amber-500 text-sm">
+                                        4. ค่าแล็บ (เฉพาะรายการที่เลือก)
+                                    </h3>
+                                    <div className="grid grid-cols-2 gap-4 px-2">
+                                        {selectedLabFields.map((field) => (
+                                            <div key={field.key} className="flex flex-col space-y-2 bg-gray-50 dark:bg-[#111827] border border-gray-200 dark:border-gray-700 p-2.5 rounded-lg">
+                                                <label className="text-[12px] font-bold text-gray-800 dark:text-gray-300">{field.label}</label>
+                                                <div className="space-y-1.5">
+                                                    <div>
+                                                        <label className="text-[10px] text-blue-600 dark:text-blue-400 font-medium">ค่าปัจจุบัน</label>
+                                                        <input
+                                                            type="text"
+                                                            value={currentLabs[field.key] || ''}
+                                                            onChange={e => handleCurrentLabChange(field.key, e.target.value)}
+                                                            placeholder="กรอกค่าปัจจุบัน..."
+                                                            className="w-full text-sm bg-white dark:bg-gray-800 dark:text-white border border-blue-300 dark:border-blue-700 rounded-md p-1.5 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <label className="text-[10px] text-amber-600 dark:text-amber-400 font-medium">ค่าเดิม</label>
+                                                        <input
+                                                            type="text"
+                                                            value={historicalLabs[field.key] || ''}
+                                                            onChange={e => handleLabChange(field.key, e.target.value)}
+                                                            placeholder="กรอกค่าเดิม..."
+                                                            className="w-full text-sm bg-white dark:bg-gray-800 dark:text-white border border-gray-300 dark:border-gray-600 rounded-md p-1.5 focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none transition-all placeholder-gray-400 dark:placeholder-gray-500"
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    <p className="text-[11px] text-gray-500 dark:text-gray-400 px-2 flex items-start gap-1">
+                                        <span className="font-bold text-amber-600 dark:text-amber-500">หมายเหตุ:</span> สามารถเว้นว่างได้ ข้อมูลจะถูกดึงไปแสดงในใบส่งตรวจ
+                                    </p>
                                 </div>
-                                <p className="text-[11px] text-gray-500 dark:text-gray-400 px-2 flex items-start gap-1">
-                                    <span className="font-bold text-amber-600 dark:text-amber-500">หมายเหตุ:</span> หากไม่ทราบค่าเดิม สามารถเว้นว่างไว้ได้ ข้อมูลนี้จะถูกดึงไปแสดงในใบส่งตรวจแบบฟอร์ม NCD
-                                </p>
-                            </div>
+                            )}
                         </div>
                     )}
                 </div>

@@ -17,6 +17,7 @@ interface DBAppointment {
     bp2?: string | null;
     rr?: string | null;
     historical_labs?: Record<string, string> | null;
+    current_labs?: Record<string, string> | null;
     pulse?: string | null;
     temperature?: string | null;
     dtx?: string | null;
@@ -40,6 +41,7 @@ export interface Appointment {
     bp2?: string;
     rr?: string;
     historical_labs?: Record<string, string>;
+    current_labs?: Record<string, string>;
     pulse?: string;
     temperature?: string;
     dtx?: string;
@@ -90,6 +92,7 @@ export class AppointmentService {
                     bp2: row.bp2 || '',
                     rr: row.rr || '',
                     historical_labs: row.historical_labs || {},
+                    current_labs: row.current_labs || {},
                     pulse: row.pulse || '',
                     temperature: row.temperature || '',
                     dtx: row.dtx || ''
@@ -129,6 +132,7 @@ export class AppointmentService {
                 bp2: data.bp2,
                 rr: data.rr,
                 historical_labs: data.historical_labs || {},
+                current_labs: data.current_labs || {},
                 pulse: data.pulse,
                 temperature: data.temperature,
                 dtx: data.dtx
@@ -187,6 +191,7 @@ export class AppointmentService {
                 if (vitals.bp2 !== undefined) updateData.bp2 = vitals.bp2;
                 if (vitals.rr !== undefined) updateData.rr = vitals.rr;
                 if (vitals.historical_labs !== undefined) updateData.historical_labs = vitals.historical_labs;
+                if (vitals.current_labs !== undefined) updateData.current_labs = vitals.current_labs;
                 if (vitals.pulse !== undefined) updateData.pulse = vitals.pulse;
                 if (vitals.temperature !== undefined) updateData.temperature = vitals.temperature;
                 if (vitals.dtx !== undefined) updateData.dtx = vitals.dtx;
