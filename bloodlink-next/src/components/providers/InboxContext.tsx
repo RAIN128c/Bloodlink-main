@@ -106,11 +106,12 @@ export function InboxProvider({ children }: { children: ReactNode }) {
         }
     }, [session, triggerPopup]);
 
-    // Fetch on mount and session change
+    // Fetch on mount and session change — delayed to avoid blocking first paint
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        refreshUnreadCount();
-    }, [refreshUnreadCount]);
+        if (!session?.user) return
+        const timer = setTimeout(refreshUnreadCount, 500)
+        return () => clearTimeout(timer)
+    }, [session?.user, refreshUnreadCount]);
 
     // Remove aggressive 2-second polling to save Supabase REST / Auth requests.
     // Realtime channel logic below will now handle updates exclusively.

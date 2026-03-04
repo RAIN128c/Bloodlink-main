@@ -1,7 +1,8 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import { User } from '@supabase/supabase-js'
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(request: NextRequest): Promise<{ response: NextResponse; user: User | null }> {
     let supabaseResponse = NextResponse.next({
         request,
     })
@@ -15,7 +16,7 @@ export async function updateSession(request: NextRequest) {
                     return request.cookies.getAll()
                 },
                 setAll(cookiesToSet) {
-                    cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
+                    cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
                     supabaseResponse = NextResponse.next({
                         request,
                     })
@@ -27,12 +28,9 @@ export async function updateSession(request: NextRequest) {
         }
     )
 
-    // IMPORTANT: Avoid writing any logic between createServerClient and
-    // supabase.auth.getUser(). A simple mistake could make it very hard to debug
-    // issues with cross-browser cookies, e.g. Safari.
+    // Refresh the session and return the user
+    const { data: { user } } = await supabase.auth.getUser()
 
-    // Refresh the session if needed
-    await supabase.auth.getUser()
-
-    return supabaseResponse
+    return { response: supabaseResponse, user }
 }
+
