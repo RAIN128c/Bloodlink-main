@@ -25,21 +25,21 @@ const printStyles = `
         .page-break { page-break-after: always; }
         .request-sheet-container {
             width: 200mm !important;
-            max-height: 140mm !important;
+            max-height: 138mm !important;
             padding: 2mm 4mm !important;
             margin: 0 !important;
             box-shadow: none !important;
             overflow: visible !important;
             page-break-inside: avoid !important;
-            font-size: 10px !important;
+            font-size: 9px !important;
         }
         .request-sheet-container .grid { gap: 0 !important; }
-        .request-sheet-container [class*="min-h-[36px]"] { min-height: 28px !important; }
-        .request-sheet-container [class*="min-h-[28px]"] { min-height: 22px !important; }
-        .request-sheet-container [class*="py-1"] { padding-top: 2px !important; padding-bottom: 2px !important; }
-        .request-sheet-container [class*="p-1.5"] { padding: 3px !important; }
-        .request-sheet-container [class*="mt-1.5"] { margin-top: 2px !important; }
-        .request-sheet-container [class*="gap-1.5"] { gap: 2px !important; }
+        .request-sheet-container [class*="min-h-[36px]"] { min-height: 22px !important; }
+        .request-sheet-container [class*="min-h-[28px]"] { min-height: 18px !important; }
+        .request-sheet-container [class*="py-1"] { padding-top: 1px !important; padding-bottom: 1px !important; }
+        .request-sheet-container [class*="p-1.5"] { padding: 2px !important; }
+        .request-sheet-container [class*="mt-1.5"] { margin-top: 1px !important; }
+        .request-sheet-container [class*="gap-1.5"] { gap: 1px !important; }
     }
 
 `;

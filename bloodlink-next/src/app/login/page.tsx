@@ -16,6 +16,7 @@ type FormMode = 'login' | 'register';
 export default function LoginPage() {
     return (
         <Suspense>
+            <title>เข้าสู่ระบบ | BloodLink</title>
             <LoginContent />
         </Suspense>
     )

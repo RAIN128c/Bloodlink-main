@@ -47,8 +47,9 @@ export default function ResultPage() {
     const [selectedFileUrl, setSelectedFileUrl] = useState<string | null>(null);
 
     // Additional state for generating snapshots
-    const [generatingSnapshot, setGeneratingSnapshot] = useState(false);
-    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null);
+    const [generatingSnapshot, setGeneratingSnapshot] = useState(false)
+    const [printingResult, setPrintingResult] = useState(false)
+    const [hospitalInfo, setHospitalInfo] = useState<{ hospitalType?: string, hospitalName?: string, district?: string, province?: string } | null>(null)
 
     const fetchData = useCallback(async () => {
         if (!hn) return;
@@ -181,8 +182,38 @@ export default function ResultPage() {
         } catch { return dateStr; }
     };
 
-    const isApproved = !!latestResult?.approver_name;
-    const canApprove = Permissions.isDoctorOrNurse(effectiveRole) || Permissions.isAdmin(effectiveRole);
+    const isApproved = !!latestResult?.approver_name
+    const canApprove = Permissions.isDoctorOrNurse(effectiveRole) || Permissions.isAdmin(effectiveRole)
+
+    const handlePrintResult = async () => {
+        if (!fileUrl || !latestResult || !hn) return
+        setPrintingResult(true)
+        try {
+            const res = await fetch('/api/print-batch', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    type: 'lab-results',
+                    items: [{
+                        hn,
+                        name: `${patient?.name || ''} ${patient?.surname || ''}`.trim(),
+                        url: fileUrl,
+                        fileType: latestResult.file_type,
+                    }]
+                })
+            })
+            if (res.ok) {
+                const data = await res.json()
+                window.open(`/print/batch-results/${data.hash}`, '_blank')
+            } else {
+                toast.error('ไม่สามารถเตรียมพิมพ์ได้')
+            }
+        } catch {
+            toast.error('เกิดข้อผิดพลาดในการเตรียมพิมพ์')
+        } finally {
+            setPrintingResult(false)
+        }
+    }
 
     const handleViewRequestSheet = async () => {
         if (!hn || !patient) return;
@@ -242,6 +273,7 @@ export default function ResultPage() {
 
     return (
         <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-prompt)]">
+            <title>ผลตรวจผู้ป่วย | BloodLink</title>
             <Sidebar />
             <main className="flex-1 md:ml-[195px]">
                 <Header />
@@ -396,13 +428,30 @@ export default function ResultPage() {
                                         <div className="space-y-3">
                                             <div className="w-full flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-semibold text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
                                                 <CheckCircle className="w-4 h-4" />
-                                                พร้อมพิมพ์
+                                                อนุมัติแล้ว
                                             </div>
-                                            {patient?.process === 'เสร็จสิ้น' ? (
-                                                <p className="text-xs text-center text-emerald-500 dark:text-emerald-400 font-medium">✅ กระบวนการเสร็จสิ้น</p>
-                                            ) : isApproved ? (
-                                                <p className="text-xs text-center text-blue-500 dark:text-blue-400 font-medium">✅ อนุมัติเรียบร้อย</p>
-                                            ) : null}
+                                            {fileUrl && (
+                                                <button
+                                                    onClick={handlePrintResult}
+                                                    disabled={printingResult}
+                                                    className="w-full flex items-center justify-center gap-2 px-4 py-3 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-600 dark:hover:bg-blue-500 rounded-xl transition shadow-lg shadow-blue-600/20 disabled:opacity-50 disabled:cursor-not-allowed"
+                                                >
+                                                    {printingResult ? (
+                                                        <>
+                                                            <RefreshCw className="w-4 h-4 animate-spin" />
+                                                            กำลังเตรียมพิมพ์...
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Printer className="w-4 h-4" />
+                                                            พิมพ์ผลตรวจ
+                                                        </>
+                                                    )}
+                                                </button>
+                                            )}
+                                            {patient?.process === 'เสร็จสิ้น' && (
+                                                <p className="text-xs text-center text-emerald-500 dark:text-emerald-400 font-medium">กระบวนการเสร็จสิ้น</p>
+                                            )}
                                         </div>
                                     )}
 

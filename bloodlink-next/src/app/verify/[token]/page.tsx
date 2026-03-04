@@ -1,7 +1,12 @@
+import type { Metadata } from 'next'
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { ShieldCheck, Calendar, User, FileText, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { formatDateThai } from '@/lib/utils';
 import Link from 'next/link';
+
+export const metadata: Metadata = {
+    title: 'ตรวจสอบลายมือชื่ออิเล็กทรอนิกส์',
+}
 
 interface VerifyPageProps {
     params: Promise<{

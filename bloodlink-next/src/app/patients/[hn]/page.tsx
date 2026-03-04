@@ -12,6 +12,7 @@ export default function PatientDetailPage() {
 
     return (
         <MainLayout>
+            <title>ข้อมูลผู้ป่วย | BloodLink</title>
             <div className="w-full sm:max-w-[960px] mx-auto flex flex-col h-full">
                 <Header />
                 {/* Use PatientDetail component which fetches data via API */}

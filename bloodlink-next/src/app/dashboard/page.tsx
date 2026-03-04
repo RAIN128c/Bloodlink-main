@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import { Header } from '@/components/layout/Header';
 import { MainLayout } from '@/components/layout/MainLayout';
 import { DashboardClient } from './DashboardClient';
+
+export const metadata: Metadata = {
+    title: 'แดชบอร์ด',
+}
 import { supabaseAdmin } from '@/lib/supabase-admin';
 import { Patient } from '@/types';
 

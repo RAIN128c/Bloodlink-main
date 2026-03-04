@@ -143,6 +143,7 @@ export default function AdminReportsPage() {
 
     return (
         <div className="w-full sm:max-w-[1400px] mx-auto flex flex-col h-full bg-[#F3F4F6] dark:bg-[#0f1729] print:bg-white print:max-w-none">
+            <title>รายงาน | BloodLink</title>
             <div className="print:hidden">
                 <Header hideSearch={true} />
             </div>

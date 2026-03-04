@@ -6,7 +6,7 @@ export const patientSchema = z.object({
     surname: z.string().optional(),
     gender: z.enum(['Male', 'Female', 'Other']),
     age: z.coerce.number().min(0, 'อายุต้องไม่ต่ำกว่า 0').max(120, 'อายุไม่ถูกต้อง'),
-    bloodType: z.enum(['A', 'B', 'O', 'AB']),
+    bloodType: z.enum(['A', 'B', 'O', 'AB']).optional(),
     disease: z.string().optional(),
     allergies: z.string().optional(),
     medication: z.string().optional(),

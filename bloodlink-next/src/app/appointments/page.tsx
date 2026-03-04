@@ -131,6 +131,7 @@ export default function AppointmentsPage() {
     return (
 
         <MainLayout>
+            <title>นัดหมาย | BloodLink</title>
             <div className="w-full sm:max-w-[960px] mx-auto flex flex-col h-full">
                 <Header />
 

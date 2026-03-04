@@ -7,6 +7,7 @@ import { InboxView } from '@/components/features/inbox/InboxView';
 export default function InboxPage() {
     return (
         <MainLayout>
+            <title>กล่องข้อความ | BloodLink</title>
             <div className="max-w-[1200px] w-full mx-auto flex flex-col h-full">
                 <Header hideSearch={true} />
                 <div className="flex-1 overflow-hidden pb-4">

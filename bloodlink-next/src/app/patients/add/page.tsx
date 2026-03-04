@@ -39,6 +39,7 @@ export default function AddPatientPage() {
 
     return (
         <MainLayout>
+            <title>เพิ่มผู้ป่วย | BloodLink</title>
             <div className="max-w-[1200px] w-full mx-auto flex flex-col items-center h-full print:hidden">
                 <Header />
 

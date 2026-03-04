@@ -59,6 +59,7 @@ function ResetPasswordForm() {
     if (!token) {
         return (
             <div className="text-center space-y-4">
+                <title>ตั้งรหัสผ่านใหม่ | BloodLink</title>
                 <div className="text-red-500 bg-red-50 dark:bg-red-900/20 p-4 rounded-xl">
                     <p className="font-medium">ลิงก์ไม่ถูกต้อง</p>
                     <p className="text-sm">ไม่พบรหัสยืนยัน (Token) ในลิงก์นี้</p>

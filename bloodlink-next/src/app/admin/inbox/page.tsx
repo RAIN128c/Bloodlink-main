@@ -7,6 +7,7 @@ import { InboxView } from '@/components/features/inbox/InboxView';
 export default function AdminInboxPage() {
     return (
         <div className="max-w-[1200px] w-full mx-auto flex flex-col h-full">
+            <title>กล่องข้อความ (Admin) | BloodLink</title>
             <Header hideSearch={true} />
             <main className="flex-1 overflow-hidden p-4 pt-0">
                 <InboxView role="admin" title="Inbox (Admin)" />

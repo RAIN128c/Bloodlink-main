@@ -23,9 +23,20 @@ const prompt = Prompt({
 });
 
 export const metadata: Metadata = {
-  title: "BloodLink",
-  description: "ระบบจัดการข้อมูลผู้ป่วยและผลตรวจเลือด",
-};
+  title: {
+    default: 'BloodLink - ระบบจัดการข้อมูลผู้ป่วยและผลตรวจเลือด',
+    template: '%s | BloodLink',
+  },
+  description: 'ระบบบริหารจัดการข้อมูลผู้ป่วยและผลตรวจทางห้องปฏิบัติการ สำหรับโรงพยาบาลชุมชนและ รพ.สต.',
+  keywords: ['BloodLink', 'ระบบจัดการผู้ป่วย', 'ผลตรวจเลือด', 'โรงพยาบาลชุมชน', 'E-Signature', 'Lab Results', 'Healthcare'],
+  robots: { index: false, follow: false },
+  openGraph: {
+    title: 'BloodLink',
+    description: 'ระบบบริหารจัดการข้อมูลผู้ป่วยและผลตรวจทางห้องปฏิบัติการ',
+    type: 'website',
+    locale: 'th_TH',
+  },
+}
 
 export default function RootLayout({
   children,

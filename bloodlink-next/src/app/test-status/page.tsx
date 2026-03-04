@@ -73,6 +73,7 @@ export default function TestStatusPage() {
 
     return (
         <MainLayout>
+            <title>สถานะการตรวจ | BloodLink</title>
             <div className="max-w-[960px] w-full mx-auto flex flex-col h-full">
                 <Header />
 

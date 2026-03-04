@@ -44,6 +44,7 @@ export default function ProfilePage() {
     if (isLoading) {
         return (
             <MainLayout>
+                <title>โปรไฟล์ | BloodLink</title>
                 <div className="flex-1 flex items-center justify-center h-full">
                     <div className="flex flex-col items-center gap-3">
                         <Loader2 className="w-8 h-8 animate-spin text-indigo-500" />

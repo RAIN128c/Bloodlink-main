@@ -7,6 +7,7 @@ import { PatientList } from '@/components/features/history/PatientList';
 export default function HistoryPage() {
     return (
         <MainLayout>
+            <title>ประวัติผู้ป่วย | BloodLink</title>
             <div className="max-w-[960px] w-full mx-auto flex flex-col h-full">
                 <Header />
                 <PatientList basePath="/history" />

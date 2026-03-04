@@ -50,6 +50,7 @@ export default function AdminDoctorsPage() {
 
     return (
         <div className="max-w-[1200px] w-full mx-auto flex flex-col h-full px-4 sm:px-6 lg:px-8">
+            <title>บุคลากร | BloodLink</title>
             <Header hideSearch={true} />
 
             <div className="flex flex-col gap-6 pb-6 mt-4">

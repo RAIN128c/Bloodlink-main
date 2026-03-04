@@ -103,7 +103,6 @@ export default async function PrintSnapshotPage({ params }: PrintSnapshotPagePro
                     signatures={loadedSignatures}
                     vitals={loadedVitals}
                     hospitalInfo={hospitalInfo}
-                    isPdfMode={true}
                 />
             </div>
 

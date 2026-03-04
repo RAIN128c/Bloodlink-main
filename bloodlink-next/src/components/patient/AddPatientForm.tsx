@@ -218,7 +218,7 @@ export function AddPatientForm() {
                             render={({ field }) => (
                                 <CustomSelect
                                     label="หมู่เลือด (Blood Type)"
-                                    value={field.value}
+                                    value={field.value || ''}
                                     onChange={field.onChange}
                                     error={errors.bloodType?.message}
                                     options={[

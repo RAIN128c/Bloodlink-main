@@ -12,7 +12,8 @@ interface RoleGuardProps {
 }
 
 // Public paths that don't require role validation
-const PUBLIC_PATHS = ['/login', '/register', '/', '/forgot-password', '/reset-password', '/privacy-policy'];
+const PUBLIC_PATHS = ['/login', '/register', '/', '/forgot-password', '/reset-password', '/privacy-policy']
+const PUBLIC_PREFIXES = ['/verify/']
 
 /**
  * RoleGuard component checks if the logged-in user has a valid role.
@@ -20,13 +21,14 @@ const PUBLIC_PATHS = ['/login', '/register', '/', '/forgot-password', '/reset-pa
  * Valid roles: แพทย์, พยาบาล, เจ้าหน้าที่ห้องปฏิบัติการ, ผู้ดูแล
  */
 export function RoleGuard({ children, allowedRoles }: RoleGuardProps) {
-    const { data: session, status, update } = useSession();
-    const pathname = usePathname();
-    const router = useRouter();
-    const [roleStatus, setRoleStatus] = useState<'loading' | 'valid' | 'invalid'>('loading');
+    const { data: session, status, update } = useSession()
+    const pathname = usePathname()
+    const router = useRouter()
+    const [roleStatus, setRoleStatus] = useState<'loading' | 'valid' | 'invalid'>('loading')
 
-    // Check if current path is public
-    const isPublicPath = PUBLIC_PATHS.includes(pathname);
+    // Check if current path is public (exact match or prefix match)
+    const isPublicPath = PUBLIC_PATHS.includes(pathname)
+        || PUBLIC_PREFIXES.some(prefix => pathname.startsWith(prefix))
 
     useEffect(() => {
         // Always allow public paths immediately

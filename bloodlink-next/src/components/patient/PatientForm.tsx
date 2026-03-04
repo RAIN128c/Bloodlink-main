@@ -110,7 +110,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
             newErrors.hn = `HN นี้มีอยู่แล้ว (${hnDuplicate.patient?.name || ''})`;
         }
 
-        if (!formData.bloodType) newErrors.bloodType = 'กรุณาเลือกหมู่เลือด';
+
         if (!formData.age?.trim()) newErrors.age = 'กรุณากรอกอายุ';
         else if (isNaN(Number(formData.age))) newErrors.age = 'อายุต้องเป็นตัวเลขเท่านั้น';
 
@@ -119,9 +119,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
         else if (formData.idCard.length !== 13) newErrors.idCard = 'เลขบัตรประชาชนต้องมี 13 หลัก';
         else if (idCardDuplicate?.exists) newErrors.idCard = `เลขบัตรนี้มีอยู่แล้ว (${idCardDuplicate.patient?.name || ''})`;
 
-        if (!formData.relativeName?.trim()) newErrors.relativeName = 'กรุณากรอกชื่อญาติ';
-        if (!formData.relativePhone?.trim()) newErrors.relativePhone = 'กรุณากรอกเบอร์โทรญาติ';
-        if (!formData.relativeRelationship) newErrors.relativeRelationship = 'กรุณาระบุความสัมพันธ์';
+
 
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -139,12 +137,10 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
                 if (!formData.name?.trim()) newErrors.name = 'กรุณากรอกชื่อ';
                 if (!formData.surname?.trim()) newErrors.surname = 'กรุณากรอกนามสกุล';
                 if (!formData.hn?.trim() || formData.hn.length !== 9 || hnDuplicate?.exists) newErrors.hn = 'HN';
-                if (!formData.bloodType) newErrors.bloodType = 'กรุณาเลือกหมู่เลือด';
+
                 if (!formData.age?.trim() || isNaN(Number(formData.age))) newErrors.age = 'อายุ';
                 if (!formData.idCard?.trim() || formData.idCard.length !== 13 || idCardDuplicate?.exists) newErrors.idCard = 'idCard';
-                if (!formData.relativeName?.trim()) newErrors.relativeName = 'relativeName';
-                if (!formData.relativePhone?.trim()) newErrors.relativePhone = 'relativePhone';
-                if (!formData.relativeRelationship) newErrors.relativeRelationship = 'relativeRelationship';
+
                 return newErrors;
             })();
 
@@ -321,7 +317,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
                             {/* Blood Type */}
                             <div className="flex flex-col gap-1.5 z-10">
                                 <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                                    หมู่เลือด <span className="text-red-500">*</span>
+                                    หมู่เลือด
                                 </label>
                                 <CustomSelect
                                     value={formData.bloodType || ''}
@@ -475,14 +471,13 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
                     <div className="space-y-4">
                         <div className="border-b border-gray-100 dark:border-gray-700 pb-2 flex items-center gap-2">
                             <label className="text-[18px] font-bold text-[#111827] dark:text-white">ข้อมูลผู้ติดต่อฉุกเฉิน (ญาติ)</label>
-                            <span className="px-2 py-0.5 rounded-full bg-red-100 text-red-600 text-[10px] font-medium border border-red-200">Mandatory for NCD</span>
                         </div>
 
                         <div className="grid grid-cols-2 gap-x-8 gap-y-6">
                             {/* Relative Name */}
                             <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
                                 <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                                    ชื่อ-สกุล ญาติ <span className="text-red-500">*</span>
+                                    ชื่อ-สกุล ญาติ
                                 </label>
                                 <input
                                     type="text"
@@ -499,7 +494,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
                             {/* Relationship */}
                             <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
                                 <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                                    ความสัมพันธ์ <span className="text-red-500">*</span>
+                                    ความสัมพันธ์
                                 </label>
                                 <CustomSelect
                                     value={formData.relativeRelationship || ''}
@@ -525,7 +520,7 @@ export function PatientForm({ initialData = {}, onCancel, onConfirm, isEdit = fa
                             {/* Relative Phone */}
                             <div className="flex flex-col gap-1.5 col-span-2 md:col-span-1">
                                 <label className="text-[13px] font-semibold text-[#374151] dark:text-gray-300">
-                                    เบอร์โทรศัพท์ญาติ <span className="text-red-500">*</span>
+                                    เบอร์โทรศัพท์ญาติ
                                 </label>
                                 <input
                                     type="tel"

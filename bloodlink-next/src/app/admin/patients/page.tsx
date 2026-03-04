@@ -7,6 +7,7 @@ import { PatientList } from '@/components/features/history/PatientList';
 export default function AdminPatientsPage() {
     return (
         <div className="max-w-[1200px] w-full mx-auto flex flex-col h-full">
+            <title>จัดการผู้ป่วย | BloodLink</title>
             <Header hideSearch={true} isAdminPage={true} />
             <PatientList basePath="/admin/patients" title="Patient List" />
         </div>

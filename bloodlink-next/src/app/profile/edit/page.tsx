@@ -185,6 +185,7 @@ export default function ProfileEditPage() {
     if (isLoading) {
         return (
             <div className="flex bg-[#F3F4F6] dark:bg-[#0f1115] min-h-screen font-[family-name:var(--font-prompt)] transition-colors">
+                <title>แก้ไขโปรไฟล์ | BloodLink</title>
                 <Sidebar />
                 <div className="ml-0 md:ml-[195px] flex-1 flex items-center justify-center">
                     <div className="text-gray-500">กำลังโหลดข้อมูล...</div>

@@ -282,6 +282,7 @@ export default function ResultsPage() {
 
     return (
         <MainLayout>
+            <title>ผลตรวจ | BloodLink</title>
             <div className="max-w-[960px] w-full mx-auto flex flex-col h-full">
                 <Header />
 

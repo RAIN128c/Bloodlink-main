@@ -41,6 +41,7 @@ export default function ForgotPasswordPage() {
 
     return (
         <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#0f1115] flex items-center justify-center p-4 font-[family-name:var(--font-prompt)] transition-colors">
+            <title>ลืมรหัสผ่าน | BloodLink</title>
             <div className="bg-white dark:bg-[#1F2937] rounded-3xl shadow-xl w-full max-w-md p-8 md:p-10 transition-colors">
 
                 {/* Logo */}

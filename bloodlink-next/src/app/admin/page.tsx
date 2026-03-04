@@ -1,6 +1,11 @@
+import type { Metadata } from 'next'
 import { Header } from '@/components/layout/Header';
 import { AdminClient } from './AdminClient';
 import { StatsService } from '@/lib/services/statsService';
+
+export const metadata: Metadata = {
+    title: 'จัดการระบบ',
+}
 import packageJson from '../../../package.json';
 
 // Force dynamic rendering since we want fresh data on every load

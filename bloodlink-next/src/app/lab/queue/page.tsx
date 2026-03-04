@@ -285,6 +285,7 @@ export default function LabQueuePage() {
 
     return (
         <RoleGuard allowedRoles={['เจ้าหน้าที่ห้องปฏิบัติการ', 'ผู้ดูแลระบบ', 'admin']}>
+            <title>คิวห้องปฏิบัติการ | BloodLink</title>
             <div className="flex min-h-screen bg-[#F3F4F6] dark:bg-[#0f1729] font-[family-name:var(--font-prompt)]">
                 <Sidebar />
                 <main className="flex-1 md:ml-[195px] print:m-0 print:w-full">
