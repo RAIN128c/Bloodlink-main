@@ -43,8 +43,9 @@ export function LabBulkUploadModal({ isOpen, onClose, onSuccess, queuePatients }
 
     const [isConfirmCloseOpen, setIsConfirmCloseOpen] = useState(false);
 
-    // Only allow uploading for patients currently in 'กำลังตรวจ' status
-    const uploadableStatuses = ['กำลังตรวจ'];
+    // Allow uploading for patients in both 'กำลังจัดส่ง' and 'กำลังตรวจ' statuses
+    // 'กำลังจัดส่ง' ensures the dropdown isn't empty if users haven't received the specimen yet.
+    const uploadableStatuses = ['กำลังจัดส่ง', 'กำลังตรวจ'];
     const activeQueue = queuePatients.filter(p => uploadableStatuses.includes(p.process));
 
     const handleClose = () => {

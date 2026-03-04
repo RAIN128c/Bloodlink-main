@@ -56,9 +56,9 @@ export default function LabQueuePage() {
     const [selectedHns, setSelectedHns] = useState<Set<string>>(new Set());
     const [batchLoading, setBatchLoading] = useState(false);
 
-    // PIN Verification for receiving specimen
+    // PIN Verification for receiving specimen (Supports single or batch)
     const [showPinModal, setShowPinModal] = useState(false);
-    const [selectedReceiveHn, setSelectedReceiveHn] = useState<string | null>(null);
+    const [receiveHnsTarget, setReceiveHnsTarget] = useState<string[]>([]);
     const [isVerifyingPin, setIsVerifyingPin] = useState(false);
 
     // Dynamic Hospital Info for PDF Freezing
@@ -145,22 +145,32 @@ export default function LabQueuePage() {
     };
 
     const handleVerifyPin = async (pin: string) => {
-        if (!selectedReceiveHn) return;
+        if (receiveHnsTarget.length === 0) return;
         setIsVerifyingPin(true);
         try {
-            const result = await updatePatientStatus(selectedReceiveHn, 'กำลังตรวจ', { pin });
-            if (result.success) {
-                setShowPinModal(false);
-                toast.success('ตรวจสอบ PIN และรับตัวอย่างเลือดสำเร็จ');
-                fetchData();
-            } else {
-                toast.error(result.error || 'รหัส PIN ไม่ถูกต้อง หรือไม่สามารถอัปเดตสถานะได้');
+            // Process all selected HNs
+            const results = await Promise.allSettled(
+                receiveHnsTarget.map(hn => updatePatientStatus(hn, 'กำลังตรวจ', { pin }))
+            );
+
+            const successCount = results.filter(r => r.status === 'fulfilled' && r.value.success).length;
+            const failCount = receiveHnsTarget.length - successCount;
+
+            if (successCount > 0) {
+                toast.success(`ตรวจสอบ PIN และรับตัวอย่างเลือดสำเร็จ ${successCount} รายการ`);
             }
+            if (failCount > 0) {
+                toast.error(`รหัส PIN ไม่ถูกต้อง หรือเกิดข้อผิดพลาด ${failCount} รายการ`);
+            }
+
+            setShowPinModal(false);
+            fetchData();
+            setSelectedHns(new Set()); // Clear selection if any
         } catch {
             toast.error('เกิดข้อผิดพลาดในการตรวจสอบรหัส PIN');
         } finally {
             setIsVerifyingPin(false);
-            setSelectedReceiveHn(null);
+            setReceiveHnsTarget([]);
         }
     };
 
@@ -300,7 +310,9 @@ export default function LabQueuePage() {
                             <div className="flex items-center gap-2 text-nowrap">
                                 <button
                                     onClick={() => setShowBulkUploadModal(true)}
-                                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition"
+                                    disabled={loading || !allLabPatients.some(p => ['กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process))}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                                    title={!allLabPatients.some(p => ['กำลังจัดส่ง', 'กำลังตรวจ'].includes(p.process)) ? 'ไม่มีรายการผู้ป่วยที่สามารถอัปโหลดผลได้' : ''}
                                 >
                                     <Upload className="w-4 h-4" />
                                     นำเข้าผลตรวจ (Bulk)
@@ -357,6 +369,7 @@ export default function LabQueuePage() {
                                         placeholder="ค้นหาด้วย HN, ชื่อ..."
                                         value={searchTerm}
                                         onChange={(e) => setSearchTerm(e.target.value)}
+                                        autoComplete="off"
                                         className="w-full pl-10 pr-4 py-2.5 text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none text-gray-900 dark:text-white"
                                     />
                                 </div>
@@ -377,7 +390,7 @@ export default function LabQueuePage() {
                                             <table className="w-full">
                                                 <thead>
                                                     <tr className="border-b border-gray-100 dark:border-gray-700">
-                                                        {activeTab === 'new_requests' && (
+                                                        {(activeTab === 'new_requests' || activeTab === 'my_tasks') && (
                                                             <th className="w-10 px-3 py-3.5">
                                                                 <button onClick={toggleSelectAll} className="text-gray-400 hover:text-blue-500 transition">
                                                                     {selectedHns.size === filteredPatients.length && filteredPatients.length > 0
@@ -397,7 +410,7 @@ export default function LabQueuePage() {
                                                 <tbody className="divide-y divide-gray-50 dark:divide-gray-800">
                                                     {filteredPatients.map((patient) => (
                                                         <tr key={patient.hn} className={`hover:bg-gray-50 dark:hover:bg-gray-800/50 transition ${selectedHns.has(patient.hn) ? 'bg-blue-50 dark:bg-blue-900/10' : ''}`}>
-                                                            {activeTab === 'new_requests' && (
+                                                            {(activeTab === 'new_requests' || activeTab === 'my_tasks') && (
                                                                 <td className="w-10 px-3 py-4">
                                                                     <button onClick={() => toggleSelect(patient.hn)} className="text-gray-400 hover:text-blue-500 transition">
                                                                         {selectedHns.has(patient.hn)
@@ -430,7 +443,7 @@ export default function LabQueuePage() {
                                                                     {patient.process === 'กำลังจัดส่ง' && (
                                                                         <button
                                                                             onClick={() => {
-                                                                                setSelectedReceiveHn(patient.hn);
+                                                                                setReceiveHnsTarget([patient.hn]);
                                                                                 setShowPinModal(true);
                                                                             }}
                                                                             className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-medium text-indigo-700 bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-300 hover:bg-indigo-200 dark:hover:bg-indigo-800/50 rounded-lg transition shadow-sm"
@@ -461,7 +474,7 @@ export default function LabQueuePage() {
                                     )}
 
                                     {/* Batch action bar */}
-                                    {activeTab === 'new_requests' && selectedHns.size > 0 && (
+                                    {(activeTab === 'new_requests' || activeTab === 'my_tasks') && selectedHns.size > 0 && (
                                         <div className="px-5 py-3 border-t border-gray-100 dark:border-gray-700 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-between">
                                             <span className="text-sm text-blue-700 dark:text-blue-300 font-medium">
                                                 เลือกแล้ว {selectedHns.size} รายการ
@@ -474,14 +487,44 @@ export default function LabQueuePage() {
                                                     <FileText className="w-4 h-4" />
                                                     ดูใบส่งตรวจ
                                                 </button>
-                                                <button
-                                                    onClick={handleBatchAccept}
-                                                    disabled={batchLoading}
-                                                    className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition shadow-sm disabled:opacity-50"
-                                                >
-                                                    <CheckCircle className="w-4 h-4" />
-                                                    {batchLoading ? 'กำลังดำเนินการ...' : `รับเรื่องทั้งหมด (${selectedHns.size})`}
-                                                </button>
+
+                                                {/* Action for 'new_requests' tab (Accept Request) */}
+                                                {activeTab === 'new_requests' && (
+                                                    <button
+                                                        onClick={handleBatchAccept}
+                                                        disabled={batchLoading}
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-amber-500 hover:bg-amber-600 rounded-lg transition shadow-sm disabled:opacity-50"
+                                                    >
+                                                        <CheckCircle className="w-4 h-4" />
+                                                        {batchLoading ? 'กำลังดำเนินการ...' : `รับเรื่องทั้งหมด (${selectedHns.size})`}
+                                                    </button>
+                                                )}
+
+                                                {/* Action for 'my_tasks' tab (Receive Specimen) */}
+                                                {activeTab === 'my_tasks' && (
+                                                    <button
+                                                        onClick={() => {
+                                                            // Filter only those that are 'กำลังจัดส่ง' to receive
+                                                            const validToReceive = Array.from(selectedHns).filter(hn => {
+                                                                const p = filteredPatients.find(patient => patient.hn === hn);
+                                                                return p && p.process === 'กำลังจัดส่ง';
+                                                            });
+
+                                                            if (validToReceive.length === 0) {
+                                                                toast.error('กรุณาเลือกเฉพาะรายการที่ "กำลังจัดส่ง" เท่านั้น');
+                                                                return;
+                                                            }
+
+                                                            setReceiveHnsTarget(validToReceive);
+                                                            setShowPinModal(true);
+                                                        }}
+                                                        disabled={isVerifyingPin}
+                                                        className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition shadow-sm disabled:opacity-50"
+                                                    >
+                                                        <Clock className="w-4 h-4" />
+                                                        รับตัวอย่างเลือดทั้งหมด ({Array.from(selectedHns).filter(hn => filteredPatients.find(p => p.hn === hn)?.process === 'กำลังจัดส่ง').length})
+                                                    </button>
+                                                )}
                                             </div>
                                         </div>
                                     )}
@@ -675,11 +718,11 @@ export default function LabQueuePage() {
                     isOpen={showPinModal}
                     onClose={() => {
                         setShowPinModal(false);
-                        setSelectedReceiveHn(null);
+                        setReceiveHnsTarget([]);
                     }}
                     onVerify={handleVerifyPin}
-                    title="ยืนยันการรับตัวอย่างเลือด"
-                    description="กรุณากรอกรหัส PIN 6 หลักเพื่อยืนยันตัวตนในการรับตัวอย่างเลือด (Electronic Signature)"
+                    title={receiveHnsTarget.length > 1 ? "ยืนยันการรับตัวอย่างเลือด (แบบกลุ่ม)" : "ยืนยันการรับตัวอย่างเลือด"}
+                    description={`กรุณากรอกรหัส PIN 6 หลักเพื่อยืนยันการรับตัวอย่างเลือด ${receiveHnsTarget.length} รายการ (Electronic Signature)`}
                 />
             </div>
         </RoleGuard>

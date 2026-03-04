@@ -116,7 +116,11 @@ export function PinSetupSection() {
                     <div className="form-group flex flex-col gap-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">รหัส PIN ใหม่ (6 หลัก)</label>
                         <input
-                            type="password"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            spellCheck={false}
+                            style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                             value={newPin}
                             onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, ''); // Allow only digits
@@ -130,7 +134,11 @@ export function PinSetupSection() {
                     <div className="form-group flex flex-col gap-2">
                         <label className="text-sm font-semibold text-gray-700 dark:text-gray-300">ยืนยันรหัส PIN ใหม่</label>
                         <input
-                            type="password"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="new-password"
+                            spellCheck={false}
+                            style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
                             value={confirmPin}
                             onChange={(e) => {
                                 const val = e.target.value.replace(/\D/g, '');

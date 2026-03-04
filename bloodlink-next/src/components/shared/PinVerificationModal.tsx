@@ -74,14 +74,16 @@ export function PinVerificationModal({
                     <div className="mb-6">
                         <input
                             ref={inputRef}
-                            type="password"
+                            type="text"
                             inputMode="numeric"
                             value={pin}
                             onChange={handlePinChange}
                             onKeyDown={handleKeyDown}
                             className="w-full text-center text-3xl font-mono tracking-[0.5em] bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl py-4 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-900 dark:text-white"
                             placeholder="••••••"
-                            autoComplete="off"
+                            autoComplete="new-password"
+                            style={{ WebkitTextSecurity: 'disc' } as React.CSSProperties}
+                            spellCheck={false}
                         />
                     </div>
 
